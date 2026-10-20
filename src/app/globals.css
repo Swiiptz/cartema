@@ -415,3 +415,42 @@ a,button,.panel,.tarot-card,.inspect-card,input,select{transition:color var(--t-
 .card-dialog[open] .dialog-copy>*:nth-child(2){animation-delay:.06s}.card-dialog[open] .dialog-copy>*:nth-child(3){animation-delay:.12s}.card-dialog[open] .dialog-copy>*:nth-child(4){animation-delay:.18s}.card-dialog[open] .dialog-copy>*:nth-child(5){animation-delay:.24s}.card-dialog[open] .dialog-copy>*:nth-child(n+6){animation-delay:.3s}
 .finish-switch button{transition:background-color .3s var(--ease-out),color .3s,border-color .3s,transform .3s var(--ease-out)}.finish-switch button:active{transform:scale(.96)}
 .dialog-close{transition:transform .3s var(--ease-out),background-color .2s}.dialog-close:hover{transform:rotate(90deg)}
+/* ============================================================== Révélations rares */
+.hint-legendaire,.epic-legendaire{--epic:#f0c45a;--epic-2:#fff1c2}
+.hint-mythique,.epic-mythique{--epic:#e0405f;--epic-2:#ffb3c0}
+.hint-unique,.epic-unique{--epic:#f3ecdf;--epic-2:#c4182f}
+.hint-gold,.epic-gold{--epic:#f1d99b;--epic-2:#fff6d6}
+.hint-blood,.epic-blood{--epic:#b0162f;--epic-2:#ff8a9a}
+/* Anticipation : la carte encore cachée palpite et tremble légèrement. */
+.stack-active.hint .flip-card{animation:hint-pulse 1.6s ease-in-out infinite,hint-shiver 3.2s ease-in-out infinite}
+.stack-active.hint:before{content:'';position:absolute;inset:-14%;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--epic) 45%,transparent),transparent);animation:hint-aura 1.6s ease-in-out infinite;pointer-events:none}
+@keyframes hint-pulse{0%,100%{filter:drop-shadow(0 0 6px color-mix(in srgb,var(--epic) 40%,transparent))}50%{filter:drop-shadow(0 0 22px var(--epic)) brightness(1.08)}}
+@keyframes hint-shiver{0%,86%,100%{transform:none}88%{transform:rotate(-1.2deg)}90%{transform:rotate(1.2deg)}92%{transform:rotate(-.8deg)}94%{transform:rotate(.5deg)}}
+@keyframes hint-aura{0%,100%{opacity:.35;transform:scale(.92)}50%{opacity:.85;transform:scale(1.04)}}
+/* Révélation : rayons, anneau et bannière, puis l'ensemble s'efface. */
+.epic-reveal{position:fixed;inset:0;z-index:40;pointer-events:none;display:grid;place-items:center;animation:epic-fade 2.6s ease forwards}
+.epic-reveal:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--epic) 22%,transparent),#05030680 70%);animation:epic-flash .9s ease-out both}
+.epic-rays{position:absolute;left:50%;top:42%;width:170vmax;height:170vmax;margin:-85vmax 0 0 -85vmax;display:none;background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--epic) 38%,transparent) 0deg 5deg,transparent 5deg 18deg);mask-image:radial-gradient(circle,#000 0,transparent 45%);animation:epic-spin 6s linear infinite,epic-rays-in .8s var(--ease-out) both}
+.with-rays .epic-rays{display:block}
+.epic-ring{position:absolute;left:50%;top:42%;width:60vmin;height:60vmin;margin:-30vmin 0 0 -30vmin;border-radius:50%;border:2px solid var(--epic-2);box-shadow:0 0 40px var(--epic),inset 0 0 40px var(--epic);animation:epic-ring 1.2s var(--ease-out) both}
+.epic-banner{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 26px;border-radius:999px;background:linear-gradient(170deg,#1b1016ee,#0d080cee);border:1px solid color-mix(in srgb,var(--epic) 70%,transparent);box-shadow:0 0 30px color-mix(in srgb,var(--epic) 45%,transparent),0 16px 40px #000c;white-space:nowrap;animation:epic-banner .7s .15s var(--ease-out) both}
+.epic-banner strong{font:600 clamp(20px,5vw,30px)/1.1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--epic-2);text-shadow:0 0 18px var(--epic)}
+.epic-banner small{font:500 13px var(--ui);color:var(--text)}
+.epic-unique .epic-banner strong{color:#f3ecdf;text-shadow:0 0 14px #c4182f}
+.epic-blood .epic-banner strong{color:#ff9aaa}
+@keyframes epic-fade{0%,72%{opacity:1}100%{opacity:0}}
+@keyframes epic-flash{0%{opacity:0}18%{opacity:1}100%{opacity:.75}}
+@keyframes epic-spin{to{transform:rotate(360deg)}}
+@keyframes epic-rays-in{from{opacity:0;transform:scale(.4)}}
+@keyframes epic-ring{0%{opacity:0;transform:scale(.2)}35%{opacity:1}100%{opacity:0;transform:scale(1.6)}}
+@keyframes epic-banner{from{opacity:0;transform:translate(-50%,24px) scale(.9)}to{opacity:1;transform:translateX(-50%)}}
+/* La carte rare révélée garde un halo. */
+.stack-active.slot-revealed.hint-done .flip-card{filter:drop-shadow(0 0 18px var(--epic))}
+/* Finition : pastille dans la légende et ruban dans le récapitulatif. */
+.finish-pill{margin-left:8px;padding:2px 9px;border-radius:999px;font:700 11px var(--ui);letter-spacing:.04em;text-transform:uppercase;animation:pop .4s .25s var(--ease-out) both}
+.finish-pill.gold{background:linear-gradient(170deg,#f6e3a8,#b8893e);color:#2a170b;box-shadow:0 0 12px #d5b87088}
+.finish-pill.blood{background:linear-gradient(170deg,#c41a36,#6e0b1c);color:#ffe3e8;box-shadow:0 0 12px #a9264699}
+.finish-ribbon{position:absolute;top:8px;left:50%;z-index:3;transform:translateX(-50%);padding:2px 10px;border-radius:999px;font:700 10px var(--ui);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;animation:pop .35s var(--ease-out) both;pointer-events:none}
+.finish-ribbon.gold{background:linear-gradient(170deg,#f6e3a8,#b8893e);color:#2a170b;box-shadow:0 0 12px #d5b87088}
+.finish-ribbon.blood{background:linear-gradient(170deg,#c41a36,#6e0b1c);color:#ffe3e8;box-shadow:0 0 12px #a9264699}
+@media(prefers-reduced-motion:reduce){.epic-reveal{animation:none;opacity:1}.epic-reveal:before,.epic-reveal .epic-rays,.epic-reveal .epic-ring{display:none}}
