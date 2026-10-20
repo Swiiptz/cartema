@@ -1,5 +1,5 @@
 'use client';
-import {createContext,useCallback,useContext,useEffect,useState} from 'react';
+import {createContext,useCallback,useContext,useEffect,useRef,useState} from 'react';
 import type {Session,SupabaseClient} from '@supabase/supabase-js';
 import {getSupabase,supabaseConfigured} from '@/lib/supabase';
 import {callRpc,type PlayerState} from '@/lib/game';
@@ -37,12 +37,22 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   if(!client){setReady(true);return;}
   let alive=true;
   void client.auth.getSession().then(({data})=>{if(alive){setSession(data.session);setReady(true);}});
-  const {data:{subscription}}=client.auth.onAuthStateChange((_event,next)=>{setSession(next);if(!next)setPlayer(null);});
+  const {data:{subscription}}=client.auth.onAuthStateChange((event,next)=>{setSession(next);if(!next)setPlayer(null);if(event==='TOKEN_REFRESHED')setRetry(r=>r+1);});
   return()=>{alive=false;subscription.unsubscribe();};
  },[client]);
 
  const userId=session?.user.id;
  useEffect(()=>{if(userId)void refreshPlayer();},[userId,refreshPlayer]);
+ // Un échec (session en cours de renouvellement, réseau) ne doit pas bloquer le site : nouvel essai.
+ const [retry,setRetry]=useState(0);
+ const attempts=useRef(0);
+ useEffect(()=>{
+  if(!userId||!playerError||attempts.current>=4)return;
+  const t=setTimeout(()=>{attempts.current++;void refreshPlayer();},1200*(attempts.current+1));
+  return()=>clearTimeout(t);
+ },[userId,playerError,refreshPlayer,retry]);
+ useEffect(()=>{if(player)attempts.current=0;},[player]);
+ useEffect(()=>{if(retry&&userId&&!player)void refreshPlayer();},[retry,userId,player,refreshPlayer]);
 
  const signOut=useCallback(async()=>{await client?.auth.signOut();setPlayer(null);},[client]);
  return <AuthContext.Provider value={{configured:supabaseConfigured,ready,client,session,player,playerError,refreshPlayer,signOut}}>{children}{daily>0&&<div className="toast" role="status"><span className="toast-coin" aria-hidden="true">✦</span><span><strong>+{daily} Deniers</strong> · bonus de connexion du jour</span><button className="icon-button" aria-label="Fermer" onClick={()=>setDaily(0)}>×</button></div>}</AuthContext.Provider>;

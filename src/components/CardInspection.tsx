@@ -1,6 +1,6 @@
 'use client';
 import {useCallback,useEffect,useId,useRef,useState} from 'react';
-import {Expand,Lock,LockOpen,Recycle,X} from 'lucide-react';
+import {Expand,Lock,LockOpen,Recycle,Tag,X} from 'lucide-react';
 import {TarotCard,type DemoCard} from './Card';
 import {useAuth} from './AuthProvider';
 import {useAsk} from './AskDialog';
@@ -76,15 +76,25 @@ function OwnedCopies({characterId,onChanged}:{characterId:string;onChanged:()=>v
   return `+${r.total.toLocaleString('fr-FR')} Deniers`;
  });
 
+ const sell=(it:InventoryItem)=>run(async()=>{
+  const raw=await ask({title:'Mettre en vente',message:`Fixez votre prix en Deniers. Une commission de 5 % est déduite à la vente ; l’exemplaire est réservé tant que l’annonce est active.${it.finish!=='Standard'?` Finition ${it.finish}.`:''}`,inputLabel:'Prix (Deniers)',initialValue:String(Math.max(it.value*2,10)),confirmLabel:'Mettre en vente'});
+  if(raw===null)return null;
+  const price=Number(raw.replace(/\s/g,''));
+  if(!Number.isInteger(price)||price<1)throw new Error('Prix invalide : un nombre entier de Deniers, au moins 1.');
+  const r=await callRpc<{net:number}>(client!,'create_listing',{p_instance_id:it.instance_id,p_price:price,p_request_id:crypto.randomUUID()});
+  return `En vente à ${price.toLocaleString('fr-FR')} Deniers · vous recevrez ${r.net.toLocaleString('fr-FR')}`;
+ });
+ const unlist=(it:InventoryItem)=>run(async()=>{await callRpc(client!,'cancel_listing',{p_listing_id:it.listing_id});return 'Annonce retirée.';});
  if(!items)return <div className="owned-copies"><Skeleton style={{height:44}}/><Skeleton style={{height:44}}/></div>;
  const extras=items.filter(i=>i.finish==='Standard'&&!i.locked&&!i.reserved&&!i.unique).slice(1);
  return <section className="owned-copies" aria-label="Vos exemplaires">
   {askNode}
   <div className="owned-head"><span className="eyebrow">Vos exemplaires</span><strong>{items.length}</strong></div>
   {items.length===0?<p className="muted">Vous ne possédez plus d’exemplaire de cette carte. Elle reste découverte dans votre album.</p>:<ul className="owned-list">{items.map(it=><li key={it.instance_id} className={`finish-${it.finish==='Dorée'?'gold':it.finish==='Sanglante'?'blood':'standard'}`}>
-   <span className="owned-finish">{it.finish}<small>{new Date(it.acquired_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}{it.reserved?' · engagée':''}</small></span>
+   <span className="owned-finish">{it.finish}<small>{new Date(it.acquired_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}{it.listing_id?` · en vente à ${(it.listing_price??0).toLocaleString('fr-FR')}`:it.reserved?' · engagée':''}</small></span>
    <button className={`icon-button lock-button ${it.locked?'on':''}`} disabled={busy} aria-pressed={it.locked} aria-label={it.locked?'Déverrouiller cet exemplaire':'Verrouiller cet exemplaire'} title={it.locked?'Verrouillée : protégée du recyclage et des ventes':'Verrouiller'} onClick={()=>void toggleLock(it)}>{it.locked?<Lock size={16}/>:<LockOpen size={16}/>}</button>
-   {it.unique?<span className="owned-note">Indestructible</span>:<button className="text-link recycle-link" disabled={busy||it.locked||it.reserved} onClick={()=>void recycle([it])}><Recycle size={13}/> {it.value.toLocaleString('fr-FR')}</button>}
+   {it.listing_id?<button className="text-link recycle-link" disabled={busy} onClick={()=>void unlist(it)}>Retirer</button>:<button className="text-link recycle-link" disabled={busy||it.locked||it.reserved} onClick={()=>void sell(it)} aria-label="Vendre cet exemplaire"><Tag size={13}/> Vendre</button>}
+   {it.unique?<span className="owned-note">Indestructible</span>:<button className="text-link recycle-link" disabled={busy||it.locked||it.reserved} onClick={()=>void recycle([it])} aria-label={`Recycler pour ${it.value} Deniers`}><Recycle size={13}/> {it.value.toLocaleString('fr-FR')}</button>}
   </li>)}</ul>}
   {extras.length>0&&<button className="primary ghost compact" disabled={busy} onClick={()=>void recycle(extras)}><Recycle size={14}/> Recycler les {extras.length} doublon{extras.length>1?'s':''} Standard · +{extras.reduce((s,i)=>s+i.value,0).toLocaleString('fr-FR')}</button>}
   {message.error&&<p className="auth-error" role="alert">{message.error}</p>}{message.notice&&<p className="auth-notice" role="status">{message.notice}</p>}

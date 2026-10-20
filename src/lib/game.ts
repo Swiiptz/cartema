@@ -20,7 +20,11 @@ export type UnknownAlbumEntry={known:false;edition_id:string;code:string;number:
 export type AlbumEntry=KnownAlbumEntry|UnknownAlbumEntry;
 /** Carte d'album : rendu + informations de possession. */
 export type AlbumCard=DemoCard&{characterId?:string;editionId?:string;finishesSeen?:Finish[];owned?:number};
-export type InventoryItem={instance_id:string;finish:Finish;locked:boolean;reserved:boolean;acquired_at:string;unique:boolean;value:number};
+export type InventoryItem={instance_id:string;finish:Finish;locked:boolean;reserved:boolean;reserved_kind?:string|null;listing_id?:string|null;listing_price?:number|null;acquired_at:string;unique:boolean;value:number};
+export type ListingCard={character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
+export type Listing={listing_id:string;price:number;net:number;status:'active'|'sold'|'cancelled';created_at:string;closed_at:string|null;mine:boolean;seller:string|null;buyer:string|null;finish:Finish;discovered:boolean;card:ListingCard};
+export type TradeStatus={allowed:boolean;blocked:boolean;available_at:string|null;commission_pct:number};
+export function listingToCard(l:Listing):DemoCard{const c=l.card;return {id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish:l.finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
 export type RecycleResult={operation_id?:string;total:number;count:number;balance:number;replayed:boolean};
 export type DuplicatePreview={count:number;total:number;by_rarity:Partial<Record<Rarity,number>>};
 
@@ -82,6 +86,11 @@ const messages:Record<string,string>={
  nothing_to_recycle:'Aucune carte à recycler.',
  unique_indestructible:'Une carte unique ne peut pas être recyclée.',
  recycled_item:'Cette carte a déjà été recyclée.',
+ account_too_new:'Les échanges entre joueurs s’ouvrent 24 h après la création du compte.',
+ transactions_blocked:'Les échanges sont suspendus sur ce compte.',
+ invalid_price:'Prix invalide : un nombre entier de Deniers, au moins 1.',
+ listing_unavailable:'Cette annonce n’est plus disponible.',
+ own_listing:'C’est votre propre annonce.',
 };
 export class GameError extends Error{
  constructor(public code:string,message:string,public definitive:boolean){super(message);}
