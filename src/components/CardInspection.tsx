@@ -18,10 +18,25 @@ export function CardInspection({card,finishesSeen,characterId,onChanged}:{card:D
  const title=useId();
  const [finish,setFinish]=useState(card.finish||'Standard');
  const [open,setOpen]=useState(false);
+ // Fermeture animée : la fenêtre se retire en fondu avant d'être réellement fermée.
+ const close=()=>{
+  const d=dialog.current;if(!d||!d.open||d.classList.contains('closing'))return;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){d.close();return;}
+  d.classList.add('closing');
+  setTimeout(()=>{d.classList.remove('closing');d.close();},230);
+ };
+ // Inclinaison de la carte qui suit le pointeur (souris uniquement).
+ const tilt=(e:React.PointerEvent<HTMLDivElement>)=>{
+  if(e.pointerType!=='mouse')return;
+  const r=e.currentTarget.getBoundingClientRect();
+  e.currentTarget.style.setProperty('--rx',`${(0.5-(e.clientY-r.top)/r.height)*10}deg`);
+  e.currentTarget.style.setProperty('--ry',`${((e.clientX-r.left)/r.width-0.5)*14}deg`);
+ };
+ const untilt=(e:React.PointerEvent<HTMLDivElement>)=>{e.currentTarget.style.setProperty('--rx','0deg');e.currentTarget.style.setProperty('--ry','0deg');};
  return <><button className="inspect-card" aria-label={`Examiner ${card.known?card.name:'la carte inconnue'}`} onClick={()=>{setFinish(card.finish||'Standard');setOpen(true);dialog.current?.showModal();}}><TarotCard card={card}/><span className="inspect-hint"><Expand size={13}/> Examiner la carte</span></button>
- <dialog className="card-dialog" ref={dialog} aria-labelledby={title} onClose={()=>setOpen(false)} onClick={e=>{if(e.target===e.currentTarget)dialog.current?.close();}}><div className="card-dialog-content">
-  <button className="icon-button dialog-close" aria-label="Fermer le détail" onClick={()=>dialog.current?.close()}><X size={20}/></button>
-  <div className="dialog-art"><TarotCard key={finish} card={{...card,finish:card.known?finish:card.finish}}/></div>
+ <dialog className="card-dialog" ref={dialog} aria-labelledby={title} onClose={()=>setOpen(false)} onCancel={e=>{e.preventDefault();close();}} onClick={e=>{if(e.target===e.currentTarget)close();}}><div className="card-dialog-content">
+  <button className="icon-button dialog-close" aria-label="Fermer le détail" onClick={close}><X size={20}/></button>
+  <div className="dialog-art" onPointerMove={tilt} onPointerLeave={untilt}><TarotCard key={finish} card={{...card,finish:card.known?finish:card.finish}}/></div>
   <div className="dialog-copy">
    <span className="eyebrow">Détail de la carte</span>
    <h2 id={title}>{card.known?card.name:'Identité voilée'}</h2>

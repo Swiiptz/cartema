@@ -391,3 +391,27 @@ a,button,.panel,.tarot-card,.inspect-card,input,select{transition:color var(--t-
 @keyframes toast-rise{from{opacity:0;transform:translate(-50%,16px)}}
 @keyframes coin-spin{from{transform:rotateY(540deg) scale(.6)}}
 @media(max-width:700px){.toast{bottom:92px}}
+/* Pile de révélation : les cartes suivantes dépassent sous la carte active (paquet), sans doubler son cadre. */
+.stack-card{transform-origin:50% 100%;transform:translateY(calc(var(--depth)*9px)) scale(calc(1 - var(--depth)*.045));filter:brightness(calc(.62 - var(--depth)*.1)) drop-shadow(0 4px 8px #000a);transition:transform .45s var(--ease-out),filter .45s var(--ease-out)}
+.reveal-stack{margin-bottom:calc(var(--behind,0)*9px)}
+.reveal-stack .reveal-slot.stack-active{filter:drop-shadow(0 14px 24px #000c)}
+/* ============================================================== Examiner une carte : ouverture et fermeture douces */
+.card-dialog[open]{animation:dialog-in .5s var(--ease-out) both}
+.card-dialog[open]::backdrop{animation:fade-in .4s ease both}
+.card-dialog.closing{animation:dialog-out .23s cubic-bezier(.4,0,1,1) forwards}
+.card-dialog.closing::backdrop{animation:fade-out .23s ease forwards}
+@keyframes dialog-in{from{opacity:0;transform:translateY(22px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes dialog-out{to{opacity:0;transform:translateY(12px) scale(.98)}}
+@keyframes fade-out{to{opacity:0}}
+.dialog-art{perspective:900px;--rx:0deg;--ry:0deg}
+.dialog-art>.tarot-card{transform:rotateX(var(--rx)) rotateY(var(--ry));transition:transform .5s var(--ease-out),filter .5s;transform-style:preserve-3d;filter:drop-shadow(0 22px 30px #000b)}
+.card-dialog[open] .dialog-art{animation:art-in .75s var(--ease-out) both}
+@keyframes art-in{from{opacity:0;transform:translateY(26px) rotateY(-24deg) scale(.9)}to{opacity:1;transform:none}}
+/* Changement de finition : la carte se retourne doucement. */
+.dialog-art>.tarot-card{animation:finish-swap .5s var(--ease-out) backwards}
+@keyframes finish-swap{from{opacity:.25;transform:rotateY(-70deg) scale(.96)}}
+/* Informations en cascade. */
+.card-dialog[open] .dialog-copy>*{animation:rise .5s var(--ease-out) both}
+.card-dialog[open] .dialog-copy>*:nth-child(2){animation-delay:.06s}.card-dialog[open] .dialog-copy>*:nth-child(3){animation-delay:.12s}.card-dialog[open] .dialog-copy>*:nth-child(4){animation-delay:.18s}.card-dialog[open] .dialog-copy>*:nth-child(5){animation-delay:.24s}.card-dialog[open] .dialog-copy>*:nth-child(n+6){animation-delay:.3s}
+.finish-switch button{transition:background-color .3s var(--ease-out),color .3s,border-color .3s,transform .3s var(--ease-out)}.finish-switch button:active{transform:scale(.96)}
+.dialog-close{transition:transform .3s var(--ease-out),background-color .2s}.dialog-close:hover{transform:rotate(90deg)}
