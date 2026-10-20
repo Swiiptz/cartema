@@ -89,7 +89,7 @@ describe('succès',()=>{
     const u=await player('discret');
     const list=await rpc<any[]>(db,u,'get_achievements');
     const secret=list.find(a=>a.code==='unique');
-    expect(secret).toEqual({code:'unique',secret:true,category:'general',label:null,unlocked_at:null});
+    expect(secret).toEqual({code:'unique',secret:true,category:'general',label:null,unlocked_at:null,edition:null,edition_prefix:null});
     await expectError(rpc(db,u,'set_title',['faces_50']),/title_locked/);
     await discover(u,`true`);
     await rpc(db,u,'get_achievements');
@@ -152,7 +152,7 @@ describe('succès conditionnels secrets',()=>{
     const {rows:chars}=await db.query<{id:string}>(`select id from public.characters where edition_id=$1 and number in (7,8)`,[edition]);
     const code=await rpc<string>(db,admin,'admin_save_achievement',[null,'Le pacte caché','Avoir réuni les deux frères.',true,100,0,null,chars.map(c=>c.id)]);
     const u=await player('curieux');
-    expect((await rpc<any[]>(db,u,'get_achievements')).find(x=>x.code===code)).toEqual({code,secret:true,category:'custom',label:null,unlocked_at:null});
+    expect((await rpc<any[]>(db,u,'get_achievements')).find(x=>x.code===code)).toEqual({code,secret:true,category:'custom',label:null,unlocked_at:null,edition:null,edition_prefix:null});
     await discover(u,`c.number in (7,8)`);
     expect((await rpc<any[]>(db,u,'get_achievements')).find(x=>x.code===code)).toMatchObject({label:'Le pacte caché',description:'Avoir réuni les deux frères.'});
     expect((await rpc(db,u,'get_player_state')).missions_ready).toBeGreaterThanOrEqual(0);
@@ -210,7 +210,7 @@ describe('succès secrets de la chronique',()=>{
     const mine=(await rpc<any[]>(db,early,'get_achievements')).find(a=>a.code==='chronicle:early');
     expect(mine).toMatchObject({label:'Soutien de la première heure',description:'Avoir rejoint Cartema durant son premier mois.'});
     expect(mine.unlocked_at).not.toBeNull();
-    expect((await rpc<any[]>(db,late,'get_achievements')).find(a=>a.code==='chronicle:early')).toEqual({code:'chronicle:early',secret:true,category:'custom',label:null,unlocked_at:null});
+    expect((await rpc<any[]>(db,late,'get_achievements')).find(a=>a.code==='chronicle:early')).toEqual({code:'chronicle:early',secret:true,category:'custom',label:null,unlocked_at:null,edition:null,edition_prefix:null});
   });
   it('se débloque en recyclant une fois chaque carte du jeu',async()=>{
     const u=await player('broyeur_total');

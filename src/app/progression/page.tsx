@@ -92,22 +92,28 @@ function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievemen
  useEffect(()=>{setChosen(undefined);},[currentTitle]);
  const groups=useMemo(()=>{
   const out:Group[]=[];
+  // Succès personnalisés rattachés à une édition : rangés dans son set ; secrets sans édition :
+  // avec les secrets généraux ; les autres forment la chronique.
+  const custom=list.filter(a=>a.category==='custom');
   const editions=[...new Set(list.filter(a=>a.category==='collection').map(a=>a.edition??''))];
   for(const ed of editions){
    const items=list.filter(a=>a.category==='collection'&&(a.edition??'')===ed);
+   const linked=custom.filter(a=>a.edition&&a.edition===ed);
    out.push({key:`ed-${ed}`,title:`Collection · ${ed}`,subgroups:[
     {key:'all',title:'Édition complète',items:items.filter(a=>a.code.endsWith(':all'))},
     {key:'rarity',title:'Raretés',items:items.filter(a=>a.code.includes(':rarity:'))},
-    {key:'clan',title:'Clans',items:items.filter(a=>a.code.includes(':clan:'))}].filter(s=>s.items.length)});
+    {key:'clan',title:'Clans',items:items.filter(a=>a.code.includes(':clan:'))},
+    {key:'groups',title:'Personnages',items:linked.filter(a=>!a.secret)},
+    {key:'secret',title:'Secrets',items:linked.filter(a=>a.secret)}].filter(s=>s.items.length)});
   }
-  const custom=list.filter(a=>a.category==='custom');
-  if(custom.length)out.push({key:'custom',title:'Succès de la chronique',subgroups:[
-   {key:'visible',title:'',items:custom.filter(a=>!a.secret)},
-   {key:'secret',title:'Secrets',items:custom.filter(a=>a.secret)}].filter(s=>s.items.length)});
+  const placed=new Set(editions);
+  const chronicle=custom.filter(a=>!(a.edition&&placed.has(a.edition))&&!a.secret);
+  if(chronicle.length)out.push({key:'custom',title:'Succès de la chronique',subgroups:[{key:'visible',title:'',items:chronicle}]});
   const general=list.filter(a=>a.category==='general');
+  const secrets=[...general.filter(a=>a.secret),...custom.filter(a=>!(a.edition&&placed.has(a.edition))&&a.secret)];
   out.push({key:'general',title:'Succès généraux',subgroups:[
    {key:'visible',title:'',items:general.filter(a=>!a.secret)},
-   {key:'secret',title:'Secrets',items:general.filter(a=>a.secret)}].filter(s=>s.items.length)});
+   {key:'secret',title:'Secrets',items:secrets}].filter(s=>s.items.length)});
   return out;
  },[list]);
  // Catégories repliables : la première est ouverte, le choix est mémorisé sur l'appareil.
