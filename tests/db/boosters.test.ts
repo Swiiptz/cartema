@@ -161,7 +161,7 @@ describe('album',()=>{
     const unknown=album.filter(c=>!c.known);
     expect(new Set(known.map(c=>c.character_id))).toEqual(new Set(opened.cards.map((c:any)=>c.character_id)));
     for(const c of unknown){
-      expect(Object.keys(c).sort()).toEqual(['code','edition_id','known','number','rarity','silhouette_key']);
+      expect(Object.keys(c).sort()).toEqual(['code','edition_id','known','number','rarity','silhouette_key','unique']);
     }
     expect(JSON.stringify(unknown)).not.toMatch(/Perso/);
     const owned=known.reduce((s,c)=>s+Object.values(c.owned as Record<string,number>).reduce((a,b)=>a+b,0),0);

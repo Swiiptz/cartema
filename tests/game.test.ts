@@ -34,6 +34,7 @@ describe('ordre de révélation',()=>{
   it('révèle de la moins rare à la plus rare, finitions spéciales en dernier',()=>{
     const pack=[{id:'a',rarity:'Rare',finish:'Standard'},{id:'b',rarity:'Commun',finish:'Dorée'},{id:'c',rarity:'Commun',finish:'Standard'},{id:'d',rarity:'Peu commun'},{id:'e',rarity:'Commun',finish:'Standard'}] as const;
     expect(revealOrder(pack).map(c=>c.id)).toEqual(['c','e','b','d','a']);
+    expect(revealOrder([{id:'u',rarity:'Mythique',unique:true},{id:'m',rarity:'Mythique',finish:'Sanglante'}]).map(c=>c.id)).toEqual(['m','u']);
   });
 });
 

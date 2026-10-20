@@ -6,7 +6,7 @@ export type AdminEdition={id:string;name:string;prefix:string;cover_path:string|
 export type AdminClan={id:string;name:string;symbol_key:string|null};
 export type CharacterStatus='draft'|'published'|'archived';
 export type IllustrationMeta=ArtMeta&{width?:number;height?:number;transparent?:boolean;original?:string};
-export type AdminCharacter={id:string;edition_id:string;clan_id:string|null;number:number;name:string;role_title:string;rarity:Rarity;art_path:string|null;art_meta:IllustrationMeta;silhouette_key:string|null;status:CharacterStatus;published_at:string|null;updated_at:string};
+export type AdminCharacter={id:string;edition_id:string;clan_id:string|null;number:number;name:string;role_title:string;rarity:Rarity;art_path:string|null;art_meta:IllustrationMeta;silhouette_key:string|null;is_unique?:boolean;status:CharacterStatus;published_at:string|null;updated_at:string};
 export type AdminCatalog={editions:AdminEdition[];clans:AdminClan[];characters:AdminCharacter[]};
 
 /** Clans dont le moteur de cartes possède déjà un symbole gravé (tarot-renderer.js). */

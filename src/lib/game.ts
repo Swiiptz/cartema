@@ -11,10 +11,10 @@ export type PlayerState={
  booster_offers:Record<string,number>;
  editions:{id:string;name:string;prefix:string;cover_path:string|null;openable:boolean}[];
 };
-export type OpenedCard={position:number;instance_id:string;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;finish:Finish;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
+export type OpenedCard={position:number;instance_id:string;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique?:boolean;finish:Finish;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
 export type Opening={opening_id:string;edition_id:string;ruleset_version:number;pool:'free'|'purchased';created_at:string;cards:OpenedCard[];replayed:boolean};
-export type KnownAlbumEntry={known:true;character_id:string;edition_id:string;code:string;number:number;rarity:Rarity;name:string;role_title:string;clan:string|null;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;discovered_at:string;finishes_seen:Finish[];owned:Partial<Record<Finish,number>>};
-export type UnknownAlbumEntry={known:false;edition_id:string;code:string;number:number;rarity:Rarity;silhouette_key:string|null};
+export type KnownAlbumEntry={known:true;character_id:string;edition_id:string;code:string;number:number;rarity:Rarity;unique?:boolean;name:string;role_title:string;clan:string|null;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;discovered_at:string;finishes_seen:Finish[];owned:Partial<Record<Finish,number>>};
+export type UnknownAlbumEntry={known:false;edition_id:string;code:string;number:number;rarity:Rarity;unique?:boolean;silhouette_key:string|null};
 export type AlbumEntry=KnownAlbumEntry|UnknownAlbumEntry;
 /** Carte d'album : rendu + informations de possession. */
 export type AlbumCard=DemoCard&{editionId?:string;finishesSeen?:Finish[];owned?:number};
@@ -32,14 +32,14 @@ function art(meta:ArtMeta|null|undefined){
 }
 
 export function openedToCard(c:OpenedCard):DemoCard{
- return {id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,known:true,finish:c.finish,
+ return {id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:!!c.unique,known:true,finish:c.finish,
   illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};
 }
 
 export function albumToCard(e:AlbumEntry):AlbumCard{
- if(!e.known)return {id:e.code,name:'Inconnu',clan:'Inconnu',role:'',rarity:e.rarity,known:false,silhouette:silhouetteIndex(e.silhouette_key),editionId:e.edition_id};
+ if(!e.known)return {id:e.code,name:'Inconnu',clan:'Inconnu',role:'',rarity:e.rarity,unique:!!e.unique,known:false,silhouette:silhouetteIndex(e.silhouette_key),editionId:e.edition_id};
  const owned=Object.values(e.owned).reduce((s,n)=>s+(n??0),0);
- return {id:e.code,name:e.name,clan:e.clan??'?',role:e.role_title,rarity:e.rarity,known:true,
+ return {id:e.code,name:e.name,clan:e.clan??'?',role:e.role_title,rarity:e.rarity,unique:!!e.unique,known:true,
   illustration:e.art_path??undefined,silhouette:silhouetteIndex(e.silhouette_key),...art(e.art_meta),
   editionId:e.edition_id,finishesSeen:e.finishes_seen,owned};
 }
@@ -88,9 +88,10 @@ export async function callRpc<T>(client:SupabaseClient,fn:string,args?:Record<st
  return result.data as T;
 }
 
-// Ordre de révélation : de la moins rare à la plus rare, finitions spéciales en dernier à rareté égale.
+// Ordre de révélation : de la moins rare à la plus rare, finitions spéciales en dernier à rareté égale,
+// carte unique toujours en tout dernier.
 // Affichage seulement : l'historique serveur conserve les positions du tirage.
 const FINISH_ORDER=['Standard','Dorée','Sanglante'];
-export function revealOrder<C extends {rarity:Rarity;finish?:string}>(cards:readonly C[]):C[]{
- return cards.map((card,i)=>({card,i})).sort((a,b)=>ALL_RARITIES.indexOf(a.card.rarity)-ALL_RARITIES.indexOf(b.card.rarity)||FINISH_ORDER.indexOf(a.card.finish??'Standard')-FINISH_ORDER.indexOf(b.card.finish??'Standard')||a.i-b.i).map(x=>x.card);
+export function revealOrder<C extends {rarity:Rarity;finish?:string;unique?:boolean}>(cards:readonly C[]):C[]{
+ return cards.map((card,i)=>({card,i})).sort((a,b)=>Number(!!a.card.unique)-Number(!!b.card.unique)||ALL_RARITIES.indexOf(a.card.rarity)-ALL_RARITIES.indexOf(b.card.rarity)||FINISH_ORDER.indexOf(a.card.finish??'Standard')-FINISH_ORDER.indexOf(b.card.finish??'Standard')||a.i-b.i).map(x=>x.card);
 }

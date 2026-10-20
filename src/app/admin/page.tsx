@@ -58,15 +58,15 @@ function Gate({title,text,link=false}:{title:string;text:string;link?:boolean}){
 type Act=(label:string,action:(c:SupabaseClient)=>Promise<unknown>)=>Promise<boolean>;
 
 // ------------------------------------------------------------------ personnages
-type Draft={id:string|null;edition_id:string;number:number;name:string;role_title:string;clan_id:string|null;rarity:Rarity;art_path:string|null;art_meta:IllustrationMeta;status:CharacterStatus;silhouette_key:string|null};
+type Draft={unique?:boolean;id:string|null;edition_id:string;number:number;name:string;role_title:string;clan_id:string|null;rarity:Rarity;art_path:string|null;art_meta:IllustrationMeta;status:CharacterStatus;silhouette_key:string|null};
 const emptyDraft=(catalog:AdminCatalog,editionId:string):Draft=>({id:null,edition_id:editionId,number:nextNumber(catalog.characters,editionId),name:'',role_title:'',clan_id:null,rarity:'Commun',art_path:null,art_meta:{},status:'draft',silhouette_key:null});
-const toDraft=(c:AdminCharacter):Draft=>({id:c.id,edition_id:c.edition_id,number:c.number,name:c.name,role_title:c.role_title,clan_id:c.clan_id,rarity:c.rarity,art_path:c.art_path,art_meta:c.art_meta??{},status:c.status,silhouette_key:c.silhouette_key});
+const toDraft=(c:AdminCharacter):Draft=>({unique:!!c.is_unique,id:c.id,edition_id:c.edition_id,number:c.number,name:c.name,role_title:c.role_title,clan_id:c.clan_id,rarity:c.rarity,art_path:c.art_path,art_meta:c.art_meta??{},status:c.status,silhouette_key:c.silhouette_key});
 
 function previewCard(d:Draft,catalog:AdminCatalog,finish='Standard'):DemoCard{
  const prefix=catalog.editions.find(e=>e.id===d.edition_id)?.prefix??'???';
  const clan=catalog.clans.find(c=>c.id===d.clan_id)?.name??'?';
  return {id:`${prefix}-${String(d.number).padStart(3,'0')}`,name:d.name||'Sans nom',clan,role:d.role_title,rarity:d.rarity,known:true,finish,
-  illustration:d.art_path??undefined,artLayout:d.art_meta.layout,artOffsetY:d.art_meta.offsetY,silhouette:silhouetteIndex(d.silhouette_key)};
+  unique:d.unique,illustration:d.art_path??undefined,artLayout:d.art_meta.layout,artOffsetY:d.art_meta.offsetY,silhouette:silhouetteIndex(d.silhouette_key)};
 }
 
 function CharactersTab({catalog,act,client,onError}:{catalog:AdminCatalog;act:Act;client:SupabaseClient;onError:(m:string)=>void}){
@@ -90,7 +90,7 @@ function CharactersTab({catalog,act,client,onError}:{catalog:AdminCatalog;act:Ac
   {bulk&&edition&&<BulkIllustrations key={editionId} characters={catalog.characters.filter(c=>c.edition_id===editionId)} act={act} client={client} onClose={()=>setBulk(false)}/>}
   <div className={`admin-split ${draft?'editing':''}`}>
    <ul className="admin-card-list" aria-label="Personnages de l’édition">
-    {list.map(c=><li key={c.id}><button className={draft?.id===c.id?'on':''} onClick={()=>setDraft(toDraft(c))}><span className="admin-card-thumb"><TarotCard card={previewCard(toDraft(c),catalog)}/></span><span className="admin-card-meta"><strong>{c.number}. {c.name}</strong><span style={{color:palette[c.rarity]}}>{c.rarity}</span><span className={`status-chip ${c.status}`}>{STATUS_LABEL[c.status]}</span></span></button></li>)}
+    {list.map(c=><li key={c.id}><button className={draft?.id===c.id?'on':''} onClick={()=>setDraft(toDraft(c))}><span className="admin-card-thumb"><TarotCard card={previewCard(toDraft(c),catalog)}/></span><span className="admin-card-meta"><strong>{c.number}. {c.name}</strong><span style={{color:c.is_unique?'#f3ecdf':palette[c.rarity]}}>{c.is_unique?'Carte unique':c.rarity}</span><span className={`status-chip ${c.status}`}>{STATUS_LABEL[c.status]}</span></span></button></li>)}
     {!list.length&&<li className="muted admin-list-empty">Aucun personnage pour ce filtre.</li>}
    </ul>
    {draft&&<CharacterEditor key={draft.id??'new'} draft={draft} setDraft={setDraft} catalog={catalog} act={act} client={client} onError={onError}/>}

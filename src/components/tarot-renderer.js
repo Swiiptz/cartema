@@ -28,7 +28,8 @@ function silhouette(index,u){
  const bust=[body+hood,body+hair+face+collar,body+veil,body+hair+face+crown,body+hair+face+`<path d="M71 162Q63 134 69 104M133 161Q145 131 134 95M81 151Q85 169 101 181 116 168 121 149" fill="none" stroke="#b1a4af" stroke-opacity=".2" stroke-width="1.5"/>`,body+hood+`<path d="M82 161 69 196 94 221M120 162 134 196 108 221" fill="none" stroke="#9098aa" stroke-opacity=".24" stroke-width="1.5"/>`][index%6];
  return `<g class="portrait-silhouette"><ellipse cx="101" cy="124" rx="57" ry="76" fill="#080a10" opacity=".2"/>${bust}<path d="M37 214Q100 197 164 214" fill="none" stroke="#7d8595" stroke-opacity=".08" stroke-width="8"/></g>`;
 }
-export function renderCard(c,k,illustration,artLayout='portrait',provisional=false,artOffsetY=0,silhouetteIndex){
+// unique : carte à exemplaire unique (Caïn) ; cadre Mythique en attendant son habillage propre.
+export function renderCard(c,k,illustration,artLayout='portrait',provisional=false,artOffsetY=0,silhouetteIndex,unique=false){
  const[id,n,cl,role,ra,kn,fin]=c,[base,lv]=R[ra],u='g'+k+id;
  const color=fin==='gold'?'#d5b870':fin==='blood'?'#98733e':base;
  const light=fin==='gold'?'#fff2c5':fin==='blood'?'#e2c08a':lv===0?'#d7c6a5':lv===1?'#c8d8a3':lv===2?'#c7e7ef':lv===3?'#b5ece4':lv===4?'#e6bcf1':lv===5?'#ffe8aa':'#ffa38b';
@@ -42,7 +43,7 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  const name=kn?n:'Inconnu',clan=kn&&cl!=='?'?cl:kn?'Clan à définir':'Clan inconnu';
  const title=kn?(role||'Chronique Camarilla'):'Identité voilée';
  const frame='M13 6H187Q194 6 194 13V287Q194 294 187 294H13Q6 294 6 287V13Q6 6 13 6Z';
- return `<div class="card crafted-card ${fin} rarity-${lv}"><svg viewBox="0 0 200 300" role="img" aria-label="${kn?n+', '+(provisional?'cadre de présentation':ra):'Personnage inconnu, '+ra}">
+ return `<div class="card crafted-card ${fin} rarity-${lv}${unique?' unique-card':''}"><svg viewBox="0 0 200 300" role="img" aria-label="${kn?n+', '+(provisional?'cadre de présentation':ra):'Personnage inconnu, '+ra}">
  <defs>
  ${fin==='blood'?bloodDefinitions(u):fin==='gold'?goldDefinitions(u):''}
   <linearGradient id="metal${u}" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="${light}"/><stop offset=".28" stop-color="${color}"/><stop offset=".48" stop-color="${light}"/><stop offset=".65" stop-color="${color}"/><stop offset="1" stop-color="${light}"/></linearGradient>
@@ -88,7 +89,7 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  <path d="M36 259H52M148 259H164" stroke="${metal}" stroke-width=".65" opacity=".5"/>
  <text x="100" y="273" text-anchor="middle" font-family="var(--body)" font-size="${title.length>24?9.5:11}" fill="#e3d0b2">${title}</text>
  <text x="100" y="291" text-anchor="middle" font-family="var(--display)" font-size="5.6" letter-spacing=".5" fill="#ded1b9">${id}</text>
- <text x="100" y="258" text-anchor="middle" font-family="var(--display)" font-size="5.2" letter-spacing=".6" fill="${light}" opacity=".8">${provisional?'APERÇU':ra.toUpperCase()}${fin?' · '+(fin==='gold'?'DORÉE':'SANGLANTE'):''}</text>
+ <text x="100" y="258" text-anchor="middle" font-family="var(--display)" font-size="5.2" letter-spacing=".6" fill="${light}" opacity=".8">${provisional?'APERÇU':unique?'UNIQUE':ra.toUpperCase()}${fin?' · '+(fin==='gold'?'DORÉE':'SANGLANTE'):''}</text>
  </svg></div>`;
 }
 export const renderBack=(t,k)=>`<div class="card"><svg viewBox="0 0 200 300"><defs><pattern id="bd${k}" width="18" height="18" patternUnits="userSpaceOnUse"><path d="M9 1l6 8-6 8-6-8z" fill="none" stroke="#c9a45c" stroke-opacity=".09" stroke-width="1"/></pattern><radialGradient id="bg2${k}" cx=".5" cy=".5" r=".75"><stop stop-color="#561430"/><stop offset="1" stop-color="#12060d"/></radialGradient></defs><rect width="200" height="300" fill="url(#bg2${k})"/><rect width="200" height="300" fill="url(#bd${k})"/><rect x="3" y="3" width="194" height="294" rx="10" fill="none" stroke="#c9a45c" stroke-width="3"/><rect x="9" y="9" width="182" height="282" rx="6" fill="none" stroke="#c9a45c" stroke-width="1.4"/><g>${corner(4,'#c9a45c')}</g><g transform="translate(200 0) scale(-1 1)">${corner(4,'#c9a45c')}</g><g transform="translate(0 300) scale(1 -1)">${corner(4,'#c9a45c')}</g><g transform="translate(200 300) scale(-1 -1)">${corner(4,'#c9a45c')}</g><g fill="none" stroke="#c9a45c" stroke-width="2" opacity=".65"><circle cx="100" cy="150" r="48"/><path d="${spokes(100,150,52,58,8)}"/></g><path d="M100 92l32 58-32 58-32-58z" fill="#7b1d36" stroke="#f0d79a" stroke-width="2"/><path d="M100 110l20 40-20 40-20-40z" fill="none" stroke="#f0d79a" stroke-width="1.5"/><circle cx="100" cy="150" r="9" fill="#12060d" stroke="#f0d79a"/>${t?`<rect x="30" y="246" width="140" height="24" fill="#12060d" stroke="#c9a45c"/><text x="100" y="263" text-anchor="middle" font-family="var(--display)" font-weight="700" font-size="16" letter-spacing="5" fill="#f0d79a">${t}</text>`:''}</svg></div>`;
