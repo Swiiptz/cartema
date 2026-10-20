@@ -340,5 +340,6 @@ a,button,.panel,.tarot-card,.inspect-card,input,select{transition:color var(--t-
 .primary.compact{min-height:40px;padding:8px 16px;font:600 13px/1.2 var(--ui);gap:7px}
 /* Lien d'achat centré sous le bouton d'ouverture. */
 .reserve-actions{display:inline-flex;flex-direction:column;align-items:center;width:auto;gap:2px}
-/* Logo : goutte de sang au cœur du losange. */
-.logo>svg .logo-blood{fill:#b3122c;stroke:none;filter:drop-shadow(0 0 2px #e0203f99)}
+/* Logo : point de sang entre VAMPIRIC et BOOSTERS. */
+.logo small{display:flex;align-items:center}
+.blood-dot{display:inline-block;width:4px;height:4px;margin:0 .7em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff6b7d,#b3122c 60%,#5c0612);box-shadow:0 0 4px #e0203faa,0 0 9px #b3122c55;flex-shrink:0}
