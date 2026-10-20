@@ -1,4 +1,5 @@
 'use client';
+import {EventBanner} from '@/components/EventBanner';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
@@ -141,6 +142,7 @@ export default function Boosters(){
  return <div className={`opening-page ${effects?'with-effects':''}`}>
   <div className="opening-toolbar"><Link href="/" className="back-link"><ArrowLeft size={15}/> Le cabinet</Link><span className="toolbar-title">L’atelier des arcanes</span><div className="toolbar-actions"><button className={`icon-button ${options?'selected':''}`} aria-label="Options d’ouverture" aria-expanded={options} onClick={()=>setOptions(!options)}><Settings2 size={17}/></button><button className="icon-button" aria-label={sound?'Couper le son':'Activer le son'} aria-pressed={sound} onClick={()=>setSound(!sound)}>{sound?<Volume2 size={17}/>:<VolumeX size={17}/>}</button></div></div>
   {options&&<div className="opening-options panel"><div className="section-header"><span className="eyebrow">Votre rituel</span><button className="icon-button" aria-label="Fermer les options" onClick={()=>setOptions(false)}><X size={16}/></button></div><label><input type="checkbox" checked={effects} onChange={e=>setEffects(e.target.checked)}/> Lumière et particules d’ambiance</label><label><input type="checkbox" checked={sound} onChange={e=>setSound(e.target.checked)}/> Notes sonores à la révélation</label><small>La réduction des animations de votre appareil est respectée.</small></div>}
+  {live&&player&&<EventBanner compact/>}
   {live&&player&&<div className="reserve-bar rise">
    <span className="chip" title="Boosters gratuits"><span className="mini-pips" aria-hidden="true">{Array.from({length:player.boosters.free_capacity},(_,k)=><i key={k} className={k<player.boosters.free?'on':''}/>)}</span>{player.boosters.free}/{player.boosters.free_capacity}<small>gratuits</small></span>
    {player.boosters.purchased>0&&<span className="chip"><Layers3 size={14}/>{player.boosters.purchased}<small>acheté{player.boosters.purchased>1?'s':''}</small></span>}

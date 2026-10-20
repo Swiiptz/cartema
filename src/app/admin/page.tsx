@@ -6,12 +6,13 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {useAuth} from '@/components/AuthProvider';
 import {useAsk,type AskOptions} from '@/components/AskDialog';
 import {Skeleton} from '@/components/ui';
+import {eventEffects} from '@/components/EventBanner';
 import {TarotCard,palette,type DemoCard} from '@/components/Card';
 import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,silhouetteIndex} from '@/lib/game';
 import {ACCEPTED_TYPES,ENGRAVED_CLANS,matchIllustrations,nextNumber,uploadIllustration,type AdminCatalog,type AdminCharacter,type AdminEdition,type CharacterStatus,type IllustrationMeta} from '@/lib/admin';
 
-type Tab='characters'|'editions'|'clans'|'achievements'|'players';
+type Tab='characters'|'editions'|'clans'|'achievements'|'players'|'events';
 const STATUS_LABEL:Record<CharacterStatus,string>={draft:'Brouillon',published:'Publiée',archived:'Archivée'};
 // jsonb ne conserve pas l'ordre des clés : comparaison indépendante de l'ordre.
 const canonical=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
@@ -55,9 +56,9 @@ export default function Admin(){
 
  return <AskContext.Provider value={ask}><div className="page admin-page">{askNode}
   <header className="admin-heading"><div><span className="eyebrow">Back-office</span><h1>Le cabinet de l’archiviste</h1></div><p className="muted">Chaque modification est enregistrée dans le journal d’administration.</p></header>
-  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['players','Joueurs']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
+  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['players','Joueurs']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
   <div className="admin-toast" aria-live="polite">{error&&<p className="auth-error" role="alert">{error}<button className="icon-button" aria-label="Fermer" onClick={()=>setError(null)}><X size={16}/></button></p>}{notice&&<p className="auth-notice">{notice}<button className="icon-button" aria-label="Fermer" onClick={()=>setNotice(null)}><X size={16}/></button></p>}</div>
-  {!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:<PlayersTab act={act} client={client!}/>}
+  {!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!}/>:<PlayersTab act={act} client={client!}/>}
  </div></AskContext.Provider>;
 }
 
@@ -417,5 +418,62 @@ function PlayersTab({act,client}:{act:Act;client:SupabaseClient}){
     <details><summary>Boosters reçus (20 derniers)</summary><ul>{detail.grants.map((g,i)=><li key={i}><strong className={g.quantity<0?'neg':'pos'}>{g.quantity>0?'+':''}{g.quantity}</strong><span>{GRANT_LABEL[g.source]??g.source}</span><small>{when(g.created_at)} · {g.pool==='free'?'gratuit':'acheté'}</small></li>)}</ul></details>
    </div>
   </section>}
+ </div>;
+}
+
+// ------------------------------------------------------------------ événements
+type AdminEvent={id:string;name:string;description:string;starts_at:string;ends_at:string;cancelled_at:string|null;finish_multiplier:number;deniers_multiplier:number;bonus_boosters:number;free_interval_hours:number|null;claims:number;openings:number};
+type EventForm={id:string|null;name:string;description:string;start:string;end:string;finish:string;deniers:string;boosters:string;interval:string};
+// datetime-local attend l'heure locale sans fuseau.
+const localInput=(d:Date)=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+const emptyEvent=():EventForm=>{const s=new Date();s.setMinutes(0,0,0);s.setHours(s.getHours()+1);const e=new Date(s.getTime()+24*3600e3);return {id:null,name:'',description:'',start:localInput(s),end:localInput(e),finish:'1',deniers:'1',boosters:'0',interval:''};};
+const INTERVALS=[1,2,3,4,6,8,12];
+
+function EventsTab({act,client}:{act:Act;client:SupabaseClient}){
+ const reason=useReason();
+ const [list,setList]=useState<AdminEvent[]|null>(null);
+ const [form,setForm]=useState<EventForm>(emptyEvent);
+ const load=useCallback(async()=>{setList(await callRpc<AdminEvent[]>(client,'admin_events').catch(()=>[]));},[client]);
+ useEffect(()=>{void load();},[load]);
+ const status=(e:AdminEvent)=>e.cancelled_at?'Annulé':Date.parse(e.ends_at)<=Date.now()?'Terminé':Date.parse(e.starts_at)<=Date.now()?'En cours':'À venir';
+ const edit=(e:AdminEvent)=>setForm({id:e.id,name:e.name,description:e.description,start:localInput(new Date(e.starts_at)),end:localInput(new Date(e.ends_at)),finish:String(e.finish_multiplier),deniers:String(e.deniers_multiplier),boosters:String(e.bonus_boosters),interval:e.free_interval_hours?String(e.free_interval_hours):''});
+ const noEffect=form.finish==='1'&&form.deniers==='1'&&form.boosters==='0'&&!form.interval;
+ async function save(ev:React.FormEvent){
+  ev.preventDefault();
+  const r=await reason(form.id?'Pourquoi modifier cet événement ?':'Pourquoi créer cet événement ?',form.id?'Enregistrer':'Créer');if(r===null)return;
+  const ok=await act(form.id?'Événement mis à jour.':'Événement programmé.',c=>callRpc(c,'admin_save_event',{p_id:form.id,p_name:form.name,p_description:form.description,
+   p_starts_at:new Date(form.start).toISOString(),p_ends_at:new Date(form.end).toISOString(),p_finish_multiplier:Number(form.finish),p_deniers_multiplier:Number(form.deniers),
+   p_bonus_boosters:Number(form.boosters),p_free_interval_hours:form.interval?Number(form.interval):null,p_reason:r}));
+  if(ok){setForm(emptyEvent());void load();}
+ }
+ async function cancel(e:AdminEvent){
+  const r=await reason(`Annuler « ${e.name} » ? S’il est en cours, il s’arrête immédiatement.`,'Annuler l’événement');if(r===null)return;
+  if(await act('Événement annulé.',c=>callRpc(c,'admin_cancel_event',{p_id:e.id,p_reason:r})))void load();
+ }
+ const fmt=(d:string)=>new Date(d).toLocaleString('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+ return <div className="admin-editions">
+  <form className="panel admin-create" onSubmit={e=>void save(e)}>
+   <span className="eyebrow">{form.id?'Modifier l’événement':'Nouvel événement'}</span>
+   <label className="auth-field"><span>Nom</span><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} required placeholder="La Nuit Rouge"/></label>
+   <label className="auth-field"><span>Description (affichée aux joueurs)</span><input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Le sang coule plus volontiers cette nuit…"/></label>
+   <div className="admin-row"><label className="auth-field"><span>Début</span><input type="datetime-local" value={form.start} onChange={e=>setForm({...form,start:e.target.value})} required/></label><label className="auth-field"><span>Fin</span><input type="datetime-local" value={form.end} onChange={e=>setForm({...form,end:e.target.value})} required/></label></div>
+   <div className="admin-row">
+    <label className="auth-field"><span>Finitions rares</span><select value={form.finish} onChange={e=>setForm({...form,finish:e.target.value})}>{['1','1.5','2','3','4','5'].map(v=><option key={v} value={v}>{v==='1'?'Normales':`×${v.replace('.',',')}`}</option>)}</select></label>
+    <label className="auth-field"><span>Deniers (connexion, missions)</span><select value={form.deniers} onChange={e=>setForm({...form,deniers:e.target.value})}>{['1','1.5','2','3'].map(v=><option key={v} value={v}>{v==='1'?'Normaux':`×${v.replace('.',',')}`}</option>)}</select></label>
+   </div>
+   <div className="admin-row">
+    <label className="auth-field"><span>Boosters gratuits</span><select value={form.interval} onChange={e=>setForm({...form,interval:e.target.value})}><option value="">06 h et 18 h (normal)</option>{INTERVALS.map(h=><option key={h} value={h}>Toutes les {h} h</option>)}</select></label>
+    <label className="auth-field"><span>Boosters offerts (une fois)</span><select value={form.boosters} onChange={e=>setForm({...form,boosters:e.target.value})}>{Array.from({length:11},(_,i)=><option key={i} value={i}>{i===0?'Aucun':i}</option>)}</select></label>
+   </div>
+   <p className="admin-hint">Les effets ne s’appliquent qu’entre le début et la fin. Les boosters gratuits supplémentaires restent limités par la réserve de 6.</p>
+   <div className="admin-actions"><button className="primary" disabled={noEffect||!form.name.trim()}>{form.id?'Enregistrer':'Programmer l’événement'}</button>{form.id&&<button type="button" className="text-link" onClick={()=>setForm(emptyEvent())}>Annuler la modification</button>}</div>
+   {noEffect&&<p className="admin-hint">Choisissez au moins un effet.</p>}
+  </form>
+  {!list?<Skeleton style={{height:120}}/>:list.length===0?<p className="muted">Aucun événement programmé.</p>:list.map(e=>{const st=status(e);return <section key={e.id} className={`panel admin-edition event-admin ${st==='En cours'?'live':''}`}>
+   <div className="section-header"><div><span className="eyebrow">{st}</span><h2>{e.name}</h2></div>{(st==='À venir'||st==='En cours')&&<div className="admin-actions"><button className="text-link" onClick={()=>edit(e)}>Modifier</button><button className="text-link" onClick={()=>void cancel(e)}>Annuler</button></div>}</div>
+   <p className="admin-hint">{fmt(e.starts_at)} → {fmt(e.ends_at)}</p>
+   <ul className="event-effects">{eventEffects(e).map(({icon:I,text})=><li key={text}><I size={13}/> {text}</li>)}</ul>
+   <p className="admin-hint">{e.openings} ouverture{e.openings>1?'s':''} sous l’effet des finitions{e.bonus_boosters?` · ${e.claims} cadeau${e.claims>1?'x':''} récupéré${e.claims>1?'s':''}`:''}</p>
+  </section>;})}
  </div>;
 }

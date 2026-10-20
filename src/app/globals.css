@@ -689,3 +689,19 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .notif-foot{display:flex;align-items:center;gap:6px;font:400 12px var(--ui);margin:10px 0 0}.notif-foot a{color:var(--gold)}
 .notif-toggles{display:flex;flex-wrap:wrap;gap:6px 16px}
 @media(max-width:700px){.bell{width:34px;height:34px;margin-right:8px}}
+
+/* Événements */
+.event-banners{display:flex;flex-direction:column;gap:10px}.event-banners.compact{max-width:760px;margin:0 auto 14px}
+.event-banner{position:relative;overflow:hidden;padding:16px 18px;border-radius:16px;border:1px solid #c0345f66;background:radial-gradient(ellipse 80% 120% at 0 0,#83234255,transparent 70%),linear-gradient(160deg,#2a1220,#160c14)}
+.event-banner.soon{border-color:#c9a45c44;background:linear-gradient(160deg,#211520,#150d14)}
+.event-banner:after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,#ff6a8a12 50%,transparent 65%);background-size:250% 100%;animation:foil 7s linear infinite}
+.event-banner.soon:after{display:none}
+.event-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.event-head .eyebrow{display:inline-flex;align-items:center;gap:7px;color:#ff8a9a}.event-banner.soon .eyebrow{color:var(--gold)}
+.event-dot{width:7px;height:7px;border-radius:50%;background:#e0405f;box-shadow:0 0 10px #e0405f;animation:breathe 2.4s ease-in-out infinite}.event-banner.soon .event-dot{background:var(--gold);box-shadow:none;animation:none}
+.event-time{display:inline-flex;align-items:center;gap:5px;font:500 12px var(--ui);color:var(--muted)}.event-time time{color:var(--gold2)}
+.event-banner h2{margin:6px 0 4px;font-size:22px}.event-banners.compact h2{font-size:18px}
+.event-desc{margin:0 0 8px;font:400 14px/1.5 var(--ui);color:var(--muted)}
+.event-effects{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}.event-effects li{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid #c9a45c44;background:#c9a45c0d;font:500 12px var(--ui);color:var(--gold2)}
+.event-banner .primary{margin-top:12px}.event-claimed{margin:10px 0 0;font:500 13px var(--ui);color:var(--gold)}
+.event-admin.live{border-color:#c0345f66}

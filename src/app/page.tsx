@@ -7,6 +7,7 @@ import {BoosterSkin} from '@/components/BoosterSkin';
 import {useAuth} from '@/components/AuthProvider';
 import {CountUp,Countdown,Skeleton} from '@/components/ui';
 import {MissionList} from '@/components/MissionList';
+import {EventBanner} from '@/components/EventBanner';
 import {showcase} from '@/data/demo';
 import {ALL_RARITIES} from '@/lib/draw';
 import {callRpc,openedToCard,revealOrder,type AlbumEntry,type Mission,type Missions,type Opening} from '@/lib/game';
@@ -77,6 +78,7 @@ function Dashboard(){
   </header>
 
   {(player.social_pending??0)>0&&<Link href="/amis/" className="social-alert rise"><Users size={16}/> <span><strong>{player.social_pending}</strong> invitation{player.social_pending!>1?'s':''}, cadeau{player.social_pending!>1?'x':''} ou échange{player.social_pending!>1?'s':''} en attente</span><ArrowRight size={14}/></Link>}
+  <EventBanner/>
   <section className="panel reserve-card rise" style={{'--i':1} as React.CSSProperties}>
    <Link href="/boosters/" className="reserve-pack" aria-label="Aller ouvrir un booster"><BoosterSkin/></Link>
    <div className="reserve-info">
