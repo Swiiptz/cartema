@@ -78,7 +78,7 @@ Aucune route API, Server Action métier, dépendance Supabase, persistance de pa
 
 - Mobile first : cible 360–430 px, **2 cartes par ligne** ; 3 à partir de 640 px, 4 à partir de 1100 px. Navigation basse tactile sur mobile.
 - Noir/bordeaux/or, tarot gothique. Fioritures lisibles et concentrées sur les bords, portrait dégagé. Pas de retour aux ornements qui occupent toute l’image.
-- Interface en **Manrope** pour la lisibilité ; Cinzel pour les titres et noms, Cormorant pour le texte des cartes. Boutons principaux ≥52 px, contrôles ≥44 px, recherche mobile à 16 px.
+- Interface en **Manrope** pour la lisibilité ; Cinzel pour les titres et noms, Cormorant pour le texte des cartes. Boutons et contrôles ≥44 px (les boutons à 52 px ont été jugés trop massifs par l’utilisateur le 20/10/2026 : boutons en pilule, plus légers), recherche mobile à 16 px.
 - Numéro discret en bas, sans étiquette noire ni augmentation de taille. Nom, clan, rareté/finition et fonction ont des zones distinctes : prévenir tout chevauchement.
 - **Pas de génération d’illustrations par IA.** Utiliser les dessins fournis ; cadre, SVG et animations sont indépendants des fichiers originaux.
 - Dorée distincte de Légendaire : gravure champagne, ornements propres, étoiles fixes qui scintillent et balayage brillant du cadre. Aucun cercle rotatif devant le personnage. Les effets doivent rester visibles sur une image opaque avec fond.
