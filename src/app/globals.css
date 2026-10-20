@@ -107,3 +107,22 @@
 .booster-shop{margin:28px auto 0;max-width:760px;display:flex;flex-direction:column;gap:16px}.booster-shop .section-header{margin:0}.shop-balance{display:inline-flex;align-items:center;gap:7px;font:600 13px var(--ui);color:var(--gold2);white-space:nowrap}.shop-offers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.booster-shop small{font:400 12px/1.6 var(--ui)}
 .ritual-controls .auth-error{max-width:420px;margin-top:6px}
 @media(max-width:700px){.auth-panel{padding:24px 20px}.account-deniers{display:none}.shop-offers{grid-template-columns:1fr}.booster-shop .section-header{flex-direction:column;align-items:flex-start}}
+/* Révélation en pile : une carte à la fois, les suivantes empilées derrière. */
+.reveal-stack-scene{width:100%;display:flex;flex-direction:column;align-items:center;gap:18px;padding:30px 0 6px}
+.reveal-stack{position:relative;width:min(250px,64vw);aspect-ratio:2/3}
+.reveal-stack .reveal-slot.stack-active{position:absolute;inset:0;width:100%;z-index:2;animation:stack-rise .55s cubic-bezier(.2,.7,.2,1) both}
+.reveal-stack .reveal-slot.stack-active.is-leaving{animation:stack-leave .38s cubic-bezier(.55,0,.8,.2) both;pointer-events:none}
+.stack-active .flip-card{width:100%;height:100%}
+.stack-active .flip-card:hover{transform:translateY(-4px)}
+.stack-card{position:absolute;inset:0;z-index:1;pointer-events:none;transform:translate(calc(var(--depth)*6px),calc(var(--depth)*-6px)) rotate(calc(var(--depth)*1.6deg));filter:brightness(calc(1 - var(--depth)*.14)) drop-shadow(0 6px 10px #0006)}
+.stack-caption{min-height:26px;margin:4px 0 0;display:flex;align-items:center;gap:7px;font:500 14px/1.5 var(--ui);color:var(--muted)}
+.stack-caption strong{font:600 15px var(--display);color:var(--gold2);letter-spacing:.02em}
+.reveal-tray{display:grid;grid-template-columns:repeat(5,40px);gap:8px}
+.tray-slot{display:block;aspect-ratio:2/3;border:1px dashed #c9a45c3d;border-radius:5px;overflow:hidden}
+.tray-slot.filled{border-color:transparent;animation:tray-in .45s cubic-bezier(.2,.7,.2,1) both}
+.tray-slot .tarot-card{filter:none}
+@keyframes stack-rise{from{transform:translateY(22px) scale(.93);opacity:0}to{transform:none;opacity:1}}
+@keyframes stack-leave{to{transform:translateY(55%) scale(.3);opacity:0}}
+@keyframes tray-in{from{transform:translateY(-14px) scale(1.3);opacity:0}to{transform:none;opacity:1}}
+@media(max-width:700px){.reveal-stack-scene{padding-top:20px}.reveal-tray{grid-template-columns:repeat(5,36px);gap:7px}}
+@media(prefers-reduced-motion:reduce){.reveal-stack .reveal-slot.stack-active,.reveal-stack .reveal-slot.stack-active.is-leaving,.tray-slot.filled{animation:none}}

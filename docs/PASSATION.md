@@ -84,6 +84,7 @@ Aucune route API, Server Action métier, dépendance Supabase, persistance de pa
 - Inconnues : silhouette, numéro, rareté ; pas d’identité ni de portrait dévoilés. Conserver la découverte après une cession ultérieure.
 - Dernière demande : fondre élégamment les images recadrées dans le fond, **automatiquement**, et **ne pas ajouter de lien “voir l’illustration entière”**. Le lien a été retiré.
 - Son initialement coupé, options d’effets, réduction des animations et navigation clavier à préserver.
+- **Révélation en pile (décision utilisateur du 20/10/2026)** : une seule carte au centre, les suivantes empilées derrière ; toucher pour retourner, toucher encore pour passer à la suivante, petite rangée des cartes déjà vues, récapitulatif des 5 à la fin, bouton « Tout révéler » conservé. Les cartes apparaissent **de la moins rare à la plus rare** (finition spéciale en dernier à rareté égale). Cela **remplace la règle du CDC §4 « le joueur choisit l’ordre des 5 cartes »** : écart validé par l’utilisateur. Tri d’affichage uniquement (`revealOrder` dans `src/lib/game.ts`) ; l’historique serveur garde les positions du tirage.
 
 La position actuelle du médaillon est à la jonction portrait/cartouche (centre SVG 100,205). L’ancienne consigne “médaillon en haut” du CDC/DESIGN ne décrit donc pas le visuel actuellement travaillé avec l’utilisateur. Ne pas déplacer automatiquement ce médaillon en restaurant une ancienne preview ; documenter tout arbitrage nécessaire avant la conformité finale.
 

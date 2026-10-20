@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {albumToCard,openedToCard,silhouetteIndex,toGameError,type AlbumEntry,type OpenedCard} from '../src/lib/game';
+import {albumToCard,openedToCard,revealOrder,silhouetteIndex,toGameError,type AlbumEntry,type OpenedCard} from '../src/lib/game';
 import {selectAlbum,initialAlbumFilters} from '../src/lib/album';
 import {resolveIllustration} from '../src/lib/paths';
 
@@ -27,6 +27,13 @@ describe('cartes issues du serveur',()=>{
     const cards=[albumToCard(known),albumToCard(unknown)];
     expect(selectAlbum(cards,{...initialAlbumFilters,finish:'Sanglante'}).map(c=>c.id)).toEqual(['CAM-001']);
     expect(selectAlbum(cards,{...initialAlbumFilters,finish:'Dorée'})).toEqual([]);
+  });
+});
+
+describe('ordre de révélation',()=>{
+  it('révèle de la moins rare à la plus rare, finitions spéciales en dernier',()=>{
+    const pack=[{id:'a',rarity:'Rare',finish:'Standard'},{id:'b',rarity:'Commun',finish:'Dorée'},{id:'c',rarity:'Commun',finish:'Standard'},{id:'d',rarity:'Peu commun'},{id:'e',rarity:'Commun',finish:'Standard'}] as const;
+    expect(revealOrder(pack).map(c=>c.id)).toEqual(['c','e','b','d','a']);
   });
 });
 

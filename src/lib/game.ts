@@ -1,6 +1,6 @@
 import type {SupabaseClient} from '@supabase/supabase-js';
 import type {DemoCard} from '@/components/Card';
-import type {Finish,Rarity} from './draw';
+import {ALL_RARITIES,type Finish,type Rarity} from './draw';
 
 // Formes renvoyées par les RPC (voir supabase/migrations, docs/BACKEND.md).
 export type ArtMeta={layout?:'portrait'|'full'|'cover';offsetY?:number};
@@ -73,4 +73,11 @@ export async function callRpc<T>(client:SupabaseClient,fn:string,args?:Record<st
  try{result=await client.rpc(fn,args);}catch(e){throw toGameError({message:(e as Error).message});}
  if(result.error)throw toGameError(result.error);
  return result.data as T;
+}
+
+// Ordre de révélation : de la moins rare à la plus rare, finitions spéciales en dernier à rareté égale.
+// Affichage seulement : l'historique serveur conserve les positions du tirage.
+const FINISH_ORDER=['Standard','Dorée','Sanglante'];
+export function revealOrder<C extends {rarity:Rarity;finish?:string}>(cards:readonly C[]):C[]{
+ return cards.map((card,i)=>({card,i})).sort((a,b)=>ALL_RARITIES.indexOf(a.card.rarity)-ALL_RARITIES.indexOf(b.card.rarity)||FINISH_ORDER.indexOf(a.card.finish??'Standard')-FINISH_ORDER.indexOf(b.card.finish??'Standard')||a.i-b.i).map(x=>x.card);
 }
