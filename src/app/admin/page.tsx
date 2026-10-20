@@ -1,9 +1,10 @@
 'use client';
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {createContext,useCallback,useContext,useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {Archive,BookPlus,Check,FolderOpen,Images,ImagePlus,PackageOpen,Plus,Save,ShieldAlert,Upload,X} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {useAuth} from '@/components/AuthProvider';
+import {useAsk,type AskOptions} from '@/components/AskDialog';
 import {TarotCard,palette,type DemoCard} from '@/components/Card';
 import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,silhouetteIndex} from '@/lib/game';
@@ -13,7 +14,12 @@ type Tab='characters'|'editions'|'clans';
 const STATUS_LABEL:Record<CharacterStatus,string>={draft:'Brouillon',published:'Publiée',archived:'Archivée'};
 // jsonb ne conserve pas l'ordre des clés : comparaison indépendante de l'ordre.
 const canonical=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
-const askReason=(question:string)=>{const r=window.prompt(question);return r&&r.trim()?r.trim():null;};
+// Boîte de dialogue intégrée : window.prompt est bloqué dans certains navigateurs intégrés.
+const AskContext=createContext<(o:AskOptions)=>Promise<string|null>>(async()=>null);
+function useReason(){
+ const ask=useContext(AskContext);
+ return (message:string,confirmLabel='Valider')=>ask({title:'Motif requis',message,inputLabel:'Motif (inscrit au journal)',confirmLabel});
+}
 
 export default function Admin(){
  const {configured,ready,session,client,player}=useAuth();
@@ -22,6 +28,7 @@ export default function Admin(){
  const [notice,setNotice]=useState<string|null>(null);
  const [tab,setTab]=useState<Tab>('characters');
  const isAdmin=player?.profile.role==='admin';
+ const [ask,askNode]=useAsk();
 
  const load=useCallback(async()=>{
   if(!client)return;
@@ -43,12 +50,12 @@ export default function Admin(){
  if(!session)return <Gate title="Accès protégé" text="Connectez-vous avec le compte administrateur." link/>;
  if(!isAdmin)return <Gate title="Accès réservé" text="Ce compte n’a pas les droits d’administration."/>;
 
- return <div className="page admin-page">
+ return <AskContext.Provider value={ask}><div className="page admin-page">{askNode}
   <header className="admin-heading"><div><span className="eyebrow">Back-office</span><h1>Le cabinet de l’archiviste</h1></div><p className="muted">Chaque modification est enregistrée dans le journal d’administration.</p></header>
   <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
   <div aria-live="polite">{error&&<p className="auth-error" role="alert">{error}</p>}{notice&&<p className="auth-notice">{notice}</p>}</div>
   {!catalog?<p className="muted">Ouverture des registres…</p>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:<ClansTab catalog={catalog} act={act}/>}
- </div>;
+ </div></AskContext.Provider>;
 }
 
 function Gate({title,text,link=false}:{title:string;text:string;link?:boolean}){
@@ -101,6 +108,7 @@ function CharactersTab({catalog,act,client,onError}:{catalog:AdminCatalog;act:Ac
 function CharacterEditor({draft,setDraft,catalog,act,client,onError}:{draft:Draft;setDraft:(d:Draft|null)=>void;catalog:AdminCatalog;act:Act;client:SupabaseClient;onError:(m:string)=>void}){
  const [busy,setBusy]=useState(false);
  const [finish,setFinish]=useState('Standard');
+ const askReason=useReason();
  const creating=!draft.id;
  const set=<K extends keyof Draft>(k:K,v:Draft[K])=>setDraft({...draft,[k]:v});
  const setMeta=(m:Partial<IllustrationMeta>)=>setDraft({...draft,art_meta:{...draft.art_meta,...m}});
@@ -123,7 +131,7 @@ function CharacterEditor({draft,setDraft,catalog,act,client,onError}:{draft:Draf
  }
  async function changeStatus(next:CharacterStatus,question:string,label:string){
   if(!draft.id)return;
-  const reason=askReason(question);if(!reason)return;
+  const reason=await askReason(question);if(!reason)return;
   setBusy(true);
   await act(label,c=>callRpc(c,'admin_set_character_status',{p_id:draft.id,p_status:next,p_reason:reason}));
   setBusy(false);
@@ -159,8 +167,8 @@ function CharacterEditor({draft,setDraft,catalog,act,client,onError}:{draft:Draf
     </fieldset>
     <div className="admin-actions">
      <button className="primary" disabled={busy||!draft.name.trim()||!dirty} onClick={()=>void save()}><Save size={16}/> {creating?'Créer le brouillon':'Enregistrer'}</button>
-     {!creating&&draft.status!=='published'&&<button className="primary ghost" disabled={busy||dirty} onClick={()=>void changeStatus('published','Motif de la publication (ex. « Validée par l’équipe ») :','Carte publiée : elle apparaît dans l’album.')}><Check size={16}/> Publier</button>}
-     {!creating&&draft.status==='published'&&<button className="primary ghost" disabled={busy} onClick={()=>void changeStatus('archived','Motif de l’archivage (la carte ne sera plus tirée, les exemplaires restent) :','Carte archivée.')}><Archive size={16}/> Archiver</button>}
+     {!creating&&draft.status!=='published'&&<button className="primary ghost" disabled={busy||dirty} onClick={()=>void changeStatus('published','Publier cette carte : elle apparaîtra dans l’album (si l’album de l’édition est publié).','Carte publiée : elle apparaît dans l’album.')}><Check size={16}/> Publier</button>}
+     {!creating&&draft.status==='published'&&<button className="primary ghost" disabled={busy} onClick={()=>void changeStatus('archived','Archiver cette carte : elle ne sera plus tirée, les exemplaires possédés restent.','Carte archivée.')}><Archive size={16}/> Archiver</button>}
     </div>
     {!creating&&dirty&&<p className="admin-hint">Enregistrez avant de publier.</p>}
    </div>
@@ -240,18 +248,19 @@ function EditionsTab({catalog,act}:{catalog:AdminCatalog;act:Act}){
 function EditionCard({edition:e,catalog,act}:{edition:AdminEdition;catalog:AdminCatalog;act:Act}){
  const drafts=catalog.characters.filter(c=>c.edition_id===e.id&&c.status==='draft').length;
  const toggleAlbum=()=>void act(e.album_published?'Album masqué.':'Album publié.',c=>callRpc(c,'admin_save_edition',{p_id:e.id,p_name:e.name,p_prefix:e.prefix,p_album_published:!e.album_published,p_cover_path:e.cover_path}));
- const togglePacks=()=>{const reason=askReason(e.packs_enabled?'Motif de la suspension des boosters :':'Motif de l’activation des boosters :');if(reason)void act(e.packs_enabled?'Boosters suspendus.':'Boosters activés.',c=>callRpc(c,'admin_set_packs',{p_edition_id:e.id,p_enabled:!e.packs_enabled,p_reason:reason}));};
- const publishDrafts=()=>{const reason=askReason(`Publier les ${drafts} brouillons de « ${e.name} » ? Ils apparaîtront dans l’album (si l’album est publié). Motif :`);if(reason)void act(`${drafts} carte${drafts>1?'s':''} publiée${drafts>1?'s':''}.`,c=>callRpc(c,'admin_publish_drafts',{p_edition_id:e.id,p_reason:reason}));};
- const archive=()=>{const reason=askReason(`Archiver « ${e.name} » ? Les boosters seront arrêtés, rien n’est supprimé. Motif :`);if(reason)void act('Édition archivée.',c=>callRpc(c,'admin_archive_edition',{p_edition_id:e.id,p_reason:reason}));};
+ const askReason=useReason();
+ const togglePacks=async()=>{const reason=await askReason(e.packs_enabled?'Suspendre les boosters de cette édition.':'Activer les boosters de cette édition.');if(reason)void act(e.packs_enabled?'Boosters suspendus.':'Boosters activés.',c=>callRpc(c,'admin_set_packs',{p_edition_id:e.id,p_enabled:!e.packs_enabled,p_reason:reason}));};
+ const publishDrafts=async()=>{const reason=await askReason(`Publier les ${drafts} brouillons de « ${e.name} » ? Ils apparaîtront dans l’album (si l’album est publié).`);if(reason)void act(`${drafts} carte${drafts>1?'s':''} publiée${drafts>1?'s':''}.`,c=>callRpc(c,'admin_publish_drafts',{p_edition_id:e.id,p_reason:reason}));};
+ const archive=async()=>{const reason=await askReason(`Archiver « ${e.name} » ? Les boosters seront arrêtés, rien n’est supprimé.`);if(reason)void act('Édition archivée.',c=>callRpc(c,'admin_archive_edition',{p_edition_id:e.id,p_reason:reason}));};
  return <section className={`panel admin-edition ${e.archived_at?'archived':''}`}>
   <div className="section-header"><div><span className="eyebrow">{e.prefix}{e.archived_at?' · archivée':''}</span><h2>{e.name}</h2></div><span className={`status-chip ${e.packs_enabled?'published':'draft'}`}><PackageOpen size={13}/> {e.packs_enabled?'Boosters actifs':'Boosters fermés'}</span></div>
   <div className="rarity-check" aria-label="Cartes publiées par rareté">{ALL_RARITIES.map(r=>{const n=e.published_by_rarity[r]??0;return <span key={r} className={n?'ok':'missing'} style={{'--rc':palette[r]} as React.CSSProperties}>{r}<b>{n}</b></span>;})}</div>
   <p className="admin-hint">{e.complete?'Les 7 raretés ont au moins une carte publiée.':'Il manque au moins une rareté publiée : activation des boosters impossible.'}{drafts?` · ${drafts} brouillon${drafts>1?'s':''} en attente`:''}</p>
   {!e.archived_at&&<div className="admin-actions">
-   {drafts>0&&<button className="primary" onClick={publishDrafts}><Check size={16}/> Publier les {drafts} brouillons</button>}
+   {drafts>0&&<button className="primary" onClick={()=>void publishDrafts()}><Check size={16}/> Publier les {drafts} brouillons</button>}
    <button className="primary ghost" onClick={toggleAlbum}>{e.album_published?'Masquer l’album':'Publier l’album'}</button>
-   <button className="primary ghost" disabled={!e.packs_enabled&&!e.complete} onClick={togglePacks}>{e.packs_enabled?'Suspendre les boosters':'Activer les boosters'}</button>
-   <button className="text-link" onClick={archive}><Archive size={14}/> Archiver</button>
+   <button className="primary ghost" disabled={!e.packs_enabled&&!e.complete} onClick={()=>void togglePacks()}>{e.packs_enabled?'Suspendre les boosters':'Activer les boosters'}</button>
+   <button className="text-link" onClick={()=>void archive()}><Archive size={14}/> Archiver</button>
   </div>}
  </section>;
 }
@@ -261,9 +270,10 @@ function ClansTab({catalog,act}:{catalog:AdminCatalog;act:Act}){
  const [name,setName]=useState('');
  const missing=ENGRAVED_CLANS.filter(n=>!catalog.clans.some(c=>c.name===n));
  const create=(n:string)=>act(`Clan « ${n} » ajouté.`,c=>callRpc(c,'admin_save_clan',{p_id:null,p_name:n,p_symbol_key:null}));
- const rename=(id:string,old:string)=>{const n=window.prompt('Nouveau nom du clan :',old);if(n&&n.trim()&&n.trim()!==old)void act('Clan renommé.',c=>callRpc(c,'admin_save_clan',{p_id:id,p_name:n.trim(),p_symbol_key:null}));};
+ const ask=useContext(AskContext);
+ const rename=async(id:string,old:string)=>{const n=await ask({title:'Renommer le clan',inputLabel:'Nouveau nom',initialValue:old,confirmLabel:'Renommer'});if(n&&n.trim()&&n.trim()!==old)void act('Clan renommé.',c=>callRpc(c,'admin_save_clan',{p_id:id,p_name:n.trim(),p_symbol_key:null}));};
  return <div className="admin-clans">
-  <ul className="panel admin-clan-list">{catalog.clans.map(c=><li key={c.id}><span>{c.name}</span><span className="admin-hint">{ENGRAVED_CLANS.includes(c.name)?'Symbole gravé':'Médaillon mystérieux (symbole à fournir)'}</span><button className="text-link" onClick={()=>rename(c.id,c.name)}>Renommer</button></li>)}{!catalog.clans.length&&<li className="muted">Aucun clan pour l’instant.</li>}</ul>
+  <ul className="panel admin-clan-list">{catalog.clans.map(c=><li key={c.id}><span>{c.name}</span><span className="admin-hint">{ENGRAVED_CLANS.includes(c.name)?'Symbole gravé':'Médaillon mystérieux (symbole à fournir)'}</span><button className="text-link" onClick={()=>void rename(c.id,c.name)}>Renommer</button></li>)}{!catalog.clans.length&&<li className="muted">Aucun clan pour l’instant.</li>}</ul>
   <form className="panel admin-create" onSubmit={e=>{e.preventDefault();void create(name.trim()).then(ok=>{if(ok)setName('');});}}>
    <span className="eyebrow">Nouveau clan ou lignée</span>
    <label className="auth-field"><span>Nom</span><input value={name} onChange={e=>setName(e.target.value)} required maxLength={40}/></label>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import {ArrowLeft,ArrowUpRight,Check,Coins,Eye,Layers3,RotateCcw,Settings2,ShieldCheck,Sparkles,Volume2,VolumeX,X} from 'lucide-react';
 import {CardBack,TarotCard,palette,type DemoCard} from '@/components/Card';
 import {useAuth} from '@/components/AuthProvider';
+import {useAsk} from '@/components/AskDialog';
 import {callRpc,openedToCard,revealOrder,GameError,type Opening} from '@/lib/game';
 import {previewPack} from '@/data/demo';
 import {BoosterSkin} from '@/components/BoosterSkin';
@@ -25,6 +26,7 @@ export default function Boosters(){
  const [error,setError]=useState<string|null>(null);
  const [buying,setBuying]=useState<string|null>(null);
  const flow=useRef({animationDone:false,result:null as Opening|null});
+ const [ask,askNode]=useAsk();
  const [revealed,setRevealed]=useState<number[]>([]);
  const [options,setOptions]=useState(false);
  const [sound,setSound]=useState(false);
@@ -98,7 +100,7 @@ export default function Boosters(){
   pack.map((_,i)=>i).filter(i=>!revealedRef.current.has(i)).forEach((i,k)=>timers.current.push(setTimeout(()=>reveal(i),250+k*180)));
  }
  function reset(){timers.current.forEach(clearTimeout);timers.current=[];setRevealed([]);revealedRef.current.clear();openingLock.current=false;setBurst(null);setCascading(false);setCurrent(0);setLeaving(false);setOpening(null);setPhase('sealed');}
- return <div className={`opening-page ${effects?'with-effects':''}`}>
+ return <div className={`opening-page ${effects?'with-effects':''}`}>{askNode}
   <div className="opening-toolbar"><Link href="/" className="back-link"><ArrowLeft size={15}/> Le cabinet</Link><span className="toolbar-title">L’atelier des arcanes</span><div className="toolbar-actions"><button className={`icon-button ${options?'selected':''}`} aria-label="Options d’ouverture" aria-expanded={options} onClick={()=>setOptions(!options)}><Settings2 size={17}/></button><button className="icon-button" aria-label={sound?'Couper le son':'Activer le son'} aria-pressed={sound} onClick={()=>setSound(!sound)}>{sound?<Volume2 size={17}/>:<VolumeX size={17}/>}</button></div></div>
   {options&&<div className="opening-options panel"><div className="section-header"><span className="eyebrow">Votre rituel</span><button className="icon-button" aria-label="Fermer les options" onClick={()=>setOptions(false)}><X size={16}/></button></div><label><input type="checkbox" checked={effects} onChange={e=>setEffects(e.target.checked)}/> Lumière et particules d’ambiance</label><label><input type="checkbox" checked={sound} onChange={e=>setSound(e.target.checked)}/> Notes sonores à la révélation</label><small>La réduction des animations de votre appareil est respectée.</small></div>}
   <header className="opening-heading"><div className="eyebrow"><span className="tiny-rule"/> Un rendez-vous avec l’inconnu <span className="tiny-rule"/></div><h1>{phase==='reveal'?'Le voile se lève.':'Ce que la nuit vous réserve.'}</h1><p>{phase==='reveal'?'Cinq arcanes, un à un.':'Cinq cartes, cinq destins. Un nouveau chapitre de votre collection.'}</p></header>
@@ -120,6 +122,6 @@ export default function Boosters(){
   </div>
   <div className="ritual-footer"><span><Layers3 size={15}/> 5 cartes par booster</span><span><ShieldCheck size={15}/> Rare ou supérieure en 5e carte</span><span><Sparkles size={15}/> 3 finitions à découvrir</span></div>
   <div className="opening-bottom"><div><span className="eyebrow">Le don des arcanes</span><p>Un booster à 06 h et à 18 h. La nuit sait être généreuse.</p></div>{live&&player?<div className="reserve-preview"><div className="pips" aria-label={`Réserve gratuite : ${player.boosters.free} sur ${player.boosters.free_capacity}`}>{Array.from({length:player.boosters.free_capacity},(_,i)=><i className={i<player.boosters.free?'on':''} key={i}/>)}</div><span>{player.boosters.free} / {player.boosters.free_capacity} <small>{player.boosters.purchased?`+ ${player.boosters.purchased} acheté${player.boosters.purchased>1?'s':''}`:'réserve gratuite'}</small></span></div>:<div className="reserve-preview"><div className="pips" aria-label="Exemple de réserve : 4 sur 6">{Array.from({length:6},(_,i)=><i className={i<4?'on':''} key={i}/>)}</div><span>4 / 6 <small>exemple de réserve</small></span></div>}</div>
-  {live&&player?<section className="booster-shop panel" aria-label="Boutique de boosters"><div className="section-header"><div><span className="eyebrow">L’échoppe</span><h2>Boosters supplémentaires</h2></div><span className="shop-balance"><Coins size={15}/> {player.balance.toLocaleString('fr-FR')} Deniers</span></div><div className="shop-offers">{Object.entries(player.booster_offers).sort((a,b)=>Number(a[0])-Number(b[0])).map(([qty,price])=><button key={qty} className="primary ghost" disabled={!!buying||player.balance<price||!editions.length} onClick={()=>{if(window.confirm(`Acheter ${qty} booster${Number(qty)>1?'s':''} pour ${price.toLocaleString('fr-FR')} Deniers ?`))void buy(qty);}}>{buying===qty?'Achat…':`${qty} booster${Number(qty)>1?'s':''} · ${price.toLocaleString('fr-FR')} Deniers`}</button>)}</div><small className="muted">Mêmes probabilités qu’un booster gratuit. L’édition se choisit à l’ouverture.</small></section>:<p className="demo-note">Atelier de démonstration · Cartes de présentation, aucun tirage réel ni ajout à la collection.</p>}
+  {live&&player?<section className="booster-shop panel" aria-label="Boutique de boosters"><div className="section-header"><div><span className="eyebrow">L’échoppe</span><h2>Boosters supplémentaires</h2></div><span className="shop-balance"><Coins size={15}/> {player.balance.toLocaleString('fr-FR')} Deniers</span></div><div className="shop-offers">{Object.entries(player.booster_offers).sort((a,b)=>Number(a[0])-Number(b[0])).map(([qty,price])=><button key={qty} className="primary ghost" disabled={!!buying||player.balance<price||!editions.length} onClick={()=>void ask({title:`Acheter ${qty} booster${Number(qty)>1?'s':''} ?`,message:`${price.toLocaleString('fr-FR')} Deniers seront débités. Il vous restera ${(player.balance-price).toLocaleString('fr-FR')} Deniers.`,confirmLabel:'Acheter'}).then(ok=>{if(ok!==null)void buy(qty);})}>{buying===qty?'Achat…':`${qty} booster${Number(qty)>1?'s':''} · ${price.toLocaleString('fr-FR')} Deniers`}</button>)}</div><small className="muted">Mêmes probabilités qu’un booster gratuit. L’édition se choisit à l’ouverture.</small></section>:<p className="demo-note">Atelier de démonstration · Cartes de présentation, aucun tirage réel ni ajout à la collection.</p>}
  </div>;
 }

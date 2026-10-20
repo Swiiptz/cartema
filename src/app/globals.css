@@ -164,3 +164,8 @@
 @keyframes unique-pulse{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
 @keyframes unique-mote{0%,100%{transform:translate(0,0);opacity:.15}50%{transform:translate(3px,-7px);opacity:.75}}
 @media(prefers-reduced-motion:reduce){.unique-card .unique-thread,.unique-card .unique-mark-glow,.unique-card .unique-motes circle{animation:none}.unique-card .unique-thread{stroke-dasharray:none;opacity:.8}}
+/* Boîte de dialogue intégrée (remplace prompt/confirm). */
+.ask-dialog{border:1px solid var(--line);border-radius:16px;padding:0;background:linear-gradient(160deg,var(--panel2),var(--panel));color:var(--text);width:min(440px,calc(100vw - 32px));box-shadow:0 20px 60px #000a}
+.ask-dialog::backdrop{background:#05030699;backdrop-filter:blur(3px)}
+.ask-dialog-body{display:flex;flex-direction:column;gap:14px;padding:24px}.ask-dialog-body h2{margin:0;font-size:22px}.ask-dialog-body p{margin:0;font:400 14px/1.6 var(--ui)}
+.ask-dialog-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}.ask-dialog-actions .primary{flex:1 1 140px}
