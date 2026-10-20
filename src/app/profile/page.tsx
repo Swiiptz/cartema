@@ -9,7 +9,7 @@ import {CountUp,Skeleton} from '@/components/ui';
 import {Showcase,ShowcaseEditor} from '@/components/Showcase';
 import {FeaturedAchievements,FeaturedEditor} from '@/components/FeaturedAchievements';
 import {demoCards} from '@/data/demo';
-import {callRpc,type AlbumEntry,type PublicProfile} from '@/lib/game';
+import {callRpc,type AlbumEntry,type NotificationPrefs,type Notifications,type PublicProfile} from '@/lib/game';
 import {withBase} from '@/lib/paths';
 
 export default function Profile(){
@@ -21,6 +21,7 @@ export default function Profile(){
  const [notice,setNotice]=useState<string|null>(null);
  const [pub,setPub]=useState<PublicProfile|null>(null);
  const [editing,setEditing]=useState(false);
+ const [prefs,setPrefs]=useState<NotificationPrefs|null>(null);
  const [editingFeatured,setEditingFeatured]=useState(false);
  useEffect(()=>{
   if(!client||!session)return;
@@ -33,6 +34,7 @@ export default function Profile(){
   if(!client||!ownHandle)return;
   let alive=true;
   callRpc<PublicProfile>(client,'get_profile',{p_handle:ownHandle}).then(p=>{if(alive)setPub(p);}).catch(()=>{});
+  callRpc<Notifications>(client,'get_notifications',{p_limit:1}).then(n=>{if(alive)setPrefs(n.prefs);}).catch(()=>{});
   return()=>{alive=false;};
  },[client,ownHandle]);
 
@@ -50,6 +52,7 @@ export default function Profile(){
   await callRpc(client!,'set_privacy',{p_visibility:visibility,p_show_stats:showStats});
   setPub(p=>p&&{...p,settings:{visibility:visibility as 'public'|'friends'|'private',show_stats:showStats}});
  });
+ const savePref=(key:keyof NotificationPrefs,value:boolean)=>void run('Préférences enregistrées.',async()=>{await callRpc(client!,'set_notification_prefs',{p_prefs:{[key]:value}});setPrefs(p=>p&&{...p,[key]:value});});
  const linkDiscord=()=>void run('Redirection vers Discord…',async()=>{const {error}=await client!.auth.linkIdentity({provider:'discord',options:{redirectTo:`${window.location.origin}${withBase('/profile/')}`}});if(error)throw new Error(error.message);});
 
  const identities=session.user.identities??[];
@@ -94,6 +97,8 @@ export default function Profile(){
     <select className="privacy-select" aria-label="Visibilité du profil" disabled={busy} value={pub.settings.visibility} onChange={e=>savePrivacy(e.target.value,pub.settings!.show_stats)}><option value="public">Public</option><option value="friends">Amis seulement</option><option value="private">Privé</option></select></div>}
    {pub?.settings&&<label className="settings-row privacy-toggle"><div><strong>Statistiques visibles</strong><span className="muted">Classement, succès, visages et finitions sur votre profil</span></div>
     <input type="checkbox" disabled={busy} checked={pub.settings.show_stats} onChange={e=>savePrivacy(pub.settings!.visibility,e.target.checked)}/></label>}
+   {prefs&&<div className="settings-row notif-prefs"><div><strong>Notifications</strong><span className="muted">Ce qui apparaît sous la cloche</span></div>
+    <div className="notif-toggles">{([['friends','Amis'],['social','Cadeaux et échanges'],['market','Marché et enchères'],['achievements','Succès']] as const).map(([k,l])=><label key={k} className="admin-check"><input type="checkbox" disabled={busy} checked={prefs[k]} onChange={e=>savePref(k,e.target.checked)}/> {l}</label>)}</div></div>}
    <div className="settings-row"><div><strong>E-mail</strong><span className="muted">{session.user.email??'—'}</span></div></div>
    <div className="settings-row"><div><strong>Discord</strong><span className="muted">{hasDiscord?'Compte lié':'Non lié'}</span></div>{!hasDiscord&&<button className="primary ghost discord-ghost" disabled={busy} onClick={linkDiscord}><DiscordIcon/> <Link2 size={14}/> Lier</button>}</div>
    <div className="settings-row"><div><strong>Session</strong><span className="muted">Connecté sur cet appareil</span></div><button className="primary ghost" onClick={()=>void signOut()}><LogOut size={16}/> Se déconnecter</button></div>

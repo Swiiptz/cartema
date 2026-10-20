@@ -676,3 +676,16 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .admin-history li small{color:var(--muted);white-space:nowrap}.admin-history .pos{color:#8fd19e}.admin-history .neg{color:#ff8a9a}
 .admin-player-empty{display:grid;place-items:center;min-height:200px}
 @media(max-width:800px){.admin-players{grid-template-columns:1fr}.admin-player-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-history li{grid-template-columns:auto 1fr}.admin-history li small{grid-column:1/-1}}
+
+/* Notifications */
+.bell{position:relative;display:grid;place-items:center;width:38px;height:38px;margin-right:10px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--muted);transition:color .2s,border-color .2s}.bell:hover{color:var(--gold2);border-color:#c9a45c55}
+.bell-count{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:linear-gradient(160deg,#c0345f,#7a1530);color:#fff;font:700 10px/18px var(--ui);text-align:center;box-shadow:0 0 10px #c0345f66;animation:pop .35s var(--ease-out,ease)}
+@keyframes pop{from{transform:scale(.4)}to{transform:scale(1)}}
+.notif-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:min(60vh,520px);overflow:auto}
+.notif-list a{display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#140d14;transition:border-color .2s,background .2s}
+.notif-list a:hover{border-color:#c9a45c55}.notif-list .unread a{border-color:#c9a45c66;background:linear-gradient(170deg,#c9a45c12,#140d14)}
+.notif-icon{flex-shrink:0;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;border:1px solid #c9a45c44;color:var(--gold)}
+.notif-text{display:flex;flex-direction:column;gap:2px;font:500 14px/1.45 var(--ui)}.notif-text small{font:400 11px var(--ui);color:var(--muted)}
+.notif-foot{display:flex;align-items:center;gap:6px;font:400 12px var(--ui);margin:10px 0 0}.notif-foot a{color:var(--gold)}
+.notif-toggles{display:flex;flex-wrap:wrap;gap:6px 16px}
+@media(max-width:700px){.bell{width:34px;height:34px;margin-right:8px}}
