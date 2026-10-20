@@ -11,6 +11,8 @@ export type PlayerState={
  booster_offers:Record<string,number>;
  /** Deniers du bonus quotidien crédités par cet appel (0 si déjà reçu aujourd'hui). */
  daily_reward?:number;
+ /** Invitations d'amis, cadeaux et échanges reçus en attente de réponse. */
+ social_pending?:number;
  editions:{id:string;name:string;prefix:string;cover_path:string|null;openable:boolean}[];
 };
 export type OpenedCard={position:number;instance_id:string;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique?:boolean;finish:Finish;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};

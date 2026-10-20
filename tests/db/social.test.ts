@@ -1,0 +1,122 @@
+import {describe,it,expect,beforeAll} from 'vitest';
+import {randomUUID} from 'node:crypto';
+import {createDb,rpc,createUser,credit,seedEdition,expectError,type Db} from './harness';
+
+let db:Db;let edition:string;
+const OLD='2026-01-01T00:00:00Z';
+beforeAll(async()=>{db=await createDb();edition=await seedEdition(db,{perRarity:1});},30000);
+
+let n=0;
+async function player(){const id=await createUser(db,{createdAt:OLD});await rpc(db,id,'set_handle',[`joueur_${++n}`]);return {id,handle:`joueur_${n}`};}
+async function give(user:string,rarity='Rare'){
+  const {rows:[c]}=await db.query<{id:string}>(`select id from public.characters where edition_id=$1 and rarity=$2 limit 1`,[edition,rarity]);
+  return (await db.query<{id:string}>(`insert into public.inventory_items (owner_id,character_id,finish) values ($1,$2,'Standard') returning id`,[user,c.id])).rows[0].id;
+}
+const owner=async(i:string)=>(await db.query<{owner_id:string;reserved_kind:string|null}>('select owner_id,reserved_kind from public.inventory_items where id=$1',[i])).rows[0];
+const balance=async(u:string)=>Number((await db.query<{b:string}>('select balance b from public.wallets where owner_id=$1',[u])).rows[0].b);
+async function befriend(a:{id:string},b:{id:string;handle:string}){
+  expect(await rpc(db,a.id,'send_friend_request',[b.handle])).toBe('sent');
+  const f=await rpc(db,b.id,'get_friends');
+  await rpc(db,b.id,'respond_friend_request',[f.incoming[0].request_id,true]);
+}
+
+describe('amis',()=>{
+  it('envoie, accepte, refuse et retire',async()=>{
+    const a=await player();const b=await player();const c=await player();
+    await expectError(rpc(db,a.id,'send_friend_request',['personne_inconnue']),/player_not_found/);
+    await expectError(rpc(db,a.id,'send_friend_request',[a.handle]),/self_request/);
+    await befriend(a,b);
+    expect((await rpc(db,a.id,'get_friends')).friends.map((f:any)=>f.handle)).toEqual([b.handle]);
+    await expectError(rpc(db,b.id,'send_friend_request',[a.handle]),/already_friends/);
+    await rpc(db,c.id,'send_friend_request',[a.handle]);
+    expect(await rpc(db,a.id,'send_friend_request',[c.handle.toUpperCase()])).toBe('accepted'); // demande croisée
+    await rpc(db,a.id,'remove_friend',[b.id]);
+    expect((await rpc(db,b.id,'get_friends')).friends).toEqual([]);
+  });
+});
+
+describe('cadeaux',()=>{
+  it('réservés aux amis, acceptés ou refusés, sans commission',async()=>{
+    const a=await player();const b=await player();const stranger=await player();
+    const card=await give(a.id);
+    await expectError(rpc(db,a.id,'send_gift',[stranger.id,card,randomUUID()]),/not_friends/);
+    await befriend(a,b);
+    const {gift_id}=await rpc(db,a.id,'send_gift',[b.id,card,randomUUID()]);
+    expect(await owner(card)).toEqual({owner_id:a.id,reserved_kind:'gift'});
+    await expectError(rpc(db,a.id,'recycle_cards',[[card],randomUUID()]),/card_reserved/);
+    await rpc(db,b.id,'respond_gift',[gift_id,true]);
+    expect(await owner(card)).toEqual({owner_id:b.id,reserved_kind:null});
+    await expectError(rpc(db,b.id,'respond_gift',[gift_id,true]),/gift_unavailable/);
+    const back=await rpc(db,b.id,'send_gift',[a.id,card,randomUUID()]);
+    await rpc(db,a.id,'respond_gift',[back.gift_id,false]);
+    expect(await owner(card)).toEqual({owner_id:b.id,reserved_kind:null});
+  });
+  it('rend la carte à l’expiration',async()=>{
+    const a=await player();const b=await player();await befriend(a,b);
+    const card=await give(a.id);
+    const {gift_id}=await rpc(db,a.id,'send_gift',[b.id,card,randomUUID()]);
+    await db.query(`update public.gifts set expires_at=now()-interval '1 second' where id=$1`,[gift_id]);
+    expect(Number((await db.query<{n:number}>('select private.expire_social() n')).rows[0].n)).toBe(1);
+    expect(await owner(card)).toEqual({owner_id:a.id,reserved_kind:null});
+    await expectError(rpc(db,b.id,'respond_gift',[gift_id,true]),/gift_unavailable/);
+  });
+});
+
+describe('échanges',()=>{
+  it('échange cartes et Deniers atomiquement, sans commission',async()=>{
+    const a=await player();const b=await player();await befriend(a,b);
+    await credit(db,a.id,1000);await credit(db,b.id,1000);
+    const a1=await give(a.id,'Rare');const a2=await give(a.id,'Commun');const b1=await give(b.id,'Épique');
+    const {trade_id}=await rpc(db,a.id,'propose_trade',[b.id,[a1,a2],[b1],200,50,randomUUID(),null]);
+    expect(await balance(a.id)).toBe(800); // 200 bloqués
+    expect(await owner(a1)).toEqual({owner_id:a.id,reserved_kind:'trade'});
+    await rpc(db,b.id,'respond_trade',[trade_id,true]);
+    expect((await owner(a1)).owner_id).toBe(b.id);expect((await owner(a2)).owner_id).toBe(b.id);
+    expect((await owner(b1)).owner_id).toBe(a.id);
+    expect(await balance(a.id)).toBe(800+50+10); // +50 reçus, +10 découverte de l'Épique
+    expect(await balance(b.id)).toBe(1000-50+200+20); // +20 : deux découvertes
+  });
+  it('refus, annulation et expiration rendent cartes et Deniers',async()=>{
+    const a=await player();const b=await player();await befriend(a,b);await credit(db,a.id,300);
+    const card=await give(a.id);
+    const t1=await rpc(db,a.id,'propose_trade',[b.id,[card],[],100,0,randomUUID(),null]);
+    await rpc(db,b.id,'respond_trade',[t1.trade_id,false]);
+    expect(await balance(a.id)).toBe(300);expect(await owner(card)).toEqual({owner_id:a.id,reserved_kind:null});
+    const t2=await rpc(db,a.id,'propose_trade',[b.id,[card],[],100,0,randomUUID(),null]);
+    await rpc(db,a.id,'cancel_trade',[t2.trade_id]);
+    expect(await balance(a.id)).toBe(300);
+    const t3=await rpc(db,a.id,'propose_trade',[b.id,[card],[],100,0,randomUUID(),null]);
+    await db.query(`update public.trades set expires_at=now()-interval '1 second' where id=$1`,[t3.trade_id]);
+    await rpc(db,a.id,'get_social');
+    expect(await balance(a.id)).toBe(300);expect(await owner(card)).toEqual({owner_id:a.id,reserved_kind:null});
+  });
+  it('contre-proposition : l’offre initiale est close et les rôles s’inversent',async()=>{
+    const a=await player();const b=await player();await befriend(a,b);await credit(db,a.id,500);
+    const a1=await give(a.id);const b1=await give(b.id);const b2=await give(b.id,'Commun');
+    const t1=await rpc(db,a.id,'propose_trade',[b.id,[a1],[b1],100,0,randomUUID(),null]);
+    const t2=await rpc(db,b.id,'propose_trade',[a.id,[b2],[a1],0,150,randomUUID(),t1.trade_id]);
+    expect(await balance(a.id)).toBe(500); // les 100 bloqués sont rendus
+    const social=await rpc(db,a.id,'get_social');
+    expect(social.trades.find((t:any)=>t.trade_id===t1.trade_id).status).toBe('countered');
+    await rpc(db,a.id,'respond_trade',[t2.trade_id,true]);
+    expect((await owner(a1)).owner_id).toBe(b.id);expect((await owner(b2)).owner_id).toBe(a.id);
+    expect(await balance(a.id)).toBe(350+10);
+  });
+  it('respecte les limites et refuse les cartes indisponibles',async()=>{
+    const a=await player();const b=await player();await befriend(a,b);
+    const many=await Promise.all(Array.from({length:11},()=>give(a.id)));
+    await expectError(rpc(db,a.id,'propose_trade',[b.id,many,[],0,0,randomUUID(),null]),/too_many_cards/);
+    await expectError(rpc(db,a.id,'propose_trade',[b.id,[],[],0,0,randomUUID(),null]),/empty_trade/);
+    const b1=await give(b.id);
+    const t=await rpc(db,a.id,'propose_trade',[b.id,[many[0]],[b1],0,0,randomUUID(),null]);
+    await rpc(db,b.id,'set_cards_locked',[[b1],true]);
+    await expectError(rpc(db,b.id,'respond_trade',[t.trade_id,true]),/card_unavailable/);
+    await expectError(rpc(db,a.id,'propose_trade',[b.id,[many[0]],[],0,0,randomUUID(),null]),/card_unavailable/); // déjà engagée
+  });
+  it('bloque les échanges des comptes de moins de 24 h',async()=>{
+    const a=await player();const fresh=await createUser(db);await rpc(db,fresh,'set_handle',['tout_neuf']);
+    await rpc(db,fresh,'send_friend_request',[a.handle]);
+    const f=await rpc(db,a.id,'get_friends');await rpc(db,a.id,'respond_friend_request',[f.incoming[0].request_id,true]);
+    await expectError(rpc(db,fresh,'propose_trade',[a.id,[await give(fresh)],[],0,0,randomUUID(),null]),/account_too_new/);
+  });
+});

@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
-import {ArrowRight,BookOpen,Coins,Eye,Moon,Sparkles} from 'lucide-react';
+import {ArrowRight,BookOpen,Coins,Eye,Moon,Sparkles,Users} from 'lucide-react';
 import {TarotCard,palette} from '@/components/Card';
 import {BoosterSkin} from '@/components/BoosterSkin';
 import {useAuth} from '@/components/AuthProvider';
@@ -70,6 +70,7 @@ function Dashboard(){
    <span className="chip gold"><Coins size={15}/><CountUp value={player.balance}/> <small>Deniers</small></span>
   </header>
 
+  {(player.social_pending??0)>0&&<Link href="/amis/" className="social-alert rise"><Users size={16}/> <span><strong>{player.social_pending}</strong> invitation{player.social_pending!>1?'s':''}, cadeau{player.social_pending!>1?'x':''} ou échange{player.social_pending!>1?'s':''} en attente</span><ArrowRight size={14}/></Link>}
   <section className="panel reserve-card rise" style={{'--i':1} as React.CSSProperties}>
    <Link href="/boosters/" className="reserve-pack" aria-label="Aller ouvrir un booster"><BoosterSkin/></Link>
    <div className="reserve-info">

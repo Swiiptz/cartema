@@ -1,11 +1,13 @@
 'use client';
 import {useCallback,useEffect,useId,useRef,useState} from 'react';
-import {Expand,Lock,LockOpen,Recycle,Tag,X} from 'lucide-react';
+import Link from 'next/link';
+import {Expand,Gift,Lock,LockOpen,Recycle,Tag,X} from 'lucide-react';
 import {TarotCard,type DemoCard} from './Card';
 import {useAuth} from './AuthProvider';
 import {useAsk} from './AskDialog';
 import {Skeleton} from './ui';
 import {SellDialog,type SellChoice} from './SellDialog';
+import {GiftDialog} from './GiftDialog';
 import {callRpc,type InventoryItem,type RecycleResult} from '@/lib/game';
 
 const FINISHES=['Standard','Dorée','Sanglante'];
@@ -87,22 +89,30 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
   await callRpc(client!,'create_auction',{p_instance_id:it.instance_id,p_start_price:c.price,p_hours:c.hours,p_request_id:crypto.randomUUID()});
   return `Enchère lancée pour ${c.hours} h · départ ${c.price.toLocaleString('fr-FR')} Deniers`;
  });};
+ const [gifting,setGifting]=useState<InventoryItem|null>(null);
+ const confirmGift=(friendId:string,handle:string)=>{const it=gifting!;setGifting(null);void run(async()=>{
+  await callRpc(client!,'send_gift',{p_recipient_id:friendId,p_instance_id:it.instance_id,p_request_id:crypto.randomUUID()});
+  return `Cadeau envoyé à ${handle} : il a 48 h pour l’accepter.`;
+ });};
  const unlist=(it:InventoryItem)=>run(async()=>{await callRpc(client!,'cancel_listing',{p_listing_id:it.listing_id});return 'Annonce retirée.';});
  if(!items)return <div className="owned-copies"><Skeleton style={{height:44}}/><Skeleton style={{height:44}}/></div>;
  const extras=items.filter(i=>i.finish==='Standard'&&!i.locked&&!i.reserved&&!i.unique).slice(1);
  return <section className="owned-copies" aria-label="Vos exemplaires">
   {askNode}
+  {client&&<GiftDialog open={!!gifting} client={client} name={cardName} onCancel={()=>setGifting(null)} onConfirm={confirmGift}/>}
   <SellDialog open={!!selling} name={cardName} finish={selling?.finish??'Standard'} suggested={Math.max((selling?.value??5)*2,10)} onCancel={()=>setSelling(null)} onConfirm={confirmSell}/>
   <div className="owned-head"><span className="eyebrow">Vos exemplaires</span><strong>{items.length}</strong></div>
   {items.length===0?<p className="muted">Vous ne possédez plus d’exemplaire de cette carte. Elle reste découverte dans votre album.</p>:<ul className="owned-list">{items.map(it=><li key={it.instance_id} className={`finish-${it.finish==='Dorée'?'gold':it.finish==='Sanglante'?'blood':'standard'} ${it.listing_id?'listed':''}`}>
    <div className="owned-top">
     <span className="owned-finish">{it.finish}<small>Obtenue le {new Date(it.acquired_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}</small></span>
-    {it.listing_id?<span className="listed-badge"><Tag size={12}/> {it.listing_kind==='auction'?'Enchère':'En vente'} · {(it.listing_price??0).toLocaleString('fr-FR')}</span>
+    {it.reserved&&!it.listing_id?<span className="listed-badge"><Gift size={12}/> {it.reserved_kind==='gift'?'Cadeau en attente':'Proposée en échange'}</span>:it.listing_id?<span className="listed-badge"><Tag size={12}/> {it.reserved_kind==='gift'?'Offerte':it.reserved_kind==='trade'?'Échange':it.listing_kind==='auction'?'Enchère':'En vente'} · {(it.listing_price??0).toLocaleString('fr-FR')}</span>
      :<button className={`lock-toggle ${it.locked?'on':''}`} disabled={busy} aria-pressed={it.locked} aria-label={it.locked?'Déverrouiller cet exemplaire':'Verrouiller cet exemplaire'} onClick={()=>void toggleLock(it)}>{it.locked?<Lock size={14}/>:<LockOpen size={14}/>}<span>{it.locked?'Verrouillée':'Verrouiller'}</span></button>}
    </div>
    <div className="owned-actions">
-    {it.listing_id?<button className="action-btn" disabled={busy} onClick={()=>void unlist(it)}><X size={14}/> Retirer la vente</button>
+    {it.reserved&&!it.listing_id?<span className="owned-note">Gérez-la depuis la page <Link className="text-link" href="/amis/">Amis</Link></span>:it.listing_id?<button className="action-btn" disabled={busy} onClick={()=>void unlist(it)}><X size={14}/> Retirer la vente</button>
      :<><button className="action-btn sell" disabled={busy||it.locked||it.reserved} onClick={()=>void sell(it)}><Tag size={14}/> Vendre</button>
+      <span className="action-sep" aria-hidden="true"/>
+      <button className="action-btn" disabled={busy||it.locked||it.reserved} onClick={()=>setGifting(it)}><Gift size={14}/> Offrir</button>
       <span className="action-sep" aria-hidden="true"/>
       {it.unique?<span className="owned-note">Indestructible</span>:<button className="action-btn recycle" disabled={busy||it.locked||it.reserved} onClick={()=>void recycle([it])}><Recycle size={14}/> Recycler <b>+{it.value.toLocaleString('fr-FR')}</b></button>}</>}
    </div>
