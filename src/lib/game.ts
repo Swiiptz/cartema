@@ -39,6 +39,8 @@ export type Mission={assignment_id:string;kind:'daily'|'weekly';label:string;tar
 export type MissionBonus={boosters:number;claimed:boolean};
 export type Missions={daily:Mission[];weekly:Mission[];replacement_available:boolean;daily_reset:string;weekly_reset:string;daily_bonus?:MissionBonus;weekly_bonus?:MissionBonus};
 export type Achievement={code:string;secret:boolean;category:'collection'|'general'|'custom';label:string|null;description?:string|null;title?:string|null;edition?:string|null;edition_prefix?:string|null;rarity?:Rarity|null;reward_deniers?:number;reward_boosters?:number;progress?:number;target?:number;unlocked_at:string|null;reason?:string|null;conditional?:boolean;series?:string|null;series_label?:string|null;tier?:number|null};
+export type FeaturedAchievement={code:string;label:string;description:string|null;title:string|null;tier:number|null;series_label:string|null;rarity:Rarity|null;category:string;unlocked_at:string};
+export type PublicProfile={featured:FeaturedAchievement[];profile_id:string;handle:string;title:string|null;created_at:string;relation:'self'|'friends'|'pending_out'|'pending_in'|'none';visible:boolean;settings:{visibility:'public'|'friends'|'private';show_stats:boolean}|null;showcase:SocialCard[]|null;stats:{faces:number;total_characters:number;achievements:number;gold:number;blood:number;position:number}|null;recent:{label:string;unlocked_at:string;tier:number|null}[]|null};
 export type Leaderboard={top:{position:number;handle:string;title:string|null;score:number;achievements:number;faces:number;me:boolean}[];me:{position:number;score:number;achievements:number;faces:number}|null;total_characters:number;total_achievements:number};
 export type TradeStatus={allowed:boolean;blocked:boolean;available_at:string|null;commission_pct:number};
 export function listingToCard(l:Listing):DemoCard{const c=l.card;return {id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish:l.finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
@@ -119,6 +121,10 @@ const messages:Record<string,string>={
  auction_has_bids:'Une enchère qui a reçu une mise ne peut plus être retirée.',
  not_fixed_price:'Cette annonce est une enchère.',
  player_not_found:'Aucun joueur avec ce pseudonyme.',
+ duplicate_card:'Cette carte est déjà dans la vitrine.',
+ too_many_achievements:'3 succès au maximum.',
+ duplicate_achievement:'Ce succès est déjà mis en avant.',
+ invalid_visibility:'Réglage de visibilité inconnu.',
  self_request:'Vous ne pouvez pas vous ajouter vous-même.',
  already_friends:'Vous êtes déjà amis.',
  request_pending:'Demande déjà envoyée.',

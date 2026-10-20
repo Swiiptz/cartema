@@ -1,13 +1,15 @@
 'use client';
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
-import {Award,BookOpen,Check,Coins,Layers3,Link2,LogOut,Settings,Sparkles,Users} from 'lucide-react';
+import {Award,BookOpen,Check,Coins,Eye,Layers3,Link2,LogOut,Pencil,Settings,Sparkles,Users} from 'lucide-react';
 import {TarotCard} from '@/components/Card';
 import {useAuth} from '@/components/AuthProvider';
 import {DiscordIcon} from '@/components/DiscordIcon';
 import {CountUp,Skeleton} from '@/components/ui';
+import {Showcase,ShowcaseEditor} from '@/components/Showcase';
+import {FeaturedAchievements,FeaturedEditor} from '@/components/FeaturedAchievements';
 import {demoCards} from '@/data/demo';
-import {callRpc,type AlbumEntry} from '@/lib/game';
+import {callRpc,type AlbumEntry,type PublicProfile} from '@/lib/game';
 import {withBase} from '@/lib/paths';
 
 export default function Profile(){
@@ -17,12 +19,22 @@ export default function Profile(){
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState<string|null>(null);
  const [notice,setNotice]=useState<string|null>(null);
+ const [pub,setPub]=useState<PublicProfile|null>(null);
+ const [editing,setEditing]=useState(false);
+ const [editingFeatured,setEditingFeatured]=useState(false);
  useEffect(()=>{
   if(!client||!session)return;
   let alive=true;
   callRpc<AlbumEntry[]>(client,'get_album').then(a=>{if(alive)setAlbum(a);}).catch(()=>{});
   return()=>{alive=false;};
  },[client,session]);
+ const ownHandle=player?.profile.handle;
+ useEffect(()=>{
+  if(!client||!ownHandle)return;
+  let alive=true;
+  callRpc<PublicProfile>(client,'get_profile',{p_handle:ownHandle}).then(p=>{if(alive)setPub(p);}).catch(()=>{});
+  return()=>{alive=false;};
+ },[client,ownHandle]);
 
  // Mode atelier (site non relié à Supabase) : maquette de présentation.
  if(!configured)return <div className="page"><div className="eyebrow">Le collectionneur</div><h1>Mon profil</h1><div className="panel"><div className="profile-top"><div className="profile-avatar">✧</div><div><h2>Archiviste anonyme</h2><p>Gardien des Arcanes</p></div></div><div className="card-grid">{demoCards.filter(c=>c.known).slice(0,4).map(c=><TarotCard card={c} key={c.id}/>)}</div></div><p className="demo-note">Écran de présentation sans données personnelles.</p></div>;
@@ -34,6 +46,10 @@ export default function Profile(){
   try{await action();setNotice(label);}catch(e){setError((e as Error).message);}finally{setBusy(false);}
  }
  const saveHandle=(e:React.FormEvent)=>{e.preventDefault();void run('Pseudonyme enregistré.',async()=>{await callRpc(client!,'set_handle',{p_handle:handle});await refreshPlayer();setHandle('');});};
+ const savePrivacy=(visibility:string,showStats:boolean)=>void run('Confidentialité enregistrée.',async()=>{
+  await callRpc(client!,'set_privacy',{p_visibility:visibility,p_show_stats:showStats});
+  setPub(p=>p&&{...p,settings:{visibility:visibility as 'public'|'friends'|'private',show_stats:showStats}});
+ });
  const linkDiscord=()=>void run('Redirection vers Discord…',async()=>{const {error}=await client!.auth.linkIdentity({provider:'discord',options:{redirectTo:`${window.location.origin}${withBase('/profile/')}`}});if(error)throw new Error(error.message);});
 
  const identities=session.user.identities??[];
@@ -58,16 +74,30 @@ export default function Profile(){
 
   <ul className="stat-grid">{stats.map((s,i)=><li key={s.label} className="panel rise" style={{'--i':i+1} as React.CSSProperties}><s.icon size={18}/><strong>{s.value===undefined?<Skeleton style={{height:28,width:60}}/>:<><CountUp value={s.value}/>{s.suffix&&<small>{s.suffix}</small>}</>}</strong><span>{s.label}</span></li>)}</ul>
 
+  {name&&<section className="social-section showcase-section rise" style={{'--i':5} as React.CSSProperties}>
+   <div className="section-header"><h2>Ma vitrine</h2><div className="showcase-actions"><Link className="text-link" href={`/joueur/?h=${encodeURIComponent(name)}`}><Eye size={14}/> Voir mon profil</Link><button className="primary ghost compact" disabled={!pub} onClick={()=>setEditing(true)}><Pencil size={14}/> Modifier</button></div></div>
+   {!pub?<Skeleton style={{height:150}}/>:<Showcase cards={pub.showcase??[]} empty="Exposez jusqu’à cinq cartes de votre collection aux autres joueurs."/>}
+  </section>}
+  {name&&<section className="social-section showcase-section rise" style={{'--i':5} as React.CSSProperties}>
+   <div className="section-header"><h2>Succès mis en avant</h2><button className="primary ghost compact" disabled={!pub} onClick={()=>setEditingFeatured(true)}><Pencil size={14}/> Choisir</button></div>
+   {!pub?<Skeleton style={{height:80}}/>:<FeaturedAchievements list={pub.featured??[]} empty="Choisissez jusqu’à trois succès dont vous êtes fier."/>}
+  </section>}
+  {pub&&client&&<FeaturedEditor client={client} open={editingFeatured} current={pub.featured??[]} onClose={()=>setEditingFeatured(false)} onSaved={p=>{setPub(p);setEditingFeatured(false);setNotice('Succès mis en avant enregistrés.');}}/>}
+  {pub&&client&&<ShowcaseEditor client={client} open={editing} current={pub.showcase??[]} onClose={()=>setEditing(false)} onSaved={p=>{setPub(p);setEditing(false);setNotice('Vitrine enregistrée.');}}/>}
+
   <div className="profile-links rise" style={{'--i':5} as React.CSSProperties}><Link className="primary" href="/collection/"><BookOpen size={16}/> Ma collection</Link><Link className="primary ghost" href="/progression/"><Award size={16}/> Missions &amp; succès</Link><Link className="primary ghost" href="/amis/"><Users size={16}/> Amis &amp; échanges{(player.social_pending??0)>0&&<b className="tab-count">{player.social_pending}</b>}</Link></div>
 
   <section className="panel settings-panel rise" style={{'--i':6} as React.CSSProperties} aria-labelledby="reglages">
    <h2 id="reglages"><Settings size={18}/> Paramètres du compte</h2>
    {name&&<form className="settings-row" onSubmit={saveHandle}><div><strong>Pseudonyme</strong><span className="muted">{name}</span></div><div className="inline-form"><input aria-label="Nouveau pseudonyme" value={handle} onChange={e=>setHandle(e.target.value)} minLength={3} maxLength={24} required placeholder="Nouveau pseudonyme"/><button className="primary ghost" disabled={busy}>Modifier</button></div></form>}
+   {pub?.settings&&<div className="settings-row"><div><strong>Visibilité du profil</strong><span className="muted">{pub.settings.visibility==='public'?'Tout le monde voit votre vitrine':pub.settings.visibility==='friends'?'Seuls vos amis voient votre vitrine':'Seuls votre pseudonyme et votre titre sont visibles'}</span></div>
+    <select className="privacy-select" aria-label="Visibilité du profil" disabled={busy} value={pub.settings.visibility} onChange={e=>savePrivacy(e.target.value,pub.settings!.show_stats)}><option value="public">Public</option><option value="friends">Amis seulement</option><option value="private">Privé</option></select></div>}
+   {pub?.settings&&<label className="settings-row privacy-toggle"><div><strong>Statistiques visibles</strong><span className="muted">Classement, succès, visages et finitions sur votre profil</span></div>
+    <input type="checkbox" disabled={busy} checked={pub.settings.show_stats} onChange={e=>savePrivacy(pub.settings!.visibility,e.target.checked)}/></label>}
    <div className="settings-row"><div><strong>E-mail</strong><span className="muted">{session.user.email??'—'}</span></div></div>
    <div className="settings-row"><div><strong>Discord</strong><span className="muted">{hasDiscord?'Compte lié':'Non lié'}</span></div>{!hasDiscord&&<button className="primary ghost discord-ghost" disabled={busy} onClick={linkDiscord}><DiscordIcon/> <Link2 size={14}/> Lier</button>}</div>
    <div className="settings-row"><div><strong>Session</strong><span className="muted">Connecté sur cet appareil</span></div><button className="primary ghost" onClick={()=>void signOut()}><LogOut size={16}/> Se déconnecter</button></div>
    {error&&<p className="auth-error" role="alert">{error}</p>}{notice&&<p className="auth-notice" role="status">{notice}</p>}
   </section>
-  <p className="demo-note">Vitrine de cinq cartes, titres et badges : à venir.</p>
  </div>;
 }

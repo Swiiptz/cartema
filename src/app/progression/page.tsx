@@ -65,7 +65,7 @@ export default function Progression(){
    <p className="muted">Classement par nombre de succès obtenus, puis par personnages découverts en cas d’égalité. Les succès sont définitifs et une carte cédée reste découverte.</p>
    <ol className="ranking">{board.top.map((r,i)=><li key={`${r.handle}-${i}`} className={`rise ${r.me?'me':''} top-${r.position}`} style={{'--i':Math.min(i,15)} as React.CSSProperties}>
     <span className="rank-pos">{r.position<=3?<Crown size={16}/>:r.position}</span>
-    <span className="person-name">{r.handle}{r.title&&<small className="rank-title">{r.title}</small>}</span>
+    <Link className="person-name" href={`/joueur/?h=${encodeURIComponent(r.handle)}`}>{r.handle}{r.title&&<small className="rank-title">{r.title}</small>}</Link>
     <span className="rank-scores"><strong className="rank-score">{r.achievements}<small> succès</small></strong><small>{r.faces} visage{r.faces>1?'s':''}</small></span>
    </li>)}</ol>
    {board.me&&!board.top.some(r=>r.me)&&<p className="muted">Vous êtes {board.me.position}e avec {board.me.achievements} succès et {board.me.faces} visages.</p>}
