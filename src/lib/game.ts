@@ -134,7 +134,7 @@ const messages:Record<string,string>={
  not_replaceable:'Cette mission ne peut pas être remplacée.',
  title_locked:'Ce titre n’est pas encore débloqué.',
  already_granted:'Ce joueur a déjà ce succès.',
- conditional_achievement:'Ce succès se débloque automatiquement (cartes requises).',
+ conditional_achievement:'Ce succès se débloque automatiquement.',
 };
 export class GameError extends Error{
  constructor(public code:string,message:string,public definitive:boolean){super(message);}

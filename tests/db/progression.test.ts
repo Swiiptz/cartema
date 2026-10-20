@@ -202,3 +202,33 @@ describe('missions longues et bonus',()=>{
     expect((await rpc(db,u,'get_missions')).daily_bonus).toEqual({boosters:1,claimed:true});
   });
 });
+
+describe('succès secrets de la chronique',()=>{
+  it('récompense les comptes du premier mois seulement',async()=>{
+    const early=await player('pionnier');
+    const late=await player('retardataire','2026-12-01 12:00+01');
+    const mine=(await rpc<any[]>(db,early,'get_achievements')).find(a=>a.code==='chronicle:early');
+    expect(mine).toMatchObject({label:'Soutien de la première heure',description:'Avoir rejoint Cartema durant son premier mois.'});
+    expect(mine.unlocked_at).not.toBeNull();
+    expect((await rpc<any[]>(db,late,'get_achievements')).find(a=>a.code==='chronicle:early')).toEqual({code:'chronicle:early',secret:true,category:'custom',label:null,unlocked_at:null});
+  });
+  it('se débloque en recyclant une fois chaque carte du jeu',async()=>{
+    const u=await player('broyeur_total');
+    const {rows:chars}=await db.query<{id:string}>(`select id from public.characters where edition_id=$1 and status='published' and not is_unique`,[edition]);
+    const ids:string[]=[];
+    for(const c of chars)ids.push((await db.query<{id:string}>(`insert into public.inventory_items (owner_id,character_id,finish) values ($1,$2,'Standard') returning id`,[u,c.id])).rows[0].id);
+    await rpc(db,u,'recycle_cards',[ids.slice(1),randomUUID(),true]);
+    expect((await rpc<any[]>(db,u,'get_achievements')).find(a=>a.code==='chronicle:recycle-all').label).toBeNull();
+    await rpc(db,u,'recycle_cards',[ids.slice(0,1),randomUUID(),true]);
+    const a=(await rpc<any[]>(db,u,'get_achievements')).find(x=>x.code==='chronicle:recycle-all');
+    expect(a).toMatchObject({label:'Le gars a pas compris le principe du jeu',progress:chars.length,target:chars.length});
+  });
+  it('montre « Actually » comme secret et le décerne à la main',async()=>{
+    const admin=(await db.query<{id:string}>(`select id from public.profiles where role='admin'`)).rows[0].id;
+    const u=await player('pinailleur');
+    expect((await rpc<any[]>(db,u,'get_achievements')).find(a=>a.code==='chronicle:actually')).toMatchObject({secret:true,label:null});
+    await rpc(db,admin,'admin_grant_achievement',['chronicle:actually','pinailleur','Erreur de clan sur une carte']);
+    expect((await rpc<any[]>(db,u,'get_achievements')).find(a=>a.code==='chronicle:actually')).toMatchObject({label:'Actually 🤓',title:'Actually 🤓'});
+    await expectError(rpc(db,admin,'admin_grant_achievement',['chronicle:early','pinailleur','x']),/conditional_achievement/);
+  });
+});
