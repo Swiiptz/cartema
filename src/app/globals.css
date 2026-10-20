@@ -343,3 +343,51 @@ a,button,.panel,.tarot-card,.inspect-card,input,select{transition:color var(--t-
 /* Logo : point de sang entre VAMPIRIC et BOOSTERS. */
 .logo small{display:flex;align-items:center}
 .blood-dot{display:inline-block;width:4px;height:4px;margin:0 .7em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff6b7d,#b3122c 60%,#5c0612);box-shadow:0 0 4px #e0203faa,0 0 9px #b3122c55;flex-shrink:0}
+/* ============================================================== Collection : animations des contrôles */
+/* Panneau de filtres repliable. */
+.collapsible{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .42s var(--ease-out),opacity .3s var(--ease-out)}
+.collapsible.open{grid-template-rows:1fr;opacity:1}
+.collapsible-inner{min-height:0;overflow:hidden}
+.collapsible .album-filter-fields{transform:translateY(-8px);transition:transform .42s var(--ease-out)}.collapsible.open .album-filter-fields{transform:none}
+.filter-toggle svg{transition:transform .4s var(--ease-out)}.filter-toggle.on svg{transform:rotate(90deg)}
+.filter-toggle b{animation:pop .35s var(--ease-out) both}
+/* Onglets de découverte : indicateur glissant. */
+.album-toolbar .album-status-tabs{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:3px;border:1px solid var(--line);border-radius:11px;background:#120c12}
+.album-toolbar .album-status-tabs button{position:relative;z-index:1;flex:none;padding-inline:8px;background:none!important;border-color:transparent!important;transition:color .3s var(--ease-out)}
+.tab-indicator{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/3);border-radius:8px;background:linear-gradient(175deg,#3a2430,#24161f);box-shadow:inset 0 1px 0 #f0d8a314,0 2px 8px #0006;border:1px solid #c9a45c2b;transform:translateX(calc(var(--k,0)*100%));transition:transform .42s var(--ease-out)}
+/* Recherche : bouton d'effacement qui apparaît en douceur. */
+.search-clear{animation:pop .25s var(--ease-out) both}
+.search-field svg:first-child{transition:color .25s,transform .3s var(--ease-out)}.search-field:focus-within svg:first-child{color:var(--gold2);transform:scale(1.08)}
+/* Étiquettes de filtres actifs. */
+.active-filters.pop button{animation:pop .3s var(--ease-out) both}
+.active-filters button:hover{border-color:#c9a45c88;background:#2c1f2b}
+.active-filters button svg{transition:transform .25s var(--ease-out)}.active-filters button:hover svg{transform:rotate(90deg)}
+@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+/* Tri. */
+.sort-icon{transition:transform .4s var(--ease-out)}.sort-icon.flipped{transform:scaleY(-1)}
+.album-results-row{gap:10px}.recycle-dup{background:none;border:0;padding:0 4px;min-height:44px;margin-left:auto;font:500 12px var(--ui);color:var(--muted)}.recycle-dup:hover{color:var(--gold2)}
+/* Survol des cartes de l'album. */
+.inspect-card{transition:transform .35s var(--ease-out),filter .35s var(--ease-out)}.inspect-card:hover{transform:translateY(-4px);filter:drop-shadow(0 12px 18px #0009)}
+/* Détail : exemplaires possédés. */
+.owned-copies{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid #c9a45c22;margin-top:4px}
+.owned-head{display:flex;align-items:center;justify-content:space-between}.owned-head strong{font:600 18px var(--display);color:var(--gold2)}
+.owned-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.owned-list li{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 12px;border-radius:10px;border:1px solid var(--line);background:#160f16;animation:rise .35s var(--ease-out) both}
+.owned-list li.finish-gold{border-color:#d5b87055}.owned-list li.finish-blood{border-color:#a9264666}
+.owned-finish{flex:1;display:flex;flex-direction:column;font:600 13px var(--ui)}.owned-finish small{font:400 11px var(--ui);color:var(--muted)}
+.finish-gold .owned-finish{color:#f1d99b}.finish-blood .owned-finish{color:#e8a3b0}
+.lock-button{min-width:40px;min-height:40px;border:0;background:none;color:var(--muted)}.lock-button.on{color:var(--gold2)}
+.lock-button svg{transition:transform .3s var(--ease-out)}.lock-button:active svg{transform:scale(.85)}
+.recycle-link{background:none;border:0;padding:0 8px;min-height:40px;font:600 12px var(--ui);color:var(--gold)}.recycle-link:disabled{opacity:.35}
+.owned-note{font:500 11px var(--ui);color:var(--muted);padding-right:8px}
+/* Panneau des doublons. */
+.sheet-text{margin:0;font:400 14px/1.6 var(--ui)}.sheet-text strong{color:var(--text)}
+.dup-summary{display:flex;flex-direction:column;gap:12px}.dup-summary p{margin:0;font:400 16px var(--ui)}.dup-summary .gain{color:var(--gold2)}
+.dup-summary ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}.dup-summary li{padding:4px 10px;border-radius:999px;border:1px solid var(--line);font:500 12px var(--ui);color:var(--muted)}.dup-summary li b{color:var(--text)}
+/* Notification globale (bonus du jour). */
+.toast{position:fixed;left:50%;bottom:28px;z-index:70;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:10px 10px 10px 16px;border-radius:999px;border:1px solid #c9a45c66;background:linear-gradient(170deg,#2f1f1fee,#1a1218f2);backdrop-filter:blur(10px);box-shadow:0 14px 34px #000b,0 0 24px #c9a45c22;font:400 13px var(--ui);color:var(--text);white-space:nowrap;animation:toast-rise .5s var(--ease-out) both}
+.toast strong{color:var(--gold2)}.toast .icon-button{min-width:32px;min-height:32px;border:0;background:none;color:var(--muted);font-size:18px}
+.toast-coin{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f7e3ad,#b8873f);color:#2a170b;font-size:12px;animation:coin-spin 1.2s var(--ease-out) both}
+@keyframes toast-rise{from{opacity:0;transform:translate(-50%,16px)}}
+@keyframes coin-spin{from{transform:rotateY(540deg) scale(.6)}}
+@media(max-width:700px){.toast{bottom:92px}}

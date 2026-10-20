@@ -9,6 +9,8 @@ export type PlayerState={
  balance:number;
  boosters:{free:number;purchased:number;free_capacity:number;next_free_at:string|null};
  booster_offers:Record<string,number>;
+ /** Deniers du bonus quotidien crédités par cet appel (0 si déjà reçu aujourd'hui). */
+ daily_reward?:number;
  editions:{id:string;name:string;prefix:string;cover_path:string|null;openable:boolean}[];
 };
 export type OpenedCard={position:number;instance_id:string;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique?:boolean;finish:Finish;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
@@ -17,7 +19,10 @@ export type KnownAlbumEntry={known:true;character_id:string;edition_id:string;co
 export type UnknownAlbumEntry={known:false;edition_id:string;code:string;number:number;rarity:Rarity;unique?:boolean;silhouette_key:string|null};
 export type AlbumEntry=KnownAlbumEntry|UnknownAlbumEntry;
 /** Carte d'album : rendu + informations de possession. */
-export type AlbumCard=DemoCard&{editionId?:string;finishesSeen?:Finish[];owned?:number};
+export type AlbumCard=DemoCard&{characterId?:string;editionId?:string;finishesSeen?:Finish[];owned?:number};
+export type InventoryItem={instance_id:string;finish:Finish;locked:boolean;reserved:boolean;acquired_at:string;unique:boolean;value:number};
+export type RecycleResult={operation_id?:string;total:number;count:number;balance:number;replayed:boolean};
+export type DuplicatePreview={count:number;total:number;by_rarity:Partial<Record<Rarity,number>>};
 
 /** "gravure-3" → 3 ; la silhouette est persistée en base, jamais recalculée. */
 export function silhouetteIndex(key:string|null|undefined):number|undefined{
@@ -43,7 +48,7 @@ export function albumToCard(e:AlbumEntry):AlbumCard{
  const shown=e.finishes_seen.includes('Standard')?undefined:e.finishes_seen.at(-1);
  return {id:e.code,name:e.name,clan:e.clan??'?',role:e.role_title,rarity:e.rarity,unique:!!e.unique,known:true,finish:shown,
   illustration:e.art_path??undefined,silhouette:silhouetteIndex(e.silhouette_key),...art(e.art_meta),
-  editionId:e.edition_id,finishesSeen:e.finishes_seen,owned};
+  characterId:e.character_id,editionId:e.edition_id,finishesSeen:e.finishes_seen,owned};
 }
 
 const messages:Record<string,string>={
@@ -70,6 +75,13 @@ const messages:Record<string,string>={
  immutable_edition:'Le préfixe est figé dès la première carte.',
  edition_archived:'Cette édition est archivée.',
  not_found:'Élément introuvable (rechargez la page).',
+ confirm_special_finish:'Confirmez le recyclage des finitions Dorée ou Sanglante.',
+ card_locked:'Cette carte est verrouillée : déverrouillez-la d’abord.',
+ card_reserved:'Cette carte est engagée dans une vente ou un échange.',
+ not_owned:'Cette carte ne vous appartient plus (rechargez la page).',
+ nothing_to_recycle:'Aucune carte à recycler.',
+ unique_indestructible:'Une carte unique ne peut pas être recyclée.',
+ recycled_item:'Cette carte a déjà été recyclée.',
 };
 export class GameError extends Error{
  constructor(public code:string,message:string,public definitive:boolean){super(message);}

@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
-import {ArrowDownWideNarrow,ArrowUpWideNarrow,BookOpen,Search,SlidersHorizontal,X,RotateCcw} from 'lucide-react';
+import {ArrowDownWideNarrow,BookOpen,Recycle,Search,SlidersHorizontal,X,RotateCcw} from 'lucide-react';
 import {CardInspection} from '@/components/CardInspection';
 import {demoCards} from '@/data/demo';
 import {ALL_RARITIES,type Rarity,type Finish} from '@/lib/draw';
@@ -10,15 +10,21 @@ import {initialAlbumFilters,selectAlbum,type AlbumFilters} from '@/lib/album';
 // La collection s'ouvre sur les cartes découvertes.
 const defaultFilters:AlbumFilters={...initialAlbumFilters,status:'known'};
 import {useAuth} from '@/components/AuthProvider';
-import {Skeleton} from '@/components/ui';
-import {albumToCard,callRpc,type AlbumCard,type AlbumEntry} from '@/lib/game';
+import {CountUp,Sheet,Skeleton} from '@/components/ui';
+import {albumToCard,callRpc,type AlbumCard,type AlbumEntry,type DuplicatePreview,type RecycleResult} from '@/lib/game';
 
 type Edition={id:string;name:string;prefix:string};
 
 export default function Collection(){
  const [filters,setFilters]=useState<AlbumFilters>(defaultFilters);
  const [expanded,setExpanded]=useState(false);
- const {configured,ready,session,client}=useAuth();
+ const {configured,ready,session,client,refreshPlayer}=useAuth();
+ const [reloadKey,setReloadKey]=useState(0);
+ const reload=()=>setReloadKey(k=>k+1);
+ const [dupOpen,setDupOpen]=useState(false);
+ const [dup,setDup]=useState<DuplicatePreview|null>(null);
+ const [dupBusy,setDupBusy]=useState(false);
+ const [dupMessage,setDupMessage]=useState<{error?:string;notice?:string}>({});
  const live=Boolean(configured&&session&&client);
  const [album,setAlbum]=useState<AlbumCard[]|null>(null);
  const [editions,setEditions]=useState<Edition[]>([]);
@@ -32,7 +38,17 @@ export default function Collection(){
    .then(([entries,eds])=>{if(!alive)return;setAlbum(entries.map(albumToCard));setEditions((eds.data??[]) as Edition[]);setLoadError(null);})
    .catch(e=>{if(alive)setLoadError((e as Error).message);});
   return()=>{alive=false;};
- },[live,client]);
+ },[live,client,reloadKey]);
+ async function openDuplicates(){
+  setDupOpen(true);setDup(null);setDupMessage({});
+  try{setDup(await callRpc<DuplicatePreview>(client!,'preview_duplicates',{p_keep:1}));}catch(e){setDupMessage({error:(e as Error).message});}
+ }
+ async function recycleDuplicates(){
+  setDupBusy(true);setDupMessage({});
+  try{const r=await callRpc<RecycleResult>(client!,'recycle_duplicates',{p_request_id:crypto.randomUUID(),p_keep:1});setDupMessage({notice:`${r.count} carte${r.count>1?'s':''} recyclée${r.count>1?'s':''} · +${r.total.toLocaleString('fr-FR')} Deniers`});setDup({count:0,total:0,by_rarity:{}});reload();void refreshPlayer();}
+  catch(e){setDupMessage({error:(e as Error).message});}
+  finally{setDupBusy(false);}
+ }
  const source:AlbumCard[]=useMemo(()=>live?(album??[]).filter(c=>editionId==='all'||c.editionId===editionId):demoCards,[live,album,editionId]);
  const cards=useMemo(()=>selectAlbum(source,filters),[source,filters]);
  const clans=useMemo(()=>[...new Set(source.filter(c=>c.known&&c.clan!=='?').map(c=>c.clan))].sort((a,b)=>a.localeCompare(b,'fr')),[source]);
@@ -46,12 +62,17 @@ export default function Collection(){
  if(gate)return <div className="page auth-page"><section className="panel auth-panel"><span className="eyebrow">Les archives de Cartema</span>{!ready?<><Skeleton style={{height:34,width:'70%'}}/><Skeleton style={{height:48}}/></>:<><h1>Votre cabinet vous attend.</h1><p className="muted">Connectez-vous pour retrouver vos cartes, vos découvertes et les visages encore voilés.</p><Link className="primary" href="/connexion/">Se connecter</Link></>}</section></div>;
  return <div className="page album-page"><header className="album-heading"><div><div className="eyebrow">Les archives de Cartema</div><h1>Votre cabinet<br/><em>de curiosités.</em></h1><p className="muted">Chaque visage dévoilé laisse une trace.</p></div><div className="album-progress"><div className="album-progress-title"><BookOpen size={17}/><span>{live?editionName:'Édition Camarilla'}</span>{!live&&<span className="album-edition-tag">Aperçu</span>}</div><div className="album-progress-numbers"><strong>{discovered}<small> / {source.length}</small></strong><span>visages découverts</span></div><progress aria-label={live?'Personnages découverts':'Personnages découverts dans cet aperçu'} value={discovered} max={Math.max(1,source.length)}/><p>Les cartes voilées gardent leur secret.</p></div></header>
  <section className="album-toolbar" aria-label="Recherche et filtres de l’album"><div className="album-search-row"><label className="search-field"><Search size={18}/><input aria-label="Rechercher une carte" placeholder="Rechercher…" value={filters.query} onChange={e=>update('query',e.target.value)}/>{filters.query&&<button className="search-clear" aria-label="Effacer la recherche" onClick={()=>update('query','')}><X size={16}/></button>}</label><button className={`filter-toggle ${expanded?'on':''}`} aria-expanded={expanded} aria-controls="album-filters" onClick={()=>setExpanded(!expanded)}><SlidersHorizontal size={17}/><span>Filtres</span>{active>0&&<b>{active}</b>}</button></div>
- <div className="album-status-tabs" aria-label="État de découverte">{([{value:'all',label:'Toutes',count:source.length},{value:'known',label:'Découvertes',count:discovered},{value:'missing',label:'À découvrir',count:source.length-discovered}] as const).map(t=><button className={filters.status===t.value?'on':''} key={t.value} aria-pressed={filters.status===t.value} onClick={()=>update('status',t.value)}>{t.label}<span>{t.count}</span></button>)}</div>
- {expanded&&<div id="album-filters" className="album-filter-fields">{live&&editions.length>1&&<label><span>Édition</span><select value={editionId} onChange={e=>setEditionId(e.target.value)}><option value="all">Toutes les éditions</option>{editions.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></label>}<label><span>Clan</span><select value={filters.clan} onChange={e=>update('clan',e.target.value)}><option value="all">Tous les clans</option>{clans.map(clan=><option key={clan}>{clan}</option>)}</select></label><label><span>Rareté</span><select value={filters.rarity} onChange={e=>update('rarity',e.target.value as Rarity|'all')}><option value="all">Toutes les raretés</option>{ALL_RARITIES.map(r=><option key={r}>{r}</option>)}</select></label><label><span>Finition</span><select value={filters.finish} onChange={e=>update('finish',e.target.value as Finish|'all')}><option value="all">Toutes les finitions</option>{['Standard','Dorée','Sanglante'].map(f=><option key={f}>{f}</option>)}</select></label><button className="reset-filters" onClick={reset}><RotateCcw size={15}/> Réinitialiser</button></div>}
+ <div className="album-status-tabs" aria-label="État de découverte" style={{'--k':['all','known','missing'].indexOf(filters.status)} as React.CSSProperties}><span className="tab-indicator" aria-hidden="true"/>{([{value:'all',label:'Toutes',count:source.length},{value:'known',label:'Découvertes',count:discovered},{value:'missing',label:'À découvrir',count:source.length-discovered}] as const).map(t=><button className={filters.status===t.value?'on':''} key={t.value} aria-pressed={filters.status===t.value} onClick={()=>update('status',t.value)}>{t.label}<span>{t.count}</span></button>)}</div>
+ <div id="album-filters" className={`collapsible ${expanded?'open':''}`} inert={!expanded}><div className="collapsible-inner"><div className="album-filter-fields">{live&&editions.length>1&&<label><span>Édition</span><select value={editionId} onChange={e=>setEditionId(e.target.value)}><option value="all">Toutes les éditions</option>{editions.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></label>}<label><span>Clan</span><select value={filters.clan} onChange={e=>update('clan',e.target.value)}><option value="all">Tous les clans</option>{clans.map(clan=><option key={clan}>{clan}</option>)}</select></label><label><span>Rareté</span><select value={filters.rarity} onChange={e=>update('rarity',e.target.value as Rarity|'all')}><option value="all">Toutes les raretés</option>{ALL_RARITIES.map(r=><option key={r}>{r}</option>)}</select></label><label><span>Finition</span><select value={filters.finish} onChange={e=>update('finish',e.target.value as Finish|'all')}><option value="all">Toutes les finitions</option>{['Standard','Dorée','Sanglante'].map(f=><option key={f}>{f}</option>)}</select></label><button className="reset-filters" onClick={reset}><RotateCcw size={15}/> Réinitialiser</button></div></div></div>
  </section>
- {active>0&&<div className="active-filters" aria-label="Filtres actifs">{filters.clan!=='all'&&<button onClick={()=>update('clan','all')} aria-label={`Retirer le filtre clan ${filters.clan}`}>{filters.clan}<X size={13}/></button>}{filters.rarity!=='all'&&<button onClick={()=>update('rarity','all')} aria-label={`Retirer le filtre rareté ${filters.rarity}`}>{filters.rarity}<X size={13}/></button>}{filters.finish!=='all'&&<button onClick={()=>update('finish','all')} aria-label={`Retirer le filtre finition ${filters.finish}`}>{filters.finish}<X size={13}/></button>}</div>}
- <div className="album-results-row"><p className="collection-count" aria-live="polite">{cards.length} {cards.length>1?'cartes':'carte'}<span> · {editionName}</span></p><div className="album-sort"><select aria-label="Trier les cartes" value={filters.sort} onChange={e=>update('sort',e.target.value as AlbumFilters['sort'])}><option value="number">Numéro</option><option value="name">Nom</option><option value="rarity">Rareté</option><option value="clan">Clan</option></select><button className="icon-button" aria-label={filters.descending?'Passer au tri croissant':'Passer au tri décroissant'} onClick={()=>update('descending',!filters.descending)}>{filters.descending?<ArrowUpWideNarrow size={17}/>:<ArrowDownWideNarrow size={17}/>}</button></div></div>
- <div className="card-grid album-grid">{cards.map(c=><div className="album-card-cell" key={c.id}><CardInspection card={c} finishesSeen={live?c.finishesSeen:undefined}/><span className={`discovery-status ${c.known?'known':''}`}>{c.known?(live?(c.owned?`Dévoilée · ×${c.owned}`:'Dévoilée · cédée'):'Dévoilée'):'À découvrir'}</span></div>)}</div>
+ {active>0&&<div className="active-filters pop" aria-label="Filtres actifs">{filters.clan!=='all'&&<button onClick={()=>update('clan','all')} aria-label={`Retirer le filtre clan ${filters.clan}`}>{filters.clan}<X size={13}/></button>}{filters.rarity!=='all'&&<button onClick={()=>update('rarity','all')} aria-label={`Retirer le filtre rareté ${filters.rarity}`}>{filters.rarity}<X size={13}/></button>}{filters.finish!=='all'&&<button onClick={()=>update('finish','all')} aria-label={`Retirer le filtre finition ${filters.finish}`}>{filters.finish}<X size={13}/></button>}</div>}
+ <div className="album-results-row"><p className="collection-count" aria-live="polite"><CountUp value={cards.length} duration={400}/> {cards.length>1?'cartes':'carte'}<span> · {editionName}</span></p>{live&&<button className="text-link recycle-dup" onClick={()=>void openDuplicates()}><Recycle size={14}/> Doublons</button>}<div className="album-sort"><select aria-label="Trier les cartes" value={filters.sort} onChange={e=>update('sort',e.target.value as AlbumFilters['sort'])}><option value="number">Numéro</option><option value="name">Nom</option><option value="rarity">Rareté</option><option value="clan">Clan</option></select><button className="icon-button" aria-label={filters.descending?'Passer au tri croissant':'Passer au tri décroissant'} onClick={()=>update('descending',!filters.descending)}><ArrowDownWideNarrow size={17} className={`sort-icon ${filters.descending?'flipped':''}`}/></button></div></div>
+ <div className="card-grid album-grid" key={`${filters.status}|${filters.clan}|${filters.rarity}|${filters.finish}|${filters.sort}|${filters.descending}|${editionId}`}>{cards.map((c,i)=><div className="album-card-cell rise" style={{'--i':Math.min(i,12)} as React.CSSProperties} key={c.id}><CardInspection card={c} finishesSeen={live?c.finishesSeen:undefined} characterId={live?c.characterId:undefined} onChanged={live?reload:undefined}/><span className={`discovery-status ${c.known?'known':''}`}>{c.known?(live?(c.owned?`Dévoilée · ×${c.owned}`:'Dévoilée · cédée'):'Dévoilée'):'À découvrir'}</span></div>)}</div>
  {live&&!album&&!loadError&&<div className="card-grid album-grid" aria-label="Chargement de l’album">{Array.from({length:8},(_,i)=><Skeleton key={i} className="skeleton-card"/>)}</div>}{loadError&&<p className="auth-error" role="alert">{loadError}</p>}{live&&album&&!source.length&&<div className="album-empty"><BookOpen size={28}/><h2>Les archives sont encore vides.</h2><p>Aucune carte n’a été publiée pour le moment.</p></div>}{!cards.length&&source.length>0&&discovered===0&&filters.status==='known'?<div className="album-empty"><BookOpen size={28}/><h2>Aucun visage dévoilé pour l’instant.</h2><p>Ouvrez un booster pour commencer votre collection, ou parcourez les cartes encore voilées.</p><div className="auth-actions"><Link className="primary" href="/boosters/">Ouvrir un booster</Link><button className="primary ghost" onClick={()=>update('status','all')}>Voir toutes les cartes</button></div></div>:!cards.length&&source.length>0&&<div className="album-empty"><Search size={28}/><h2>Aucun visage dans le miroir.</h2><p>Essayez un autre nom ou allégez vos filtres.</p><button className="primary ghost" onClick={reset}><RotateCcw size={16}/> Réinitialiser les filtres</button></div>}
+ {live&&<Sheet open={dupOpen} onClose={()=>setDupOpen(false)} title="Recycler les doublons">
+  <p className="muted sheet-text">Recycle les exemplaires <strong>Standard</strong> en trop, en gardant le plus ancien de chaque personnage. Les cartes verrouillées, Dorées, Sanglantes et uniques ne sont jamais concernées.</p>
+  {!dup?<Skeleton style={{height:90}}/>:dup.count===0?<p className="auth-notice">{dupMessage.notice??'Aucun doublon Standard à recycler.'}</p>:<div className="dup-summary"><p><strong>{dup.count}</strong> carte{dup.count>1?'s':''} · <strong className="gain">+{dup.total.toLocaleString('fr-FR')} Deniers</strong></p><ul>{Object.entries(dup.by_rarity).map(([r,n])=><li key={r}>{r} <b>×{n}</b></li>)}</ul><button className="primary" disabled={dupBusy} onClick={()=>void recycleDuplicates()}><Recycle size={15}/> {dupBusy?'Recyclage…':'Recycler définitivement'}</button></div>}
+  {dupMessage.error&&<p className="auth-error" role="alert">{dupMessage.error}</p>}
+ </Sheet>}
  {!live&&<p className="demo-note">Album de démonstration · Clans et raretés des illustrations ajoutées à définir.{configured&&<> <Link className="text-link" href="/connexion/">Se connecter pour voir sa collection</Link></>}</p>}</div>;
 }
