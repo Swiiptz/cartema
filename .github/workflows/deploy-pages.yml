@@ -1,7 +1,7 @@
 # Déploiement MANUEL (CDC §10) : onglet Actions → « Déployer sur GitHub Pages » → Run workflow.
 # Prérequis : Settings → Pages → Source = GitHub Actions, et deux variables de dépôt
 # (Settings → Secrets and variables → Actions → Variables) :
-#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (clé anon, publique par nature).
+#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (clé publique par nature).
 name: Déployer sur GitHub Pages
 on:
   workflow_dispatch:
@@ -29,7 +29,7 @@ jobs:
         env:
           NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out
