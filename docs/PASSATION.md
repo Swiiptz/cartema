@@ -6,6 +6,7 @@ Date : 20 octobre 2026 · état constaté dans le code local.
 
 - 20/10/2026 : Git initialisé. Architecture retenue : site statique GitHub Pages + Supabase, logique métier en fonctions Postgres. Première tranche backend livrée et testée sur PGlite (schéma, RLS, crédits Paris, boutique, ouverture atomique, album masqué) : voir `BACKEND.md`.
 - 20/10/2026 (suite) : export statique (`output: 'export'`, basePath Pages), client Supabase, `/connexion/` (e-mail, Discord, pseudo, liaison), `/boosters/` et `/collection/` branchés sur les RPC, mode aperçu conservé sans configuration, SW enregistré avec chemins relatifs, workflow manuel GitHub Pages. Non vérifié contre un vrai projet Supabase (aucun n’était relié). `next start` n’existe plus : `npm run start` sert `out/`.
+- 20/10/2026 (soir) : projet Supabase de dev `grlpysqlabwylexinbrl` relié (CLI dans les devDependencies, `supabase/config.toml`). Migrations et réglages d'auth appliqués (`npx supabase db push`, `npx supabase config push`). Édition d'ESSAI (7 cartes fictives, `supabase/dev/edition-essai.sql`) active. Vérifié sur la vraie base : droits anon refusés, deux ouvertures simultanées avec 1 booster → une seule réussite, ouverture de bout en bout par un joueur (5 exemplaires, découvertes, récompenses, ledger égal au solde). Discord pas encore configuré, aucun administrateur désigné, site pas encore publié sur Pages.
 
 ## 1. Reprendre ici
 
