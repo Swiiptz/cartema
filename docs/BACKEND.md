@@ -62,7 +62,44 @@ npm test
    ```sql
    update public.profiles set role = 'admin' where id = '<uuid du compte>';
    ```
-5. Activer les fournisseurs d'auth : e-mail (sans confirmation obligatoire, CDC §2), puis Discord (application Discord, puis client id et secret dans Supabase).
+5. Configurer l'auth (*Authentication*) :
+   - **URL Configuration** : *Site URL* = `https://<compte>.github.io/<dépôt>/`. Dans *Redirect URLs*, ajouter `http://localhost:3000/connexion/` et `https://<compte>.github.io/<dépôt>/connexion/`.
+   - **E-mail** : désactiver *Confirm email*, car le CDC §2 autorise un e-mail non vérifié. Si l'option reste active, l'inscription affiche « confirmez votre adresse ».
+   - **Discord** : créer une application sur discord.com/developers. Lui donner comme redirect `https://<ref>.supabase.co/auth/v1/callback`, puis reporter le client id et le secret dans Supabase.
+   - **Liaison d'identités** : activer *Allow manual linking*, nécessaire pour le bouton « Lier mon compte Discord ».
+
+## Front branché
+
+- `src/lib/supabase.ts` : client navigateur, en flux PKCE. Sans variables d'environnement, le site reste en **mode aperçu** avec les données de démonstration, signalé comme tel.
+- `src/components/AuthProvider.tsx` : session, puis `get_player_state` au chargement et après chaque opération.
+- `/connexion/` :
+  - e-mail et mot de passe ;
+  - Discord ;
+  - choix du pseudo ;
+  - liaison d'un compte Discord ;
+  - déconnexion.
+- `/boosters/` :
+  - réserve réelle et choix de l'édition ;
+  - boutique avec confirmation avant achat ;
+  - ouverture serveur : l'animation attend la réponse et révèle les cartes réellement tirées.
+- **Reprise d'une ouverture interrompue** : la clé de requête est conservée en `sessionStorage`. Après une coupure réseau ou un rechargement, « Déchirer le booster » rejoue la même clé : le serveur renvoie le même tirage, sans débiter de nouveau. Un refus métier (plus de booster, édition incomplète) abandonne la clé.
+- `/collection/` :
+  - album servi par `get_album`, avec le nombre d'exemplaires possédés ;
+  - filtre de finition selon les finitions réellement obtenues ;
+  - filtre d'édition dès qu'il en existe plusieurs.
+
+## Développement et déploiement
+
+```bash
+cp .env.example .env.local
+npm run dev
+```
+
+Après avoir rempli `.env.local` avec l'URL et la clé anon, ouvrir http://localhost:3000.
+
+- `npm run build` produit le site statique dans `out/`. `npm run start` le sert sur le port 3101.
+- **Déploiement manuel** : `.github/workflows/deploy-pages.yml`, à lancer depuis l'onglet *Actions*. Le workflow exécute les tests, le build avec `NEXT_PUBLIC_BASE_PATH` fourni par GitHub Pages, puis la publication. Les prérequis sont indiqués en tête du fichier.
+- **Retour arrière** : relancer le workflow sur un commit antérieur. Les migrations de base, elles, ne se défont pas automatiquement : écrire une migration corrective.
 
 ## Points ouverts
 

@@ -28,7 +28,7 @@ function silhouette(index,u){
  const bust=[body+hood,body+hair+face+collar,body+veil,body+hair+face+crown,body+hair+face+`<path d="M71 162Q63 134 69 104M133 161Q145 131 134 95M81 151Q85 169 101 181 116 168 121 149" fill="none" stroke="#b1a4af" stroke-opacity=".2" stroke-width="1.5"/>`,body+hood+`<path d="M82 161 69 196 94 221M120 162 134 196 108 221" fill="none" stroke="#9098aa" stroke-opacity=".24" stroke-width="1.5"/>`][index%6];
  return `<g class="portrait-silhouette"><ellipse cx="101" cy="124" rx="57" ry="76" fill="#080a10" opacity=".2"/>${bust}<path d="M37 214Q100 197 164 214" fill="none" stroke="#7d8595" stroke-opacity=".08" stroke-width="8"/></g>`;
 }
-export function renderCard(c,k,illustration,artLayout='portrait',provisional=false,artOffsetY=0){
+export function renderCard(c,k,illustration,artLayout='portrait',provisional=false,artOffsetY=0,silhouetteIndex){
  const[id,n,cl,role,ra,kn,fin]=c,[base,lv]=R[ra],u='g'+k+id;
  const color=fin==='gold'?'#d5b870':fin==='blood'?'#98733e':base;
  const light=fin==='gold'?'#fff2c5':fin==='blood'?'#e2c08a':lv===0?'#d7c6a5':lv===1?'#c8d8a3':lv===2?'#c7e7ef':lv===3?'#b5ece4':lv===4?'#e6bcf1':lv===5?'#ffe8aa':'#ffa38b';
@@ -38,7 +38,7 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  const artTop=artLayout==='cover'?Math.max(11,11+artOffsetY):11;
  const image=(y,height,fit,extra='')=>`<image href="${illustration}" x="11" y="${y}" width="178" height="${height}" preserveAspectRatio="${fit}" ${extra}/>`;
  const foreground=artLayout==='cover'?image(11+artOffsetY,194,'xMidYMax slice'):artLayout==='full'?image(11,174,'xMidYMid meet'):`<image href="${illustration}" x="4" y="7" width="192" height="310" preserveAspectRatio="xMidYMin meet"/>`;
- const art=kn&&illustration?`<g mask="url(#art-sides${u})">${artLayout==='cover'?`<g mask="url(#art-ambience${u})">${image(11,194,'xMidYMax slice','opacity=".3" style="filter:blur(5px)"')}</g>`:''}<g mask="url(#art-fade${u})">${foreground}</g></g>`:silhouette(H(id)%6,u);
+ const art=kn&&illustration?`<g mask="url(#art-sides${u})">${artLayout==='cover'?`<g mask="url(#art-ambience${u})">${image(11,194,'xMidYMax slice','opacity=".3" style="filter:blur(5px)"')}</g>`:''}<g mask="url(#art-fade${u})">${foreground}</g></g>`:silhouette(Number.isInteger(silhouetteIndex)?silhouetteIndex:H(id)%6,u);
  const name=kn?n:'Inconnu',clan=kn&&cl!=='?'?cl:kn?'Clan à définir':'Clan inconnu';
  const title=kn?(role||'Chronique Camarilla'):'Identité voilée';
  const frame='M13 6H187Q194 6 194 13V287Q194 294 187 294H13Q6 294 6 287V13Q6 6 13 6Z';

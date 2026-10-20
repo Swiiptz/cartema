@@ -5,10 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "npx --yes serve@14.2.4 out -l 3101",
     "test": "vitest run"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.117.2",
     "lucide-react": "^0.468.0",
     "next": "^15.5.0",
     "react": "^19.1.0",

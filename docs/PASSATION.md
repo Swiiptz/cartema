@@ -4,7 +4,8 @@ Date : 20 octobre 2026 · état constaté dans le code local.
 
 ## 0. Avancement depuis la passation
 
-- 20/10/2026 : Git initialisé. Architecture retenue : site statique GitHub Pages + Supabase, logique métier en fonctions Postgres. Première tranche backend livrée et testée sur PGlite (schéma, RLS, crédits Paris, boutique, ouverture atomique, album masqué) : voir `BACKEND.md`. L'UI n'est pas encore branchée ; le projet Supabase reste à relier.
+- 20/10/2026 : Git initialisé. Architecture retenue : site statique GitHub Pages + Supabase, logique métier en fonctions Postgres. Première tranche backend livrée et testée sur PGlite (schéma, RLS, crédits Paris, boutique, ouverture atomique, album masqué) : voir `BACKEND.md`.
+- 20/10/2026 (suite) : export statique (`output: 'export'`, basePath Pages), client Supabase, `/connexion/` (e-mail, Discord, pseudo, liaison), `/boosters/` et `/collection/` branchés sur les RPC, mode aperçu conservé sans configuration, SW enregistré avec chemins relatifs, workflow manuel GitHub Pages. Non vérifié contre un vrai projet Supabase (aucun n’était relié). `next start` n’existe plus : `npm run start` sert `out/`.
 
 ## 1. Reprendre ici
 
