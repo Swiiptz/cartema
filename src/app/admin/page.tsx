@@ -5,6 +5,7 @@ import {Archive,BookPlus,Check,FolderOpen,Images,ImagePlus,PackageOpen,Plus,Save
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {useAuth} from '@/components/AuthProvider';
 import {useAsk,type AskOptions} from '@/components/AskDialog';
+import {Skeleton} from '@/components/ui';
 import {TarotCard,palette,type DemoCard} from '@/components/Card';
 import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,silhouetteIndex} from '@/lib/game';
@@ -56,7 +57,7 @@ export default function Admin(){
   <header className="admin-heading"><div><span className="eyebrow">Back-office</span><h1>Le cabinet de l’archiviste</h1></div><p className="muted">Chaque modification est enregistrée dans le journal d’administration.</p></header>
   <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
   <div className="admin-toast" aria-live="polite">{error&&<p className="auth-error" role="alert">{error}<button className="icon-button" aria-label="Fermer" onClick={()=>setError(null)}><X size={16}/></button></p>}{notice&&<p className="auth-notice">{notice}<button className="icon-button" aria-label="Fermer" onClick={()=>setNotice(null)}><X size={16}/></button></p>}</div>
-  {!catalog?<p className="muted">Ouverture des registres…</p>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:<ClansTab catalog={catalog} act={act}/>}
+  {!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:<ClansTab catalog={catalog} act={act}/>}
  </div></AskContext.Provider>;
 }
 

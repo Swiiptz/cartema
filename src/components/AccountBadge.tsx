@@ -8,5 +8,5 @@ export function AccountBadge(){
  if(!configured)return <span className="demo-badge">ATELIER · APERÇU</span>;
  if(!ready)return <span className="demo-badge" aria-hidden="true">…</span>;
  if(!session)return <Link href="/connexion/" className="demo-badge account-badge">Se connecter</Link>;
- return <Link href="/connexion/" className="demo-badge account-badge"><UserRound size={13}/> {player?.profile.handle??'Mon compte'}{player&&<span className="account-deniers"> · {player.balance.toLocaleString('fr-FR')} Deniers</span>}</Link>;
+ return <Link href="/profile/" className="demo-badge account-badge"><UserRound size={13}/> {player?.profile.handle??'Mon compte'}{player&&<span className="account-deniers"> · {player.balance.toLocaleString('fr-FR')} Deniers</span>}</Link>;
 }
