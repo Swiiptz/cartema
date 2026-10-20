@@ -14,7 +14,7 @@ type Edition={id:string;name:string;prefix:string};
 export default function Collection(){
  const [filters,setFilters]=useState<AlbumFilters>(initialAlbumFilters);
  const [expanded,setExpanded]=useState(false);
- const {configured,session,client}=useAuth();
+ const {configured,ready,session,client}=useAuth();
  const live=Boolean(configured&&session&&client);
  const [album,setAlbum]=useState<AlbumCard[]|null>(null);
  const [editions,setEditions]=useState<Edition[]>([]);
@@ -35,8 +35,11 @@ export default function Collection(){
  const discovered=source.filter(c=>c.known).length;
  const editionName=live?(editions.find(e=>e.id===editionId)?.name??(editions.length===1?editions[0].name:'Toutes les éditions')):'Camarilla';
  const active=[filters.clan!=='all',filters.rarity!=='all',filters.finish!=='all'].filter(Boolean).length;
+ // En ligne, un visiteur non connecté n'a pas d'album : pas de cartes de démonstration.
+ const gate=configured&&(!ready||!session);
  function update<K extends keyof AlbumFilters>(key:K,value:AlbumFilters[K]){setFilters(old=>({...old,[key]:value}));}
  function reset(){setFilters(initialAlbumFilters);}
+ if(gate)return <div className="page auth-page"><section className="panel auth-panel"><span className="eyebrow">Les archives de Cartema</span>{!ready?<p className="muted" aria-live="polite">Ouverture des archives…</p>:<><h1>Votre cabinet vous attend.</h1><p className="muted">Connectez-vous pour retrouver vos cartes, vos découvertes et les visages encore voilés.</p><Link className="primary" href="/connexion/">Se connecter</Link></>}</section></div>;
  return <div className="page album-page"><header className="album-heading"><div><div className="eyebrow">Les archives de Cartema</div><h1>Votre cabinet<br/><em>de curiosités.</em></h1><p className="muted">Chaque visage dévoilé laisse une trace.</p></div><div className="album-progress"><div className="album-progress-title"><BookOpen size={17}/><span>{live?editionName:'Édition Camarilla'}</span>{!live&&<span className="album-edition-tag">Aperçu</span>}</div><div className="album-progress-numbers"><strong>{discovered}<small> / {source.length}</small></strong><span>visages découverts</span></div><progress aria-label={live?'Personnages découverts':'Personnages découverts dans cet aperçu'} value={discovered} max={Math.max(1,source.length)}/><p>Les cartes voilées gardent leur secret.</p></div></header>
  <section className="album-toolbar" aria-label="Recherche et filtres de l’album"><div className="album-search-row"><label className="search-field"><Search size={18}/><input aria-label="Rechercher une carte" placeholder="Rechercher…" value={filters.query} onChange={e=>update('query',e.target.value)}/>{filters.query&&<button className="search-clear" aria-label="Effacer la recherche" onClick={()=>update('query','')}><X size={16}/></button>}</label><button className={`filter-toggle ${expanded?'on':''}`} aria-expanded={expanded} aria-controls="album-filters" onClick={()=>setExpanded(!expanded)}><SlidersHorizontal size={17}/><span>Filtres</span>{active>0&&<b>{active}</b>}</button></div>
  <div className="album-status-tabs" aria-label="État de découverte">{([{value:'all',label:'Toutes',count:source.length},{value:'known',label:'Découvertes',count:discovered},{value:'missing',label:'À découvrir',count:source.length-discovered}] as const).map(t=><button className={filters.status===t.value?'on':''} key={t.value} aria-pressed={filters.status===t.value} onClick={()=>update('status',t.value)}>{t.label}<span>{t.count}</span></button>)}</div>

@@ -1,8 +1,10 @@
 import type {DemoCard} from '@/components/Card';
-// Presentation data only. Alhoon's clan and rarity are intentionally unspecified.
-export const alhoon:DemoCard={id:'APERÇU',name:'Alhoon',clan:'?',role:'Illustration originale',rarity:'Rare',known:true,illustration:'/illustrations/alhoon.png',provisional:true};
-export const rus:DemoCard={id:'APERÇU-RUS',name:'Rus',clan:'?',role:'Illustration originale',rarity:'Rare',known:true,illustration:'/illustrations/rus.webp',originalIllustration:'/illustrations/originals/rus.png',artLayout:'cover',artOffsetY:-18,provisional:true};
-export const norton:DemoCard={id:'APERÇU-NORTON',name:'Norton',clan:'?',role:'Illustration originale',rarity:'Rare',known:true,illustration:'/illustrations/norton.webp',originalIllustration:'/illustrations/originals/norton.png',provisional:true};
+// Vitrine publique : vraies cartes illustrées, données du catalogue Camarilla (import du Google Sheets).
+export const alhoon:DemoCard={id:'CAM-189',name:'Alhoon',clan:'Malkavien',role:'Nouveau-né',rarity:'Peu commun',known:true,illustration:'/illustrations/alhoon.png'};
+export const rus:DemoCard={id:'CAM-142',name:'Rus',clan:'Gangrel',role:'Nouveau-né',rarity:'Rare',known:true,illustration:'/illustrations/rus.webp',originalIllustration:'/illustrations/originals/rus.png',artLayout:'cover',artOffsetY:-18};
+export const norton:DemoCard={id:'CAM-141',name:'Norton',clan:'Ventrue',role:'Nouveau-né',rarity:'Commun',known:true,illustration:'/illustrations/norton.webp',originalIllustration:'/illustrations/originals/norton.png'};
+export const showcase:DemoCard[]=[alhoon,norton,rus];
+// Le reste n'est utilisé qu'en mode atelier (site non relié à Supabase).
 export const demoCards:DemoCard[]=[
  alhoon,
  {id:'CAM-001',name:'Werner Le Nôtre',clan:'Toréador',role:'Veneur',rarity:'Rare',known:true},
