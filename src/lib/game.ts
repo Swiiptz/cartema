@@ -39,7 +39,9 @@ export function openedToCard(c:OpenedCard):DemoCard{
 export function albumToCard(e:AlbumEntry):AlbumCard{
  if(!e.known)return {id:e.code,name:'Inconnu',clan:'Inconnu',role:'',rarity:e.rarity,unique:!!e.unique,known:false,silhouette:silhouetteIndex(e.silhouette_key),editionId:e.edition_id};
  const owned=Object.values(e.owned).reduce((s,n)=>s+(n??0),0);
- return {id:e.code,name:e.name,clan:e.clan??'?',role:e.role_title,rarity:e.rarity,unique:!!e.unique,known:true,
+ // Affichée dans sa meilleure finition obtenue si le joueur n'a pas la Standard.
+ const shown=e.finishes_seen.includes('Standard')?undefined:e.finishes_seen.at(-1);
+ return {id:e.code,name:e.name,clan:e.clan??'?',role:e.role_title,rarity:e.rarity,unique:!!e.unique,known:true,finish:shown,
   illustration:e.art_path??undefined,silhouette:silhouetteIndex(e.silhouette_key),...art(e.art_meta),
   editionId:e.edition_id,finishesSeen:e.finishes_seen,owned};
 }

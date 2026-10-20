@@ -49,3 +49,11 @@ describe('erreurs et chemins',()=>{
     expect(resolveIllustration('/illustrations/../secret')).toBeUndefined();
   });
 });
+
+describe('finition affichée dans l’album',()=>{
+  it('montre la meilleure finition obtenue quand la Standard manque',()=>{
+    const base={known:true,character_id:'c',edition_id:'e',code:'CAM-002',number:2,rarity:'Rare',name:'X',role_title:'',clan:null,art_path:null,art_meta:{},silhouette_key:null,discovered_at:'',owned:{}} as const;
+    expect(albumToCard({...base,finishes_seen:['Dorée']} as any).finish).toBe('Dorée');
+    expect(albumToCard({...base,finishes_seen:['Standard','Sanglante']} as any).finish).toBeUndefined();
+  });
+});
