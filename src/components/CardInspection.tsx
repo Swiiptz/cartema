@@ -5,6 +5,7 @@ import {TarotCard,type DemoCard} from './Card';
 import {useAuth} from './AuthProvider';
 import {useAsk} from './AskDialog';
 import {Skeleton} from './ui';
+import {SellDialog,type SellChoice} from './SellDialog';
 import {callRpc,type InventoryItem,type RecycleResult} from '@/lib/game';
 
 const FINISHES=['Standard','Dorée','Sanglante'];
@@ -43,13 +44,13 @@ export function CardInspection({card,finishesSeen,characterId,onChanged}:{card:D
    <span className="detail-rarity">{card.provisional?'Rareté à définir':card.unique?'Carte unique':card.rarity}</span>
    {card.known&&!card.unique&&options.length>1&&<div className="finish-preview"><span className="eyebrow">Aperçu des finitions</span><div className="finish-switch" aria-label="Prévisualiser une finition">{options.map(f=><button key={f} className={finish===f?'active':''} aria-pressed={finish===f} onClick={()=>setFinish(f)}>{f}</button>)}</div><small>{finishesSeen?'Finitions que vous avez obtenues.':'Comparaison visuelle de la même carte.'}</small></div>}
    <dl><div><dt>Numéro</dt><dd>{card.id}</dd></div><div><dt>Clan</dt><dd>{card.known?(card.clan!=='?'?card.clan:'À définir'):'À découvrir'}</dd></div><div><dt>Titre / fonction</dt><dd>{card.known?card.role||'À définir':'Identité voilée'}</dd></div>{finishesSeen?card.known&&<div><dt>Finitions obtenues</dt><dd>{options.join(', ')||'—'}</dd></div>:<div><dt>Finition d’origine</dt><dd>{card.finish||'Standard'}</dd></div>}</dl>
-   {open&&card.known&&characterId&&onChanged&&<OwnedCopies characterId={characterId} onChanged={onChanged}/>}
+   {open&&card.known&&characterId&&onChanged&&<OwnedCopies characterId={characterId} cardName={card.name} onChanged={onChanged}/>}
    {card.provisional&&<p className="detail-note">Étude graphique de {card.name} · Clan et rareté à définir.</p>}
   </div>
  </div></dialog></>;
 }
 
-function OwnedCopies({characterId,onChanged}:{characterId:string;onChanged:()=>void}){
+function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardName:string;onChanged:()=>void}){
  const {client,refreshPlayer}=useAuth();
  const [ask,askNode]=useAsk();
  const [items,setItems]=useState<InventoryItem[]|null>(null);
@@ -76,24 +77,27 @@ function OwnedCopies({characterId,onChanged}:{characterId:string;onChanged:()=>v
   return `+${r.total.toLocaleString('fr-FR')} Deniers`;
  });
 
- const sell=(it:InventoryItem)=>run(async()=>{
-  const raw=await ask({title:'Mettre en vente',message:`Fixez votre prix en Deniers. Une commission de 5 % est déduite à la vente ; l’exemplaire est réservé tant que l’annonce est active.${it.finish!=='Standard'?` Finition ${it.finish}.`:''}`,inputLabel:'Prix (Deniers)',initialValue:String(Math.max(it.value*2,10)),confirmLabel:'Mettre en vente'});
-  if(raw===null)return null;
-  const price=Number(raw.replace(/\s/g,''));
-  if(!Number.isInteger(price)||price<1)throw new Error('Prix invalide : un nombre entier de Deniers, au moins 1.');
-  const r=await callRpc<{net:number}>(client!,'create_listing',{p_instance_id:it.instance_id,p_price:price,p_request_id:crypto.randomUUID()});
-  return `En vente à ${price.toLocaleString('fr-FR')} Deniers · vous recevrez ${r.net.toLocaleString('fr-FR')}`;
- });
+ const [selling,setSelling]=useState<InventoryItem|null>(null);
+ const sell=(it:InventoryItem)=>setSelling(it);
+ const confirmSell=(c:SellChoice)=>{const it=selling!;setSelling(null);void run(async()=>{
+  if(c.kind==='fixed'){
+   const r=await callRpc<{net:number}>(client!,'create_listing',{p_instance_id:it.instance_id,p_price:c.price,p_request_id:crypto.randomUUID()});
+   return `En vente à ${c.price.toLocaleString('fr-FR')} Deniers · vous recevrez ${r.net.toLocaleString('fr-FR')}`;
+  }
+  await callRpc(client!,'create_auction',{p_instance_id:it.instance_id,p_start_price:c.price,p_hours:c.hours,p_request_id:crypto.randomUUID()});
+  return `Enchère lancée pour ${c.hours} h · départ ${c.price.toLocaleString('fr-FR')} Deniers`;
+ });};
  const unlist=(it:InventoryItem)=>run(async()=>{await callRpc(client!,'cancel_listing',{p_listing_id:it.listing_id});return 'Annonce retirée.';});
  if(!items)return <div className="owned-copies"><Skeleton style={{height:44}}/><Skeleton style={{height:44}}/></div>;
  const extras=items.filter(i=>i.finish==='Standard'&&!i.locked&&!i.reserved&&!i.unique).slice(1);
  return <section className="owned-copies" aria-label="Vos exemplaires">
   {askNode}
+  <SellDialog open={!!selling} name={cardName} finish={selling?.finish??'Standard'} suggested={Math.max((selling?.value??5)*2,10)} onCancel={()=>setSelling(null)} onConfirm={confirmSell}/>
   <div className="owned-head"><span className="eyebrow">Vos exemplaires</span><strong>{items.length}</strong></div>
   {items.length===0?<p className="muted">Vous ne possédez plus d’exemplaire de cette carte. Elle reste découverte dans votre album.</p>:<ul className="owned-list">{items.map(it=><li key={it.instance_id} className={`finish-${it.finish==='Dorée'?'gold':it.finish==='Sanglante'?'blood':'standard'} ${it.listing_id?'listed':''}`}>
    <div className="owned-top">
     <span className="owned-finish">{it.finish}<small>Obtenue le {new Date(it.acquired_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}</small></span>
-    {it.listing_id?<span className="listed-badge"><Tag size={12}/> En vente · {(it.listing_price??0).toLocaleString('fr-FR')}</span>
+    {it.listing_id?<span className="listed-badge"><Tag size={12}/> {it.listing_kind==='auction'?'Enchère':'En vente'} · {(it.listing_price??0).toLocaleString('fr-FR')}</span>
      :<button className={`lock-toggle ${it.locked?'on':''}`} disabled={busy} aria-pressed={it.locked} aria-label={it.locked?'Déverrouiller cet exemplaire':'Verrouiller cet exemplaire'} onClick={()=>void toggleLock(it)}>{it.locked?<Lock size={14}/>:<LockOpen size={14}/>}<span>{it.locked?'Verrouillée':'Verrouiller'}</span></button>}
    </div>
    <div className="owned-actions">

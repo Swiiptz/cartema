@@ -1,11 +1,11 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
-import {Clock,Coins,Search,Store,Tag,X} from 'lucide-react';
+import {Clock,Coins,Crown,Gavel,Search,Store,Tag,X} from 'lucide-react';
 import {TarotCard} from '@/components/Card';
 import {useAuth} from '@/components/AuthProvider';
 import {useAsk} from '@/components/AskDialog';
-import {CountUp,Skeleton} from '@/components/ui';
+import {CountUp,Countdown,Skeleton} from '@/components/ui';
 import {ALL_RARITIES,type Finish,type Rarity} from '@/lib/draw';
 import {callRpc,listingToCard,type Listing,type TradeStatus} from '@/lib/game';
 
@@ -17,6 +17,7 @@ export default function Market(){
  const [tab,setTab]=useState<'buy'|'mine'>('buy');
  const [listings,setListings]=useState<Listing[]|null>(null);
  const [mine,setMine]=useState<Listing[]|null>(null);
+ const [bids,setBids]=useState<Listing[]|null>(null);
  const [status,setStatus]=useState<TradeStatus|null>(null);
  const [rarity,setRarity]=useState<Rarity|''>('');
  const [finish,setFinish]=useState<Finish|''>('');
@@ -27,11 +28,12 @@ export default function Market(){
  const load=useCallback(async()=>{
   if(!client)return;
   try{
-   const [m,own,st]=await Promise.all([
+   const [m,own,st,b]=await Promise.all([
     callRpc<Listing[]>(client,'get_market',{p_rarity:rarity||null,p_finish:finish||null,p_query:query.trim()||null}),
     callRpc<Listing[]>(client,'get_my_listings'),
-    callRpc<TradeStatus>(client,'get_trade_status')]);
-   setListings(m);setMine(own);setStatus(st);
+    callRpc<TradeStatus>(client,'get_trade_status'),
+    callRpc<Listing[]>(client,'get_my_bids')]);
+   setListings(m);setMine(own);setStatus(st);setBids(b);
   }catch(e){setMessage({error:(e as Error).message});}
  },[client,rarity,finish,query]);
  useEffect(()=>{if(!session)return;const t=setTimeout(()=>void load(),query?300:0);return()=>clearTimeout(t);},[session,load,query]);
@@ -42,6 +44,15 @@ export default function Market(){
   if(ok===null)return;
   setBusy(l.listing_id);setMessage({});
   try{const r=await callRpc<{discovered:boolean}>(client!,'buy_listing',{p_listing_id:l.listing_id});setMessage({notice:`${l.card.name} rejoint votre collection${r.discovered?' · nouveau visage, +10 Deniers':''}.`});await load();void refreshPlayer();}
+  catch(e){setMessage({error:(e as Error).message});await load();}
+  finally{setBusy(null);}
+ }
+ async function placeBid(l:Listing){
+  const raw=await ask({title:`Enchérir sur ${l.card.name}`,message:`${l.current_bid?`Mise actuelle : ${l.current_bid.toLocaleString('fr-FR')} Deniers.`:`Mise de départ : ${l.price.toLocaleString('fr-FR')} Deniers.`} Minimum : ${l.min_next_bid.toLocaleString('fr-FR')}. Votre mise est bloquée jusqu’à la fin, et rendue si quelqu’un vous dépasse.`,inputLabel:'Votre mise (Deniers)',initialValue:String(l.min_next_bid),confirmLabel:'Enchérir'});
+  if(raw===null)return;
+  const amount=Number(raw.replace(/\s/g,''));
+  setBusy(l.listing_id);setMessage({});
+  try{if(!Number.isInteger(amount))throw new Error('Mise invalide.');await callRpc(client!,'place_bid',{p_listing_id:l.listing_id,p_amount:amount,p_request_id:crypto.randomUUID()});setMessage({notice:`Vous menez l’enchère avec ${amount.toLocaleString('fr-FR')} Deniers.`});await load();void refreshPlayer();}
   catch(e){setMessage({error:(e as Error).message});await load();}
   finally{setBusy(null);}
  }
@@ -77,16 +88,23 @@ export default function Market(){
    {!listings?<div className="card-grid">{Array.from({length:8},(_,i)=><Skeleton key={i} className="skeleton-card"/>)}</div>
    :listings.length===0?<div className="album-empty"><Store size={28}/><h2>Aucune annonce pour l’instant.</h2><p>Mettez une carte en vente depuis votre collection : ouvrez-la, puis « Vendre ».</p><Link className="primary ghost" href="/collection/">Ma collection</Link></div>
    :<div className="card-grid market-grid" key={`${rarity}|${finish}|${query}`}>{listings.map((l,i)=>{const afford=(player?.balance??0)>=l.price;return <article key={l.listing_id} className="listing rise" style={{'--i':Math.min(i,12)} as React.CSSProperties}>
-     <div className="listing-art">{!l.discovered&&!l.mine&&<span className="listing-new">Nouveau</span>}<TarotCard card={listingToCard(l)}/></div>
-     <div className="listing-info"><strong className="listing-price"><Coins size={14}/> {l.price.toLocaleString('fr-FR')}</strong><span className="muted">{l.mine?'Votre annonce':`par ${l.seller??'—'}`}</span></div>
-     {l.mine?<button className="primary ghost compact" disabled={busy===l.listing_id} onClick={()=>void cancel(l)}>Retirer</button>
+     <div className="listing-art">{!l.discovered&&!l.mine&&<span className="listing-new">Nouveau</span>}{l.kind==='auction'&&<span className="listing-auction"><Gavel size={11}/> Enchère</span>}<TarotCard card={listingToCard(l)}/></div>
+     {l.kind==='auction'?<div className="listing-info auction-info">
+      <strong className="listing-price"><Coins size={14}/> {(l.current_bid??l.price).toLocaleString('fr-FR')}</strong>
+      <span className="muted">{l.bid_count?`${l.bid_count} mise${l.bid_count>1?'s':''}`:'départ'} · {l.mine?'votre enchère':l.seller??'—'}</span>
+      <span className="auction-timer"><Clock size={12}/> <Countdown to={l.ends_at} onDone={()=>void load()}/></span>
+     </div>:<div className="listing-info"><strong className="listing-price"><Coins size={14}/> {l.price.toLocaleString('fr-FR')}</strong><span className="muted">{l.mine?'Votre annonce':`par ${l.seller??'—'}`}</span></div>}
+     {l.mine?<button className="primary ghost compact" disabled={busy===l.listing_id||(l.kind==='auction'&&l.bid_count>0)} onClick={()=>void cancel(l)}>{l.kind==='auction'&&l.bid_count>0?'Mises en cours':'Retirer'}</button>
+      :l.kind==='auction'?(l.leading?<span className="leading-chip"><Crown size={14}/> Vous menez</span>:<button className="primary compact" disabled={!!busy||!status?.allowed||(player?.balance??0)<l.min_next_bid} onClick={()=>void placeBid(l)}>{busy===l.listing_id?'Mise…':(player?.balance??0)<l.min_next_bid?'Fonds insuffisants':`Enchérir · ${l.min_next_bid.toLocaleString('fr-FR')}`}</button>)
       :<button className="primary compact" disabled={!!busy||!status?.allowed||!afford} onClick={()=>void buy(l)}>{busy===l.listing_id?'Achat…':!afford?'Fonds insuffisants':'Acheter'}</button>}
     </article>;})}</div>}
   </>:<>
    <section className="market-section"><h2>En vente</h2>{!mine?<Skeleton style={{height:120}}/>:activeMine.length===0?<p className="muted">Aucune carte en vente. Ouvrez une carte de votre <Link className="text-link" href="/collection/">collection</Link> puis choisissez « Vendre ».</p>
-    :<div className="card-grid market-grid">{activeMine.map((l,i)=><article key={l.listing_id} className="listing rise" style={{'--i':i} as React.CSSProperties}><div className="listing-art"><TarotCard card={listingToCard(l)}/></div><div className="listing-info"><strong className="listing-price"><Coins size={14}/> {l.price.toLocaleString('fr-FR')}</strong><span className="muted">vous recevrez {l.net.toLocaleString('fr-FR')}</span></div><button className="primary ghost compact" disabled={busy===l.listing_id} onClick={()=>void cancel(l)}>Retirer</button></article>)}</div>}</section>
+    :<div className="card-grid market-grid">{activeMine.map((l,i)=><article key={l.listing_id} className="listing rise" style={{'--i':i} as React.CSSProperties}><div className="listing-art"><TarotCard card={listingToCard(l)}/></div><div className="listing-info"><strong className="listing-price"><Coins size={14}/> {l.price.toLocaleString('fr-FR')}</strong><span className="muted">{l.kind==='auction'?<><Countdown to={l.ends_at} onDone={()=>void load()}/> · {l.bid_count} mise{l.bid_count>1?'s':''}</>:<>vous recevrez {l.net.toLocaleString('fr-FR')}</>}</span></div><button className="primary ghost compact" disabled={busy===l.listing_id} onClick={()=>void cancel(l)}>Retirer</button></article>)}</div>}</section>
+   <section className="market-section"><h2>Mes mises</h2>{!bids?<Skeleton style={{height:80}}/>:bids.length===0?<p className="muted">Vous n’avez misé sur aucune enchère récemment.</p>
+    :<ul className="market-history">{bids.map(l=><li key={l.listing_id}><span className="history-name">{l.card.name}<small>{l.status==='active'?<>fin dans <Countdown to={l.ends_at} onDone={()=>void load()}/></>:l.closed_at?dateFr(l.closed_at):''}</small></span><span className={`history-kind ${l.leading||l.won?'sold':'cancelled'}`}>{l.status==='active'?(l.leading?'Vous menez':'Dépassé'):l.won?'Remportée':'Perdue'}</span><strong>{(l.current_bid??l.price).toLocaleString('fr-FR')}</strong></li>)}</ul>}</section>
    <section className="market-section"><h2>Historique</h2>{!mine?<Skeleton style={{height:120}}/>:history.length===0?<p className="muted">Aucune vente ni achat pour l’instant.</p>
-    :<ul className="market-history">{history.map(l=><li key={l.listing_id}><span className="history-name">{l.card.name}<small>{l.finish!=='Standard'?`${l.finish} · `:''}{l.closed_at?dateFr(l.closed_at):''}</small></span><span className={`history-kind ${l.status}`}>{l.status==='cancelled'?'Retirée':l.mine?`Vendue à ${l.buyer??'—'}`:`Achetée à ${l.seller??'—'}`}</span><strong className={l.status==='sold'?(l.mine?'gain':'loss'):''}>{l.status==='sold'?(l.mine?`+${l.net.toLocaleString('fr-FR')}`:`−${l.price.toLocaleString('fr-FR')}`):'—'}</strong></li>)}</ul>}</section>
+    :<ul className="market-history">{history.map(l=><li key={l.listing_id}><span className="history-name">{l.card.name}<small>{l.finish!=='Standard'?`${l.finish} · `:''}{l.closed_at?dateFr(l.closed_at):''}</small></span><span className={`history-kind ${l.status}`}>{l.status==='cancelled'?'Retirée':l.status==='expired'?'Sans enchère':l.mine?`Vendue à ${l.buyer??'—'}`:`Achetée à ${l.seller??'—'}`}</span><strong className={l.status==='sold'?(l.mine?'gain':'loss'):''}>{l.status==='sold'?(l.mine?`+${((l.current_bid??l.price)-Math.floor((l.current_bid??l.price)*5/100)).toLocaleString('fr-FR')}`:`−${(l.current_bid??l.price).toLocaleString('fr-FR')}`):'—'}</strong></li>)}</ul>}</section>
   </>}
  </div>;
 }

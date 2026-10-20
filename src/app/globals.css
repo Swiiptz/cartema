@@ -500,3 +500,16 @@ a,button,.panel,.tarot-card,.inspect-card,input,select{transition:color var(--t-
 .action-sep{width:1px;margin:6px 4px;background:#c9a45c26}
 .owned-hint{font:400 11px var(--ui);color:var(--muted)}
 .owned-actions .owned-note{flex:1;display:grid;place-items:center}
+/* Mise en vente. */
+.sell-head{display:flex;align-items:center;justify-content:space-between}.sell-head .icon-button{border:0;background:none;color:var(--muted)}
+.sell-dialog .segmented button{display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.duration-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.duration-picker button{min-height:40px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--muted);font:600 13px var(--ui)}
+.duration-picker button.on{border-color:var(--gold);color:var(--gold2);background:#c9a45c14}
+.sell-net{margin:0;font:400 14px var(--ui)}.sell-net strong{color:var(--gold2)}.sell-net small{color:var(--muted)}
+.sell-rules{margin:0;font:400 12px/1.6 var(--ui)}
+/* Enchères dans le marché. */
+.listing-auction{position:absolute;top:8px;right:8px;z-index:2;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:#2a1b25ee;border:1px solid #c9a45c77;color:var(--gold2);font:700 10px var(--ui);text-transform:uppercase;letter-spacing:.05em}
+.auction-info{flex-direction:column;align-items:flex-start;gap:2px}
+.auction-timer{display:inline-flex;align-items:center;gap:5px;font:600 12px var(--ui);color:var(--gold);font-variant-numeric:tabular-nums}
+.leading-chip{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:999px;border:1px solid #5f9c7a88;background:#5f9c7a1a;color:#bfe3c6;font:600 13px var(--ui)}
