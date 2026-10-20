@@ -111,7 +111,25 @@ Migration `…150000_admin.sql`. Les RPC `admin_*` exigent `private.require_admi
 - Le **cadrage par défaut est automatique** : détouré → portrait ; opaque de proportion classique → portrait ; opaque très vertical (≥ 1,8) ou paysage → remplissage. L'admin peut le corriger avec aperçu en direct, et dans les trois finitions, avant de publier.
 - Le chemin enregistré est vérifié côté serveur : stockage du projet ou `/illustrations/` uniquement.
 
-Pas encore fait : import Google Sheets, couverture d'édition, symboles de clan personnalisés (téléversés), outils économiques (ajout ou retrait de boosters et de Deniers, réglages versionnés), modération.
+**Import du Google Sheets** (fait le 20/10/2026, `scripts/sheet-import.mjs`, testé dans `tests/sheet-import.test.ts`) :
+- Source : export CSV de l'onglet « Feuille 1 ». Le partage du fichier est réglé sur « tous les utilisateurs disposant du lien ».
+- Mapping validé avec l'utilisateur :
+  - nom = Prénom + Nom ;
+  - fonction = Poste, sinon Statut/Secte (vide si « Inconnu » ou « * ») ;
+  - numéro = ligne du fichier − 1 ;
+  - `Malkavian` est importé comme `Malkavien` (symbole gravé) ;
+  - un clan « Inconnu » ou « * » devient « clan à définir » ;
+  - Mort/vivant, Praxis, Statut et la valeur source sont gardés dans `characters.lore`.
+- `characters.source_ref` empêche tout doublon si l'import est relancé.
+- Résultat : **230 brouillons** dans l'édition Camarilla (CAM, album non publié, boosters fermés), 14 clans.
+- **Écartés** : Caïn, ligne 2, rareté « One » : carte unique à concevoir, **CAM-001 lui est réservé**. Morgan, ligne 91 : rareté vide, **CAM-090 réservé**.
+- À relire : « V* *V*V » (ligne 33), « Deux-Savoie » / « Deux-savoie », « Autarck » / « Autark ». Plusieurs noms dépassent 24 caractères : vérifier l'affichage.
+
+**Illustrations en lot** : dans le back-office, Personnages → « Associer des illustrations ». On choisit un dossier ou plusieurs fichiers, et chaque fichier est rapproché de la carte de même nom (nom complet, sinon premier mot). Accents, casse et séparateurs sont ignorés. En cas d'homonymes (Arthur, Lily…), un choix manuel est proposé. Les cartes déjà illustrées ne sont remplacées que sur demande.
+
+**Publication groupée** : `admin_publish_drafts(edition, motif)`, avec le bouton « Publier les N brouillons » sur la fiche d'édition.
+
+Pas encore fait : carte unique (Caïn), couverture d'édition, symboles de clan personnalisés (téléversés), outils économiques (ajout ou retrait de boosters et de Deniers, réglages versionnés), modération.
 
 ## Développement et déploiement
 

@@ -79,3 +79,23 @@ export async function uploadIllustration(client:SupabaseClient,file:File):Promis
  bitmap.close();
  return {path:bucket.getPublicUrl(display).data.publicUrl,meta};
 }
+
+/** Clé de comparaison : sans accents, casse, extension ni séparateurs (« Saint_Simon.png » = « saint simon »). */
+export function nameKey(s:string):string{
+ return s.replace(/\.[a-z0-9]{2,5}$/i,'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9*]+/g,' ').trim();
+}
+
+export type IllustrationMatch<F>={file:F;candidates:AdminCharacter[]};
+/**
+ * Rapproche chaque fichier du personnage de même nom : nom complet d'abord, sinon prénom seul
+ * (premier mot du nom) en dernier recours. Plusieurs candidats = choix manuel ; aucun = fichier ignoré.
+ */
+export function matchIllustrations<F extends {name:string}>(files:readonly F[],characters:readonly AdminCharacter[]):IllustrationMatch<F>[]{
+ const active=characters.filter(c=>c.status!=='archived');
+ return files.filter(f=>/\.(png|webp|jpe?g)$/i.test(f.name)).map(file=>{
+  const key=nameKey(file.name);
+  let candidates=active.filter(c=>nameKey(c.name)===key);
+  if(!candidates.length)candidates=active.filter(c=>nameKey(c.name.split(' ')[0])===key);
+  return {file,candidates};
+ });
+}

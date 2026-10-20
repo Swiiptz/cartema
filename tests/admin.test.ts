@@ -14,3 +14,17 @@ describe('préparation des illustrations',()=>{
     expect(nextNumber([],'a')).toBe(1);
   });
 });
+
+import {matchIllustrations,nameKey} from '../src/lib/admin';
+describe('association des illustrations par nom de fichier',()=>{
+  const c=(id:string,name:string,status='draft')=>({id,name,status,edition_id:'e',number:1}) as AdminCharacter;
+  const chars=[c('1','Norton'),c('2','Clément de Saint-Simon'),c('3','Arthur'),c('4','Arthur'),c('5','Rus','archived'),c('6','Isabeau de Sancerre')];
+  it('normalise accents, casse, extension et séparateurs',()=>{
+    expect(nameKey('Clement_de-Saint_Simon.PNG')).toBe('clement de saint simon');
+  });
+  it('associe par nom complet, sinon par prénom, et signale les ambiguïtés',()=>{
+    const r=matchIllustrations([{name:'norton.webp'},{name:'Clément de Saint-Simon.png'},{name:'arthur.jpg'},{name:'Isabeau.png'},{name:'rus.png'},{name:'notes.txt'},{name:'Inconnu.png'}],chars);
+    expect(r.map(m=>[m.file.name,m.candidates.map(x=>x.id)])).toEqual([
+      ['norton.webp',['1']],['Clément de Saint-Simon.png',['2']],['arthur.jpg',['3','4']],['Isabeau.png',['6']],['rus.png',[]],['Inconnu.png',[]]]);
+  });
+});

@@ -94,3 +94,20 @@ describe('catalogue',()=>{
     await expectError(rpc(db,admin,'admin_set_packs',[edition,true,'Réouverture']),/edition_archived/);
   });
 });
+
+describe('publication groupée',()=>{
+  it('publie tous les brouillons d’une édition avec un seul motif journalisé',async()=>{
+    const ed=await rpc<string>(db,admin,'admin_save_edition',[null,'Lot','LOT',true,null]);
+    for(let n=1;n<=3;n++) await saveCharacter(admin,{edition:ed,number:n});
+    await expectError(rpc(db,player,'admin_publish_drafts',[ed,'x']),/forbidden/);
+    await expectError(rpc(db,admin,'admin_publish_drafts',[ed,'']),/reason_required/);
+    expect(await rpc(db,admin,'admin_publish_drafts',[ed,'Import initial validé'])).toBe(3);
+    expect(await rpc(db,admin,'admin_publish_drafts',[ed,'Rien à publier'])).toBe(0);
+    expect(await rpc<any[]>(db,player,'get_album',[ed])).toHaveLength(3);
+  });
+  it('refuse deux personnages issus de la même ligne source',async()=>{
+    const ed=await rpc<string>(db,admin,'admin_save_edition',[null,'Source','SRC',false,null]);
+    await db.query(`insert into public.characters (edition_id,number,name,rarity,source_ref) values ($1,1,'A','Commun','sheet:L2')`,[ed]);
+    await expectError(db.query(`insert into public.characters (edition_id,number,name,rarity,source_ref) values ($1,2,'A','Commun','sheet:L2')`,[ed]),/characters_source_ref_key/);
+  });
+});
