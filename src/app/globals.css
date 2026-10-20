@@ -154,3 +154,13 @@
 .admin-bulk{display:flex;flex-direction:column;gap:14px;margin-bottom:18px}.admin-bulk h2{font-size:22px}.admin-check{display:inline-flex;align-items:center;gap:8px;min-height:44px;font:500 13px var(--ui);color:var(--muted)}.admin-check input{width:17px;height:17px;accent-color:var(--gold)}
 .admin-bulk-list{list-style:none;margin:0;padding:0;max-height:52vh;overflow:auto;display:flex;flex-direction:column}.admin-bulk-list li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid #c9a45c14;font:400 13px/1.4 var(--ui);min-height:44px}.admin-bulk-file{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}.admin-bulk-list li.done{opacity:.75}
 @media(max-width:700px){.admin-bulk-list li{grid-template-columns:1fr;gap:4px}}
+/* Carte unique (Caïn) : seule carte claire, fil pourpre vivant, encre en suspension. */
+.tarot-card .unique-card{box-shadow:0 0 0 1px #d6d0c455,0 0 22px #9b142633,0 0 60px #f4ecdd14}
+.unique-card .unique-thread{stroke-dasharray:18 82;animation:unique-thread 9s linear infinite}
+.unique-card .unique-mark{filter:drop-shadow(0 0 2px #c4182f)}
+.unique-card .unique-mark-glow{animation:unique-pulse 3.6s ease-in-out infinite;transform-origin:100px 212px}
+.unique-card .unique-motes circle{animation:unique-mote 7s ease-in-out infinite;animation-delay:calc(var(--m)*-1.15s)}
+@keyframes unique-thread{to{stroke-dashoffset:-100}}
+@keyframes unique-pulse{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+@keyframes unique-mote{0%,100%{transform:translate(0,0);opacity:.15}50%{transform:translate(3px,-7px);opacity:.75}}
+@media(prefers-reduced-motion:reduce){.unique-card .unique-thread,.unique-card .unique-mark-glow,.unique-card .unique-motes circle{animation:none}.unique-card .unique-thread{stroke-dasharray:none;opacity:.8}}

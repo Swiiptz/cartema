@@ -36,3 +36,19 @@ describe('habillage tarot',()=>{
   expect(html).not.toContain('rotate(180');
  });
 });
+
+describe('carte unique',()=>{
+ it('a son propre habillage clair une fois identifiée, et absorbe le fond blanc de l’illustration',()=>{
+  const html=renderCard(['CAM-001','Caïn','?','','Mythique',1,''],'u1','/illustrations/originals/cain.png','cover',false,0,undefined,true);
+  expect(html).toContain('unique-card');expect(html).toContain('UNIQUE · I / I');
+  expect(html).toContain('mix-blend-mode:multiply');
+  expect(html).not.toContain('MYTHIQUE');
+ });
+ it('reste voilée tant qu’elle n’est pas découverte',()=>{
+  const html=renderCard(['CAM-001','Caïn','?','','Mythique',0,''],'u2',undefined,'portrait',false,0,1,true);
+  expect(html).not.toContain('Caïn');expect(html).not.toContain('unique-card');expect(html).toContain('UNIQUE');
+ });
+ it('comprime un nom très long au lieu de déborder',()=>{
+  expect(renderCard(['CAM-037','Gabrielle Monique de Saint-Etienne','Toréador','Ancilla','Rare',1,''],'l1')).toContain('textLength="150"');
+ });
+});
