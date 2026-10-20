@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
-import {BookOpen,Check,Coins,Layers3,Link2,LogOut,Settings,Sparkles,Users} from 'lucide-react';
+import {Award,BookOpen,Check,Coins,Layers3,Link2,LogOut,Settings,Sparkles,Users} from 'lucide-react';
 import {TarotCard} from '@/components/Card';
 import {useAuth} from '@/components/AuthProvider';
 import {DiscordIcon} from '@/components/DiscordIcon';
@@ -51,14 +51,14 @@ export default function Profile(){
  return <div className="page profile-page">
   <header className="profile-hero rise">
    <div className="profile-sigil" aria-hidden="true">{(name??'?').slice(0,1).toUpperCase()}</div>
-   <div><span className="eyebrow">Collectionneur</span><h1>{name??'Sans nom'}</h1><p className="muted">Membre depuis le {new Date(player.profile.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</p></div>
+   <div><span className="eyebrow">{player.profile.title??'Collectionneur'}</span><h1>{name??'Sans nom'}</h1><p className="muted">Membre depuis le {new Date(player.profile.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</p></div>
   </header>
 
   {!name&&<form className="panel handle-callout rise" onSubmit={saveHandle}><h2>Choisissez votre pseudonyme</h2><p className="muted">Il vous représentera auprès des autres collectionneurs.</p><div className="inline-form"><input aria-label="Pseudonyme" value={handle} onChange={e=>setHandle(e.target.value)} minLength={3} maxLength={24} required placeholder="Lilith"/><button className="primary" disabled={busy}><Check size={16}/> Valider</button></div></form>}
 
   <ul className="stat-grid">{stats.map((s,i)=><li key={s.label} className="panel rise" style={{'--i':i+1} as React.CSSProperties}><s.icon size={18}/><strong>{s.value===undefined?<Skeleton style={{height:28,width:60}}/>:<><CountUp value={s.value}/>{s.suffix&&<small>{s.suffix}</small>}</>}</strong><span>{s.label}</span></li>)}</ul>
 
-  <div className="profile-links rise" style={{'--i':5} as React.CSSProperties}><Link className="primary" href="/collection/"><BookOpen size={16}/> Ma collection</Link><Link className="primary ghost" href="/amis/"><Users size={16}/> Amis &amp; échanges{(player.social_pending??0)>0&&<b className="tab-count">{player.social_pending}</b>}</Link></div>
+  <div className="profile-links rise" style={{'--i':5} as React.CSSProperties}><Link className="primary" href="/collection/"><BookOpen size={16}/> Ma collection</Link><Link className="primary ghost" href="/progression/"><Award size={16}/> Missions &amp; succès</Link><Link className="primary ghost" href="/amis/"><Users size={16}/> Amis &amp; échanges{(player.social_pending??0)>0&&<b className="tab-count">{player.social_pending}</b>}</Link></div>
 
   <section className="panel settings-panel rise" style={{'--i':6} as React.CSSProperties} aria-labelledby="reglages">
    <h2 id="reglages"><Settings size={18}/> Paramètres du compte</h2>

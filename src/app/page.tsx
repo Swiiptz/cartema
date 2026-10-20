@@ -6,9 +6,10 @@ import {TarotCard,palette} from '@/components/Card';
 import {BoosterSkin} from '@/components/BoosterSkin';
 import {useAuth} from '@/components/AuthProvider';
 import {CountUp,Countdown,Skeleton} from '@/components/ui';
+import {MissionList} from '@/components/MissionList';
 import {showcase} from '@/data/demo';
 import {ALL_RARITIES} from '@/lib/draw';
-import {callRpc,openedToCard,revealOrder,type AlbumEntry,type Opening} from '@/lib/game';
+import {callRpc,openedToCard,revealOrder,type AlbumEntry,type Mission,type Missions,type Opening} from '@/lib/game';
 
 export default function Home(){
  const {configured,ready,session,player}=useAuth();
@@ -40,6 +41,11 @@ function Dashboard(){
  const {client,player,refreshPlayer}=useAuth();
  const [album,setAlbum]=useState<AlbumEntry[]|null>(null);
  const [last,setLast]=useState<Opening|null|undefined>(undefined);
+ const [missions,setMissions]=useState<Missions|null>(null);
+ const [claiming,setClaiming]=useState(false);
+ const loadMissions=useCallback(()=>{if(client)void callRpc<Missions>(client,'get_missions').then(setMissions).catch(()=>{});},[client]);
+ useEffect(()=>{loadMissions();},[loadMissions]);
+ async function claim(m:Mission){if(!client)return;setClaiming(true);try{await callRpc(client,'claim_mission',{p_assignment_id:m.assignment_id});loadMissions();void refreshPlayer();}finally{setClaiming(false);}}
  useEffect(()=>{
   if(!client)return;
   let alive=true;
@@ -88,7 +94,12 @@ function Dashboard(){
    <ul className="rarity-progress">{(stats?.byRarity??ALL_RARITIES.map(r=>({rarity:r,total:0,found:0}))).map(r=><li key={r.rarity} style={{'--rc':palette[r.rarity]} as React.CSSProperties}><span>{r.rarity}</span><b>{stats?`${r.found}/${r.total}`:'…'}</b></li>)}</ul>
   </section>
 
-  <section className="dash-last rise" style={{'--i':3} as React.CSSProperties}>
+  <section className="panel dash-missions rise" style={{'--i':3} as React.CSSProperties}>
+   <div className="section-header"><div><span className="eyebrow">Missions du jour</span>{missions&&<h2><Countdown to={missions.daily_reset} onDone={loadMissions}/> <small>restantes</small></h2>}</div><Link className="text-link" href="/progression/">Tout voir <ArrowRight size={14}/></Link></div>
+   {!missions?<Skeleton style={{height:150}}/>:<MissionList missions={missions.daily} busy={claiming} canReplace={false} onClaim={m=>void claim(m)}/>}
+  </section>
+
+  <section className="dash-last rise" style={{'--i':4} as React.CSSProperties}>
    <div className="section-header"><div><span className="eyebrow">Dernier tirage</span><h2>{last?new Date(last.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}):'Aucun pour l’instant'}</h2></div>{last&&<Link className="text-link" href="/collection/">Collection <ArrowRight size={14}/></Link>}</div>
    {last===undefined?<div className="last-row">{Array.from({length:5},(_,i)=><Skeleton key={i} className="skeleton-card"/>)}</div>
     :last?<div className="last-row">{lastCards.map((c,i)=><div key={i} className="rise" style={{'--i':i} as React.CSSProperties}><TarotCard card={c}/></div>)}</div>

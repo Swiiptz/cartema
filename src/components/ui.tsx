@@ -29,6 +29,7 @@ export function CountUp({value,duration=650}:{value:number;duration?:number}){
 export function formatDelay(ms:number){
  if(ms<=0)return 'maintenant';
  const s=Math.ceil(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+ if(h>=48)return `${Math.floor(h/24)} j ${h%24} h`;
  if(h>0)return `${h} h ${String(m).padStart(2,'0')} min`;
  if(m>0)return `${m} min ${String(sec).padStart(2,'0')} s`;
  return `${sec} s`;

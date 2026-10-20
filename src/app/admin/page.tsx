@@ -11,7 +11,7 @@ import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,silhouetteIndex} from '@/lib/game';
 import {ACCEPTED_TYPES,ENGRAVED_CLANS,matchIllustrations,nextNumber,uploadIllustration,type AdminCatalog,type AdminCharacter,type AdminEdition,type CharacterStatus,type IllustrationMeta} from '@/lib/admin';
 
-type Tab='characters'|'editions'|'clans';
+type Tab='characters'|'editions'|'clans'|'achievements';
 const STATUS_LABEL:Record<CharacterStatus,string>={draft:'Brouillon',published:'Publiée',archived:'Archivée'};
 // jsonb ne conserve pas l'ordre des clés : comparaison indépendante de l'ordre.
 const canonical=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
@@ -55,9 +55,9 @@ export default function Admin(){
 
  return <AskContext.Provider value={ask}><div className="page admin-page">{askNode}
   <header className="admin-heading"><div><span className="eyebrow">Back-office</span><h1>Le cabinet de l’archiviste</h1></div><p className="muted">Chaque modification est enregistrée dans le journal d’administration.</p></header>
-  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
+  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
   <div className="admin-toast" aria-live="polite">{error&&<p className="auth-error" role="alert">{error}<button className="icon-button" aria-label="Fermer" onClick={()=>setError(null)}><X size={16}/></button></p>}{notice&&<p className="auth-notice">{notice}<button className="icon-button" aria-label="Fermer" onClick={()=>setNotice(null)}><X size={16}/></button></p>}</div>
-  {!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:<ClansTab catalog={catalog} act={act}/>}
+  {!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:<AchievementsTab catalog={catalog} act={act} client={client!}/>}
  </div></AskContext.Provider>;
 }
 
@@ -283,5 +283,53 @@ function ClansTab({catalog,act}:{catalog:AdminCatalog;act:Act}){
    <button className="primary"><Plus size={16}/> Ajouter</button>
    {missing.length>0&&<p className="admin-hint">Symboles déjà dessinés : {missing.map((n,i)=><span key={n}>{i?', ':''}<button type="button" className="text-link" onClick={()=>void create(n)}>{n}</button></span>)}</p>}
   </form>
+ </div>;
+}
+
+// ------------------------------------------------------------------ succès personnalisés
+type CustomAchievement={code:string;label:string;description:string;secret:boolean;reward_deniers:number;reward_boosters:number;title:string|null;conditional:boolean;characters:{id:string;name:string;code:string}[];holders:string[]};
+type AchievementForm={code:string;label:string;description:string;secret:boolean;deniers:string;boosters:string;title:string;mode:'conditional'|'manual'};
+const emptyAchievement:AchievementForm={code:'',label:'',description:'',secret:false,deniers:'100',boosters:'0',title:'',mode:'conditional'};
+
+function AchievementsTab({catalog,act,client}:{catalog:AdminCatalog;act:Act;client:SupabaseClient}){
+ const [list,setList]=useState<CustomAchievement[]|null>(null);
+ const [form,setForm]=useState<AchievementForm>(emptyAchievement);
+ const [chars,setChars]=useState<string[]>([]);
+ const [query,setQuery]=useState('');
+ const [grant,setGrant]=useState<{code:string;handle:string;reason:string}|null>(null);
+ const load=useCallback(async()=>{setList(await callRpc<CustomAchievement[]>(client,'admin_custom_achievements').catch(()=>[]));},[client]);
+ useEffect(()=>{void load();},[load]);
+ const published=useMemo(()=>catalog.characters.filter(c=>c.status==='published'),[catalog]);
+ const matches=useMemo(()=>{const q=query.trim().toLowerCase();return q.length<2?[]:published.filter(c=>c.name.toLowerCase().includes(q)&&!chars.includes(c.id)).slice(0,8);},[query,published,chars]);
+ const label=(id:string)=>{const c=catalog.characters.find(x=>x.id===id);const e=catalog.editions.find(x=>x.id===c?.edition_id);return c?`${c.name} (${e?.prefix}-${String(c.number).padStart(3,'0')})`:id;};
+ const edit=(a:CustomAchievement)=>{setForm({code:a.code,label:a.label,description:a.description,secret:a.secret,deniers:String(a.reward_deniers),boosters:String(a.reward_boosters),title:a.title??'',mode:a.conditional?'conditional':'manual'});setChars(a.characters.map(c=>c.id));};
+ const reset=()=>{setForm(emptyAchievement);setChars([]);};
+ const digits=(v:string)=>v.replace(/[^\d]/g,'');
+ const save=(e:React.FormEvent)=>{e.preventDefault();void act(form.code?'Succès mis à jour.':'Succès créé.',async c=>{await callRpc(c,'admin_save_achievement',{p_code:form.code||null,p_label:form.label,p_description:form.description,p_secret:form.secret,p_reward_deniers:Number(form.deniers)||0,p_reward_boosters:Number(form.boosters)||0,p_title:form.title||null,p_characters:form.mode==='conditional'?chars:null});}).then(ok=>{if(ok){reset();void load();}});};
+ const doGrant=(e:React.FormEvent)=>{e.preventDefault();if(!grant)return;void act(`Succès décerné à ${grant.handle}.`,c=>callRpc(c,'admin_grant_achievement',{p_code:grant.code,p_handle:grant.handle,p_reason:grant.reason})).then(ok=>{if(ok){setGrant(null);void load();}});};
+ return <div className="admin-editions">
+  <form className="panel admin-create" onSubmit={save}>
+   <span className="eyebrow">{form.code?'Modifier le succès':'Nouveau succès personnalisé'}</span>
+   <label className="auth-field"><span>Nom</span><input value={form.label} onChange={e=>setForm({...form,label:e.target.value})} required placeholder="LES BRATS!!"/></label>
+   <label className="auth-field"><span>Explication (révélée une fois débloqué)</span><input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Avoir collectionné Sirius et Wezen."/></label>
+   <div className="segmented" role="tablist"><button type="button" role="tab" aria-selected={form.mode==='conditional'} onClick={()=>setForm({...form,mode:'conditional'})}>Conditionnel</button><button type="button" role="tab" aria-selected={form.mode==='manual'} onClick={()=>setForm({...form,mode:'manual'})}>Décerné à la main</button></div>
+   {form.mode==='conditional'?<div className="admin-art"><span className="admin-hint">Se débloque automatiquement quand le joueur a découvert tous ces personnages.</span>
+    <div className="chip-row">{chars.map(id=><button type="button" key={id} className="chip" onClick={()=>setChars(chars.filter(x=>x!==id))}>{label(id)} <X size={12}/></button>)}{!chars.length&&<span className="muted">Aucun personnage choisi.</span>}</div>
+    <input className="picker-search" placeholder="Ajouter un personnage (nom)…" value={query} onChange={e=>setQuery(e.target.value)}/>
+    {matches.length>0&&<ul className="friend-pick">{matches.map(c=><li key={c.id}><button type="button" onClick={()=>{setChars([...chars,c.id]);setQuery('');}}>{label(c.id)}</button></li>)}</ul>}
+   </div>:<p className="admin-hint">Vous le décernerez à un joueur avec un motif (séance de GN, événement…).</p>}
+   <div className="admin-row"><label className="auth-field"><span>Deniers</span><input inputMode="numeric" value={form.deniers} onChange={e=>setForm({...form,deniers:digits(e.target.value)})}/></label><label className="auth-field"><span>Boosters</span><input inputMode="numeric" value={form.boosters} onChange={e=>setForm({...form,boosters:digits(e.target.value)})}/></label></div>
+   <label className="auth-field"><span>Titre offert (facultatif)</span><input value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label>
+   <label className="admin-check"><input type="checkbox" checked={form.secret} onChange={e=>setForm({...form,secret:e.target.checked})}/> Secret (invisible tant qu’il n’est pas obtenu)</label>
+   <div className="admin-actions"><button className="primary" disabled={form.mode==='conditional'&&!chars.length}>{form.code?'Enregistrer':'Créer le succès'}</button>{form.code&&<button type="button" className="text-link" onClick={reset}>Annuler la modification</button>}</div>
+  </form>
+  {!list?<Skeleton style={{height:120}}/>:list.map(a=><section key={a.code} className="panel admin-edition">
+   <div className="section-header"><div><span className="eyebrow">{a.conditional?'Conditionnel':'Décerné à la main'}{a.secret?' · secret':''}</span><h2>{a.label}</h2></div><button className="text-link" onClick={()=>edit(a)}>Modifier</button></div>
+   <p className="admin-hint">{a.description||'Sans explication.'} · +{a.reward_deniers} Deniers{a.reward_boosters?` · +${a.reward_boosters} booster(s)`:''}{a.title?` · titre « ${a.title} »`:''}</p>
+   {a.conditional&&<p className="admin-hint">Requis : {a.characters.map(c=>`${c.name} (${c.code})`).join(', ')}</p>}
+   <p className="admin-hint">Obtenu par : {a.holders.length?a.holders.join(', '):'personne pour l’instant'}</p>
+   {!a.conditional&&(grant?.code===a.code?<form className="admin-row" onSubmit={doGrant}><input className="picker-search" placeholder="Pseudonyme" value={grant.handle} onChange={e=>setGrant({...grant,handle:e.target.value})} required/><input className="picker-search" placeholder="Motif" value={grant.reason} onChange={e=>setGrant({...grant,reason:e.target.value})} required/><button className="primary compact">Décerner</button></form>
+    :<button className="primary ghost compact" onClick={()=>setGrant({code:a.code,handle:'',reason:''})}>Décerner à un joueur</button>)}
+  </section>)}
  </div>;
 }

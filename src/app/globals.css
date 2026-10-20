@@ -556,3 +556,40 @@ a,button,.panel,.tarot-card,.inspect-card,input,select{transition:color var(--t-
 .friend-pick button{width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:none;color:var(--text);font:600 14px var(--ui);text-align:left}
 .friend-pick button.on{border-color:var(--gold);background:#c9a45c14}
 .profile-links .tab-count{margin-left:6px}
+/* ============================================================== Progression */
+.progression-page{display:flex;flex-direction:column;gap:16px;max-width:860px}
+.reset-in{display:inline-flex;align-items:center;gap:5px;font:400 12px var(--ui)}.reset-in time{color:var(--gold2);font-weight:600}
+.small-note{font:400 12px var(--ui);margin:0}
+.mission-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.mission{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:#160f16;transition:border-color .3s,background-color .3s}
+.mission.ready{border-color:#c9a45c88;background:linear-gradient(170deg,#c9a45c14,#160f16);box-shadow:0 0 18px #c9a45c1a}
+.mission.claimed{opacity:.6}
+.mission-top{display:flex;justify-content:space-between;align-items:center;gap:10px}.mission-label{font:600 14px var(--ui)}
+.mission-reward{display:inline-flex;align-items:center;gap:4px;font:700 12px var(--ui);color:var(--gold2)}.mission-reward svg{color:var(--gold)}
+.mission-bottom{display:flex;align-items:center;gap:10px}.mission-meter{flex:1}.mission-count{font:600 12px var(--ui);color:var(--muted);font-variant-numeric:tabular-nums;min-width:34px;text-align:right}
+.mission-claim{min-height:34px;padding:6px 14px;animation:pop .4s var(--ease-out) both}
+.mission-done{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--ui);color:#9fd8b0}
+.mission-swap{min-width:34px;min-height:34px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--muted)}.mission-swap:hover{color:var(--gold2);transform:rotate(90deg)}
+.title-panel{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}.title-count{display:block;font:600 28px var(--display);color:var(--gold2)}
+.title-select{min-width:220px}.title-select select{min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#171017;color:var(--text);font:400 15px var(--ui)}
+.achievement-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.achievement{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:14px;border:1px solid var(--line);background:#140d14}
+.achievement.done{border-color:color-mix(in srgb,var(--rc) 55%,transparent);background:linear-gradient(170deg,color-mix(in srgb,var(--rc) 10%,#140d14),#140d14)}
+.achievement.secret{border-style:dashed}
+.ach-medal{flex-shrink:0;width:38px;height:38px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);color:var(--muted);background:#1b121a}
+.achievement.done .ach-medal{color:#1a0f08;border-color:transparent;background:radial-gradient(circle at 35% 30%,#fff1c4,var(--rc) 70%);box-shadow:0 0 14px color-mix(in srgb,var(--rc) 45%,transparent)}
+.ach-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.ach-head{display:flex;align-items:center;gap:6px}.ach-head strong{font:600 14px var(--ui)}
+.info-btn{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--muted);padding:0}.info-btn:hover,.info-btn[aria-expanded=true]{color:var(--gold2);border-color:#c9a45c88}
+.ach-bubble{position:relative;margin:2px 0 0;padding:8px 10px;border-radius:10px;background:#221620;border:1px solid #c9a45c33;font:400 11.5px/1.5 var(--ui);color:var(--muted);animation:rise .3s var(--ease-out) both}
+.ach-reason{display:block;margin-top:4px;color:var(--gold)}
+.ach-date{font:400 11px var(--ui);color:var(--gold)}.ach-reward{font:600 11px var(--ui);color:var(--muted)}
+.ach-progress{display:flex;align-items:center;gap:8px}.ach-progress .meter{flex:1}.ach-progress small{font:600 11px var(--ui);color:var(--muted);font-variant-numeric:tabular-nums}
+.ranking{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ranking li{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:#160f16}
+.ranking li.me{border-color:var(--gold);background:linear-gradient(170deg,#c9a45c18,#160f16)}
+.rank-pos{width:28px;display:grid;place-items:center;font:700 14px var(--ui);color:var(--muted)}
+.ranking li.top-1 .rank-pos{color:#f0d79a}.ranking li.top-2 .rank-pos{color:#d6d0c4}.ranking li.top-3 .rank-pos{color:#c58b5a}
+.rank-title{color:var(--gold)!important}.rank-score{font:600 18px var(--display);color:var(--gold2)}
+.dash-missions{display:flex;flex-direction:column;gap:12px}.dash-missions .section-header{margin:0}.dash-missions h2{margin:6px 0 0;font-size:20px}.dash-missions h2 small{font:400 13px var(--ui);color:var(--muted)}.dash-missions h2 time{color:var(--gold2)}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}.chip-row .chip{cursor:pointer}

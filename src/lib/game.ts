@@ -5,7 +5,7 @@ import {ALL_RARITIES,type Finish,type Rarity} from './draw';
 // Formes renvoyées par les RPC (voir supabase/migrations, docs/BACKEND.md).
 export type ArtMeta={layout?:'portrait'|'full'|'cover';offsetY?:number};
 export type PlayerState={
- profile:{id:string;handle:string|null;role:'player'|'admin';created_at:string};
+ profile:{id:string;handle:string|null;role:'player'|'admin';created_at:string;title?:string|null};
  balance:number;
  boosters:{free:number;purchased:number;free_capacity:number;next_free_at:string|null};
  booster_offers:Record<string,number>;
@@ -33,6 +33,10 @@ export type Gift={gift_id:string;status:'pending'|'accepted'|'declined'|'cancell
 export type Trade={trade_id:string;status:'pending'|'accepted'|'declined'|'cancelled'|'expired'|'countered';incoming:boolean;other_id:string;other:string|null;proposer_deniers:number;recipient_deniers:number;created_at:string;expires_at:string;closed_at:string|null;proposer_cards:SocialCard[];recipient_cards:SocialCard[]};
 export type Social={gifts:Gift[];trades:Trade[];pending_count:number};
 export function socialToCard(c:SocialCard):DemoCard{return {id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish:c.finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
+export type Mission={assignment_id:string;kind:'daily'|'weekly';label:string;target:number;reward:number;progress:number;claimed:boolean;ends_at:string};
+export type Missions={daily:Mission[];weekly:Mission[];replacement_available:boolean;daily_reset:string;weekly_reset:string};
+export type Achievement={code:string;secret:boolean;category:'collection'|'general'|'custom';label:string|null;description?:string|null;title?:string|null;edition?:string|null;edition_prefix?:string|null;rarity?:Rarity|null;reward_deniers?:number;reward_boosters?:number;progress?:number;target?:number;unlocked_at:string|null;reason?:string|null;conditional?:boolean};
+export type Leaderboard={top:{position:number;handle:string;title:string|null;score:number;me:boolean}[];me:{position:number;score:number}|null;total_characters:number};
 export type TradeStatus={allowed:boolean;blocked:boolean;available_at:string|null;commission_pct:number};
 export function listingToCard(l:Listing):DemoCard{const c=l.card;return {id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish:l.finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
 export type RecycleResult={operation_id?:string;total:number;count:number;balance:number;replayed:boolean};
@@ -121,6 +125,12 @@ const messages:Record<string,string>={
  card_unavailable:'Une des cartes n’est plus disponible (vendue, verrouillée ou engagée).',
  empty_trade:'Ajoutez au moins une carte à l’échange.',
  too_many_cards:'10 cartes maximum de chaque côté.',
+ mission_incomplete:'Mission pas encore accomplie.',
+ already_claimed:'Récompense déjà réclamée.',
+ replacement_used:'Remplacement gratuit déjà utilisé aujourd’hui.',
+ title_locked:'Ce titre n’est pas encore débloqué.',
+ already_granted:'Ce joueur a déjà ce succès.',
+ conditional_achievement:'Ce succès se débloque automatiquement (cartes requises).',
 };
 export class GameError extends Error{
  constructor(public code:string,message:string,public definitive:boolean){super(message);}
