@@ -15,7 +15,12 @@ describe('préparation des illustrations',()=>{
   });
 });
 
-import {matchIllustrations,nameKey} from '../src/lib/admin';
+import {illustrationPaths,matchIllustrations,nameKey} from '../src/lib/admin';
+describe('rangement des illustrations',()=>{
+  it('range par édition et nomme d’après la carte',()=>{
+    expect(illustrationPaths('CAM',7,'png','1a2b3c4d')).toEqual({original:'CAM/originals/CAM-007-1a2b3c4d.png',display:'CAM/display/CAM-007-1a2b3c4d.webp'});
+  });
+});
 describe('association des illustrations par nom de fichier',()=>{
   const c=(id:string,name:string,status='draft')=>({id,name,status,edition_id:'e',number:1}) as AdminCharacter;
   const chars=[c('1','Norton'),c('2','Clément de Saint-Simon'),c('3','Arthur'),c('4','Arthur'),c('5','Rus','archived'),c('6','Isabeau de Sancerre')];

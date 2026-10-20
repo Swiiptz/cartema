@@ -87,7 +87,7 @@ function CharactersTab({catalog,act,client,onError}:{catalog:AdminCatalog;act:Ac
    <button className="primary ghost" disabled={!!edition?.archived_at} onClick={()=>{setBulk(!bulk);setDraft(null);}}><Images size={16}/> Associer des illustrations</button>
    <button className="primary" disabled={!!edition?.archived_at} onClick={()=>{setBulk(false);setDraft(emptyDraft(catalog,editionId));}}><Plus size={16}/> Nouveau personnage</button>
   </div>
-  {bulk&&edition&&<BulkIllustrations key={editionId} characters={catalog.characters.filter(c=>c.edition_id===editionId)} act={act} client={client} onClose={()=>setBulk(false)}/>}
+  {bulk&&edition&&<BulkIllustrations key={editionId} prefix={edition.prefix} characters={catalog.characters.filter(c=>c.edition_id===editionId)} act={act} client={client} onClose={()=>setBulk(false)}/>}
   <div className={`admin-split ${draft?'editing':''}`}>
    <ul className="admin-card-list" aria-label="Personnages de l’édition">
     {list.map(c=><li key={c.id}><button className={draft?.id===c.id?'on':''} onClick={()=>setDraft(toDraft(c))}><span className="admin-card-thumb"><TarotCard card={previewCard(toDraft(c),catalog)}/></span><span className="admin-card-meta"><strong>{c.number}. {c.name}</strong><span style={{color:c.is_unique?'#f3ecdf':palette[c.rarity]}}>{c.is_unique?'Carte unique':c.rarity}</span><span className={`status-chip ${c.status}`}>{STATUS_LABEL[c.status]}</span></span></button></li>)}
@@ -108,7 +108,7 @@ function CharacterEditor({draft,setDraft,catalog,act,client,onError}:{draft:Draf
  async function upload(file:File|undefined){
   if(!file)return;
   setBusy(true);
-  try{const {path,meta}=await uploadIllustration(client,file);setDraft({...draft,art_path:path,art_meta:meta});}
+  try{const prefix=catalog.editions.find(e=>e.id===draft.edition_id)?.prefix??'SANS';const {path,meta}=await uploadIllustration(client,file,{prefix,number:draft.number});setDraft({...draft,art_path:path,art_meta:meta});}
   catch(e){onError((e as Error).message);}
   finally{setBusy(false);}
  }
@@ -171,7 +171,7 @@ function CharacterEditor({draft,setDraft,catalog,act,client,onError}:{draft:Draf
 // ------------------------------------------------------------------ association groupée
 type BulkRow={file:File;candidates:AdminCharacter[];target:string;state:'pending'|'done'|'error'|'skipped';message?:string};
 
-function BulkIllustrations({characters,act,client,onClose}:{characters:AdminCharacter[];act:Act;client:SupabaseClient;onClose:()=>void}){
+function BulkIllustrations({prefix,characters,act,client,onClose}:{prefix:string;characters:AdminCharacter[];act:Act;client:SupabaseClient;onClose:()=>void}){
  const [rows,setRows]=useState<BulkRow[]>([]);
  const [replace,setReplace]=useState(false);
  const [running,setRunning]=useState(false);
@@ -190,7 +190,7 @@ function BulkIllustrations({characters,act,client,onClose}:{characters:AdminChar
     if(!ready.includes(r))continue;
     const ch=byId.get(r.target)!;
     try{
-     const {path,meta}=await uploadIllustration(c,r.file);
+     const {path,meta}=await uploadIllustration(c,r.file,{prefix,number:ch.number});
      await callRpc(c,'admin_save_character',{p_id:ch.id,p_edition_id:ch.edition_id,p_number:ch.number,p_name:ch.name,p_role_title:ch.role_title,p_clan_id:ch.clan_id,p_rarity:ch.rarity,p_art_path:path,p_art_meta:meta});
      update(i,{state:'done'});
     }catch(e){update(i,{state:'error',message:(e as Error).message});}
@@ -201,7 +201,7 @@ function BulkIllustrations({characters,act,client,onClose}:{characters:AdminChar
  const unmatched=rows.filter(r=>!r.candidates.length).length;
  return <section className="panel admin-bulk" aria-label="Associer des illustrations">
   <div className="section-header"><div><span className="eyebrow">Illustrations en lot</span><h2>Associer par nom de fichier</h2></div><button className="icon-button" aria-label="Fermer" onClick={onClose}><X size={18}/></button></div>
-  <p className="admin-hint">Le nom du fichier doit être celui de la carte (« Clément de Saint-Simon.png ») ou son prénom s’il est unique (« Norton.webp »). Accents, majuscules et tirets ne comptent pas. Les originaux sont conservés.</p>
+  <p className="admin-hint">Le nom du fichier doit être celui de la carte (« Clément de Saint-Simon.png ») ou son prénom s’il est unique (« Norton.webp »). Accents, majuscules et tirets ne comptent pas. Les originaux sont conservés, rangés dans le dossier {prefix}/ de l’édition.</p>
   <div className="admin-actions">
    <label className="primary ghost admin-upload"><FolderOpen size={16}/> Choisir un dossier<input type="file" multiple {...{webkitdirectory:''}} onChange={e=>{pick(e.target.files);e.target.value='';}}/></label>
    <label className="primary ghost admin-upload"><ImagePlus size={16}/> Choisir des images<input type="file" multiple accept={ACCEPTED_TYPES.join(',')} onChange={e=>{pick(e.target.files);e.target.value='';}}/></label>

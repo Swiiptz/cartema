@@ -64,13 +64,20 @@ async function toDisplayWebp(bitmap:ImageBitmap):Promise<Blob>{
  * Conserve l'original intact, publie une version d'affichage WebP (900 px de large, sans recadrage)
  * et renvoie le chemin public et les métadonnées à enregistrer sur le personnage.
  */
-export async function uploadIllustration(client:SupabaseClient,file:File):Promise<{path:string;meta:IllustrationMeta}>{
+/**
+ * Un dossier par édition, nommé d'après la carte : CAM/display/CAM-001-1a2b3c4d.webp.
+ * Le suffixe aléatoire évite qu'un remplacement soit masqué par le cache des navigateurs.
+ */
+export function illustrationPaths(prefix:string,number:number,ext:string,token:string){
+ const code=`${prefix}-${String(number).padStart(3,'0')}`;
+ return {original:`${prefix}/originals/${code}-${token}.${ext}`,display:`${prefix}/display/${code}-${token}.webp`};
+}
+
+export async function uploadIllustration(client:SupabaseClient,file:File,card:{prefix:string;number:number}):Promise<{path:string;meta:IllustrationMeta}>{
  const {bitmap,transparent}=await inspect(file);
- const id=crypto.randomUUID();
  const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
  const bucket=client.storage.from('illustrations');
- const original=`originals/${id}.${ext}`;
- const display=`display/${id}.webp`;
+ const {original,display}=illustrationPaths(card.prefix,card.number,ext,crypto.randomUUID().slice(0,8));
  const up1=await bucket.upload(original,file,{contentType:file.type,upsert:false});
  if(up1.error)throw new Error(`Envoi de l’original impossible : ${up1.error.message}`);
  const up2=await bucket.upload(display,await toDisplayWebp(bitmap),{contentType:'image/webp',upsert:false,cacheControl:'31536000'});

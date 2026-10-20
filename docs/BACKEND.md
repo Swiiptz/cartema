@@ -107,7 +107,8 @@ Migration `…150000_admin.sql`. Les RPC `admin_*` exigent `private.require_admi
 **Illustrations** : bucket Storage `illustrations`.
 - Lecture publique. Écriture, modification et suppression réservées à l'admin, par politique sur `storage.objects`.
 - 15 Mo maximum, formats PNG, WebP et JPEG.
-- Le navigateur vérifie que le fichier est bien une image décodable d'au moins 200 px. Il détecte la transparence et les dimensions, envoie l'**original intact** dans `originals/` et une **version d'affichage WebP de 900 px** dans `display/`, sans recadrage.
+- Le navigateur vérifie que le fichier est bien une image décodable d'au moins 200 px. Il détecte la transparence et les dimensions, envoie l'**original intact** et une **version d'affichage WebP de 900 px**, sans recadrage. Un dossier par édition, et chaque fichier porte le code de sa carte : `CAM/originals/CAM-007-1a2b3c4d.png` et `CAM/display/CAM-007-1a2b3c4d.webp`. Le suffixe aléatoire évite qu'un remplacement soit masqué par le cache. Les fichiers locaux du site suivent la même logique : `public/illustrations/CAM/CAM-001.webp`.
+- Changer l'illustration d'une carte déjà publiée est rétroactif : le rendu est recalculé à chaque affichage, y compris pour les exemplaires déjà possédés.
 - Le **cadrage par défaut est automatique** : détouré → portrait ; opaque de proportion classique → portrait ; opaque très vertical (≥ 1,8) ou paysage → remplissage. L'admin peut le corriger avec aperçu en direct, et dans les trois finitions, avant de publier.
 - Le chemin enregistré est vérifié côté serveur : stockage du projet ou `/illustrations/` uniquement.
 
