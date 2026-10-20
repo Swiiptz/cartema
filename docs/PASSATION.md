@@ -2,6 +2,10 @@
 
 Date : 20 octobre 2026 · état constaté dans le code local.
 
+## 0. Avancement depuis la passation
+
+- 20/10/2026 : Git initialisé. Architecture retenue : site statique GitHub Pages + Supabase, logique métier en fonctions Postgres. Première tranche backend livrée et testée sur PGlite (schéma, RLS, crédits Paris, boutique, ouverture atomique, album masqué) : voir `BACKEND.md`. L'UI n'est pas encore branchée ; le projet Supabase reste à relier.
+
 ## 1. Reprendre ici
 
 Le projet est une **démo visuelle avancée, pas encore un jeu connecté**. Le travail récent porte sur les cartes, les finitions, le booster et la lisibilité mobile. Les règles métier complètes restent dans `CAHIER_DES_CHARGES.md` ; ce document indique ce qui existe réellement et ce qui manque.
@@ -97,7 +101,7 @@ La position actuelle du médaillon est à la jonction portrait/cartouche (centre
 | `src/app/collection/page.tsx` | Interface de l’album, état local des filtres, compteurs de démo |
 | `src/data/demo.ts` | Seule source actuelle des cartes et du paquet de présentation ; à remplacer pour le jeu réel |
 | `src/lib/draw.ts` | Pondérations et tirage pur avec RNG injecté ; aucun accès DB |
-| `db/migrations/0001_init.sql` | Tables de départ seulement ; pas de RLS ni fonctions métier |
+| `supabase/migrations/` | Schéma, RLS et RPC transactionnelles (remplace l’ancien `db/migrations/0001_init.sql`) ; voir `BACKEND.md` |
 | `tests/` | Tests unitaires actuels ; à compléter avec intégration et concurrence |
 | `docs/design/` | Preview historique et captures de travail ; captures complémentaires, pas spécification métier |
 

@@ -19,7 +19,8 @@ Ouvrir http://localhost:3000. Le starter contient un design responsive, 5 sectio
 - `src/app` : pages Next.js App Router
 - `src/components` : composants réutilisables
 - `src/lib/draw.ts` : référence de probabilités, contrôles des distributions
-- `db/migrations/0001_init.sql` : **schéma de départ**, à étendre et sécuriser avant toute mise en production
+- `supabase/migrations/` : schéma, RLS et fonctions transactionnelles (voir `docs/BACKEND.md`)
+- `tests/db/` : tests d'intégration SQL sur PGlite
 - `tests/draw.test.ts` : quelques tests unitaires de référence
 
 ## Important avant la production
