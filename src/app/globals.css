@@ -332,3 +332,7 @@ a,button,.panel,.tarot-card,.inspect-card,input,select{transition:color var(--t-
 .segmented button{min-height:40px}
 .offer-confirm .primary,.auth-form .primary,.ask-dialog-actions .primary{border-radius:12px}
 @media(max-width:700px){.primary{min-height:44px;padding:10px 18px}.open-button{width:100%}}
+/* Accès boutique discret ; cases de réserve vides atténuées. */
+.buy-link{min-height:32px;gap:6px;font:500 12px var(--ui);color:var(--muted);opacity:.8}.buy-link svg{color:inherit}
+.buy-link:hover{color:var(--gold2);opacity:1}
+.reserve-pips i{width:10px;height:15px;border-color:#c9a45c2e;background:#ffffff04}.reserve-pips i.on{border-color:#f0d79a}

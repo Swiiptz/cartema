@@ -77,7 +77,7 @@ function Dashboard(){
     <p className="reserve-count"><strong><CountUp value={available}/></strong> booster{available>1?'s':''} prêt{available>1?'s':''}</p>
     <div className="reserve-pips" aria-label={`${b.free} boosters gratuits sur ${b.free_capacity}`}>{Array.from({length:b.free_capacity},(_,i)=><i key={i} className={i<b.free?'on':''}/>)}<small>{b.free}/{b.free_capacity} gratuits{b.purchased?` · ${b.purchased} acheté${b.purchased>1?'s':''}`:''}</small></div>
     <p className="reserve-next">{full?'Réserve pleine : ouvrez-en un pour ne pas perdre le prochain.':<>Prochain booster gratuit dans <Countdown to={b.next_free_at} onDone={onSlot}/></>}</p>
-    <div className="reserve-actions">{available>0&&<Link className="primary" href="/boosters/"><Sparkles size={16}/> {available>1?'Ouvrir mes boosters':'Ouvrir un booster'}</Link>}{available>0?<Link className="text-link buy-link" href="/boosters/?boutique=1"><Coins size={14}/> Acheter des boosters</Link>:<Link className="primary" href="/boosters/?boutique=1"><Coins size={16}/> Acheter des boosters</Link>}</div>
+    <div className="reserve-actions">{available>0&&<Link className="primary" href="/boosters/"><Sparkles size={16}/> {available>1?'Ouvrir mes boosters':'Ouvrir un booster'}</Link>}{available>0?<Link className="text-link buy-link" href="/boosters/?boutique=1"><Coins size={12}/> Acheter des boosters</Link>:<Link className="primary" href="/boosters/?boutique=1"><Coins size={16}/> Acheter des boosters</Link>}</div>
    </div>
   </section>
 
