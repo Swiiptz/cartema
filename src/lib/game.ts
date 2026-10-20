@@ -55,6 +55,19 @@ const messages:Record<string,string>={
  invalid_offer:'Offre inconnue.',
  handle_taken:'Ce pseudonyme est déjà pris.',
  invalid_handle:'Pseudonyme invalide : 3 à 24 caractères, lettres, chiffres, _ . -',
+ forbidden:'Accès réservé à l’administrateur.',
+ reason_required:'Un motif est obligatoire pour cette action.',
+ prefix_taken:'Ce préfixe est déjà utilisé par une autre édition.',
+ clan_taken:'Ce clan existe déjà.',
+ number_taken:'Ce numéro est déjà pris dans cette édition.',
+ name_required:'Le nom est obligatoire.',
+ invalid_art_path:'Illustration refusée : elle doit venir du stockage du projet.',
+ invalid_art_meta:'Réglage de cadrage invalide.',
+ already_published:'Une carte déjà publiée ne revient pas en brouillon : archivez-la.',
+ immutable_character:'Édition, numéro et rareté sont figés après création.',
+ immutable_edition:'Le préfixe est figé dès la première carte.',
+ edition_archived:'Cette édition est archivée.',
+ not_found:'Élément introuvable (rechargez la page).',
 };
 export class GameError extends Error{
  constructor(public code:string,message:string,public definitive:boolean){super(message);}

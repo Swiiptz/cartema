@@ -88,6 +88,31 @@ npm test
   - filtre de finition selon les finitions réellement obtenues ;
   - filtre d'édition dès qu'il en existe plusieurs.
 
+## Back-office (`/admin/`)
+
+Migration `…150000_admin.sql`. Les RPC `admin_*` exigent `private.require_admin()` : compte connecté, rôle `admin`, non suspendu. Chaque écriture ajoute une ligne à `admin_audit_logs` (état avant et après).
+
+| RPC | Effet |
+|---|---|
+| `admin_catalog()` | Éditions, avec complétude par rareté, clans, et tous les personnages, brouillons compris |
+| `admin_save_edition` | Crée ou modifie une édition (nom, préfixe figé dès la 1ʳᵉ carte, publication de l'album) |
+| `admin_set_packs(edition, actif, motif)` | Active ou suspend les boosters. **Motif obligatoire.** Refusé si l'une des 7 raretés manque |
+| `admin_archive_edition(edition, motif)` | Archive l'édition et arrête ses boosters. Jamais de suppression |
+| `admin_save_clan` | Crée ou renomme un clan. Les clans Toréador, Gangrel, Malkavien, Ventrue, Tremere, Brujah et Nosferatu ont déjà un symbole gravé |
+| `admin_save_character` | Crée un personnage, toujours en brouillon, ou le corrige. Numéro, rareté et édition restent figés |
+| `admin_set_character_status(id, statut, motif)` | Publie ou archive. **Motif obligatoire.** Une carte publiée ne revient jamais en brouillon |
+
+**Désigner l'administrateur** : une seule fois, en SQL, avec une ligne `admin_provision` dans le journal. Fait le 20/10/2026 pour Swiiptz sur le projet de dev.
+
+**Illustrations** : bucket Storage `illustrations`.
+- Lecture publique. Écriture, modification et suppression réservées à l'admin, par politique sur `storage.objects`.
+- 15 Mo maximum, formats PNG, WebP et JPEG.
+- Le navigateur vérifie que le fichier est bien une image décodable d'au moins 200 px. Il détecte la transparence et les dimensions, envoie l'**original intact** dans `originals/` et une **version d'affichage WebP de 900 px** dans `display/`, sans recadrage.
+- Le **cadrage par défaut est automatique** : détouré → portrait ; opaque de proportion classique → portrait ; opaque très vertical (≥ 1,8) ou paysage → remplissage. L'admin peut le corriger avec aperçu en direct, et dans les trois finitions, avant de publier.
+- Le chemin enregistré est vérifié côté serveur : stockage du projet ou `/illustrations/` uniquement.
+
+Pas encore fait : import Google Sheets, couverture d'édition, symboles de clan personnalisés (téléversés), outils économiques (ajout ou retrait de boosters et de Deniers, réglages versionnés), modération.
+
 ## Développement et déploiement
 
 ```bash
@@ -95,7 +120,9 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Après avoir rempli `.env.local` avec l'URL et la clé anon, ouvrir http://localhost:3000.
+Après avoir rempli `.env.local` avec l'URL et la clé publique, ouvrir http://localhost:3000.
+
+**Ne pas lancer `npm run build` pendant que `npm run dev` tourne** : les deux partagent `.next/` et le serveur de dev se met à renvoyer des 404. En cas de souci, arrêter le serveur, supprimer `.next/`, relancer.
 
 - `npm run build` produit le site statique dans `out/`. `npm run start` le sert sur le port 3101.
 - **Déploiement manuel** : `.github/workflows/deploy-pages.yml`, à lancer depuis l'onglet *Actions*. Le workflow exécute les tests, le build avec `NEXT_PUBLIC_BASE_PATH` fourni par GitHub Pages, puis la publication. Les prérequis sont indiqués en tête du fichier.
