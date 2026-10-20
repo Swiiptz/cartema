@@ -169,3 +169,11 @@
 .ask-dialog::backdrop{background:#05030699;backdrop-filter:blur(3px)}
 .ask-dialog-body{display:flex;flex-direction:column;gap:14px;padding:24px}.ask-dialog-body h2{margin:0;font-size:22px}.ask-dialog-body p{margin:0;font:400 14px/1.6 var(--ui)}
 .ask-dialog-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}.ask-dialog-actions .primary{flex:1 1 140px}
+/* Messages du back-office : flottants, visibles quel que soit le défilement. */
+.admin-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:60;width:min(520px,calc(100vw - 32px));display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.admin-toast p{pointer-events:auto;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0!important;box-shadow:0 10px 30px #000b;backdrop-filter:blur(8px);animation:toast-in .3s ease-out both}
+.admin-toast .auth-notice{background:#2a2016f2}.admin-toast .auth-error{background:#3a0d18f2}
+.admin-toast .icon-button{min-width:36px;min-height:36px;background:none;border:0;color:inherit}
+@keyframes toast-in{from{transform:translateY(10px);opacity:0}}
+@media(max-width:700px){.admin-toast{bottom:96px}}
+@media(prefers-reduced-motion:reduce){.admin-toast p{animation:none}}
