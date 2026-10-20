@@ -13,7 +13,9 @@ describe('comptes',()=>{
   it('crée profil, portefeuille et compteur de boosters à l’inscription',async()=>{
     const state=await rpc(db,alice,'get_player_state');
     expect(state.profile.role).toBe('player');
-    expect(state.balance).toBe(1000);
+    expect(state.daily_reward).toBe(25); // bonus de connexion du jour
+    expect(state.balance).toBe(1025);
+    expect((await rpc(db,alice,'get_player_state')).daily_reward).toBe(0);
     expect(state.boosters).toMatchObject({free:0,purchased:0,free_capacity:6});
   });
   it('impose un pseudo unique sans tenir compte de la casse',async()=>{
