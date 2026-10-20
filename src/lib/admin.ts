@@ -10,7 +10,7 @@ export type AdminCharacter={id:string;edition_id:string;clan_id:string|null;numb
 export type AdminCatalog={editions:AdminEdition[];clans:AdminClan[];characters:AdminCharacter[]};
 
 /** Clans dont le moteur de cartes possède déjà un symbole gravé (tarot-renderer.js). */
-export const ENGRAVED_CLANS=['Toréador','Gangrel','Malkavien','Ventrue','Tremere','Brujah','Nosferatu'];
+export const ENGRAVED_CLANS=['Toréador','Gangrel','Malkavien','Ventrue','Tremere','Brujah','Nosferatu','Lasombra','Assamite','Ravnos','Giovanni','Sethite','Baali','Tzimisce'];
 
 export const ACCEPTED_TYPES=['image/png','image/webp','image/jpeg'];
 export const MAX_UPLOAD_BYTES=15*1024*1024;
