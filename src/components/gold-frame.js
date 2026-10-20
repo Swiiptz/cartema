@@ -1,0 +1,27 @@
+// Gilded finish: fixed sculpted leaves, with highlights layered above the illustration.
+export function goldDefinitions(u){return `<mask id="gold-foil${u}" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="300" style="mask-type:alpha"><use href="#gold-engraving${u}"/><rect x="6" y="6" width="188" height="288" rx="7" fill="none" stroke="white" stroke-width="2.8"/><circle cx="100" cy="205" r="17" fill="none" stroke="white" stroke-width="1.7"/></mask><linearGradient id="foil-sweep${u}" x1="0" x2="1"><stop stop-color="#fff2b7" stop-opacity="0"/><stop offset=".25" stop-color="#fce397" stop-opacity=".1"/><stop offset=".48" stop-color="#fffff3" stop-opacity="1"/><stop offset=".57" stop-color="#fff7cb" stop-opacity=".75"/><stop offset="1" stop-color="#e9c570" stop-opacity="0"/></linearGradient><clipPath id="gold-safe${u}"><path d="M0 0H200V300H0Z M38 223H162V281H38Z M80 283H120V296H80Z" clip-rule="evenodd"/></clipPath><radialGradient id="amber${u}" cx=".3" cy=".2" r=".8"><stop stop-color="#fff9e8"/><stop offset=".23" stop-color="#e8d9ae"/><stop offset=".62" stop-color="#9f8958"/><stop offset="1" stop-color="#51432d"/></radialGradient><mask id="gold-margin${u}" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="207"><rect width="200" height="207" fill="white"/><ellipse cx="100" cy="107" rx="62" ry="82" fill="black"/></mask><linearGradient id="leaf-light${u}" x1="0" x2="1"><stop stop-color="#ffeab5" stop-opacity="0"/><stop offset=".5" stop-color="#fff4ce" stop-opacity=".45"/><stop offset="1" stop-color="#ffeab5" stop-opacity="0"/></linearGradient>`;}
+export function goldSurface(u){
+ const stars=[{x:28,y:43,r:3.1,t:5.8,d:-1.7},{x:169,y:59,r:2.5,t:7.3,d:-4.1},{x:25,y:108,r:2,t:6.7,d:-2.6},{x:176,y:139,r:3,t:6.2,d:-5.3},{x:32,y:183,r:2.6,t:7.8,d:-.8},{x:158,y:190,r:2,t:5.9,d:-3.4},{x:64,y:24,r:1.7,t:8.1,d:-5.1},{x:141,y:28,r:2.1,t:7.1,d:-1.5}];
+ return `<g class="gold-surface" mask="url(#gold-margin${u})" pointer-events="none"><g class="gold-constellation">${stars.map(({x,y,r,t,d})=>`<g transform="translate(${x} ${y})"><g class="gold-astral-star" style="--star-time:${t}s;--star-delay:${d}s"><path d="M0 ${-r*1.6} ${r*.23} ${-r*.23} ${r} 0 ${r*.23} ${r*.23} 0 ${r*1.6} ${-r*.23} ${r*.23} ${-r} 0 ${-r*.23} ${-r*.23}Z" fill="#fff9e3"/><circle r=".55" fill="white"/></g></g>`).join('')}<g fill="#e9ddb5" opacity=".6"><circle cx="34" cy="65" r=".45"/><circle cx="174" cy="113" r=".5"/><circle cx="26" cy="161" r=".4"/><circle cx="161" cy="47" r=".4"/></g></g></g>`;
+}
+export function goldFrame(u){
+ const metal=`url(#metal${u})`;
+ const scroll='M12 68C29 52 8 40 21 24 30 13 44 22 55 11M13 88C32 107 6 117 16 135 29 154 6 163 15 183M12 219C32 205 9 190 23 179M13 264C32 247 10 235 24 223M13 277C28 293 49 276 66 291';
+ const leaves=Array.from({length:4},(_,i)=>{const y=37+i*45;return `<g transform="translate(0 ${y})"><path d="M14 0C20-8 30-8 27-16 17-16 16-7 14 0ZM15 0C12-10 6-13 9-19 17-18 20-9 15 0Z" fill="${metal}" stroke="#68481d" stroke-width=".45"/><path d="M15-1 25-13M15-3 10-15" stroke="#fff7df" stroke-width=".45" opacity=".75"/></g>`;}).join('');
+ const half=`<path d="${scroll}" fill="none" stroke="#35220e" stroke-width="4.8"/><path d="${scroll}" fill="none" stroke="${metal}" stroke-width="2.8"/><path d="M14 64C26 52 10 39 23 25M16 135C27 153 9 163 16 178M15 276Q34 290 54 285" fill="none" stroke="#fff7df" stroke-width=".6"/>
+ ${leaves}<g fill="none" stroke="${metal}" stroke-width=".85"><path d="M18 26C30 31 43 26 38 18 34 12 28 19 31 22M14 79C24 74 29 84 23 90 19 94 15 88 19 86M16 141C28 140 29 153 22 155 17 157 17 151 21 151M16 269C31 261 40 274 34 280 29 285 24 280 28 277"/><path d="M11 98Q28 112 15 125M13 181Q30 189 16 202"/></g>
+ <path d="M16 66 23 76 16 86 9 76Z" fill="#19100b" stroke="${metal}" stroke-width="1"/><path d="M16 70 20 76 16 82 12 76Z" fill="url(#amber${u})"/>
+ <path d="M16 147 17.5 153 23 155 17.5 157 16 163 14.5 157 9 155 14.5 153Z" fill="${metal}"/>
+ <path class="gold-engraving-facet" d="${scroll}" fill="none" stroke="#fff4c9" stroke-width=".85" stroke-linecap="round" opacity=".35"/>
+ <path d="M17 226Q30 221 29 237 29 245 22 245 16 243 20 238M22 279Q35 284 40 275" fill="none" stroke="${metal}" stroke-width="1.3"/>`;
+ return `<g id="gold-engraving${u}" class="gilded-ornament" clip-path="url(#gold-safe${u})" pointer-events="none">${half}<g transform="translate(200 0) scale(-1 1)">${half}</g>
+ <g stroke="${metal}" fill="none" stroke-width="1"><path d="M24 11Q48 23 77 11M176 11Q152 23 123 11M48 11Q56 27 69 21 74 17 68 14 63 12 63 17M152 11Q144 27 131 21 126 17 132 14 137 12 137 17"/><path d="M83 11 91 16 100 4 109 16 117 11M85 17 94 21M115 17 106 21"/></g>
+ <path d="M100 8 104 15 100 24 96 15Z" fill="url(#amber${u})" stroke="${metal}" stroke-width="1"/>
+ <path class="gold-cabochon-glint" d="M98 14 100 10 101 14" fill="none" stroke="#fff8dd" stroke-width=".8"/>
+ <g fill="none" stroke="${metal}" stroke-width="1"><path d="M29 208Q43 194 64 201M171 208Q157 194 136 201M40 206Q50 196 65 204M160 206Q150 196 135 204M45 285Q59 273 77 287M155 285Q141 273 123 287"/></g>
+ <g fill="url(#amber${u})" stroke="${metal}" stroke-width=".6"><path d="M25 263 30 270 25 277 20 270Z"/><path d="M175 263 180 270 175 277 170 270Z"/></g>
+ </g>`;
+}
+
+// The sweep is clipped to metalwork only, including on fully opaque illustrations.
+export function goldShine(u){return `<g class="gold-foil-overlay" mask="url(#gold-foil${u})" pointer-events="none"><path class="gold-foil-sweep" d="M-100-30H-55L68 330H23Z" fill="url(#foil-sweep${u})"/></g>`;}
