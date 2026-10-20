@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
-import {Award,Clock,Crown,Info,Lock,Medal,ScrollText,Trophy,X} from 'lucide-react';
+import {Award,ChevronDown,Clock,Crown,Info,Lock,Medal,ScrollText,Trophy,X} from 'lucide-react';
 import {useAuth} from '@/components/AuthProvider';
 import {useAsk} from '@/components/AskDialog';
 import {Countdown,Skeleton} from '@/components/ui';
@@ -71,34 +71,64 @@ export default function Progression(){
  </div>;
 }
 
+type Group={key:string;title:string;subgroups:{key:string;title:string;items:Achievement[]}[]};
+
 function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievement[];unlocked:number;currentTitle:string|null;busy:boolean;onTitle:(code:string|null)=>void}){
- const [open,setOpen]=useState<string|null>(null);
+ const [info,setInfo]=useState<string|null>(null);
  const groups=useMemo(()=>{
-  const out:{key:string;title:string;items:Achievement[]}[]=[];
+  const out:Group[]=[];
   const editions=[...new Set(list.filter(a=>a.category==='collection').map(a=>a.edition??''))];
   for(const ed of editions){
    const items=list.filter(a=>a.category==='collection'&&(a.edition??'')===ed);
-   out.push({key:`ed-${ed}`,title:`Collection · ${ed}`,items:[...items.filter(a=>a.code.endsWith(':all')),...items.filter(a=>a.code.includes(':rarity:')),...items.filter(a=>a.code.includes(':clan:'))]});
+   out.push({key:`ed-${ed}`,title:`Collection · ${ed}`,subgroups:[
+    {key:'all',title:'Édition complète',items:items.filter(a=>a.code.endsWith(':all'))},
+    {key:'rarity',title:'Raretés',items:items.filter(a=>a.code.includes(':rarity:'))},
+    {key:'clan',title:'Clans',items:items.filter(a=>a.code.includes(':clan:'))}].filter(s=>s.items.length)});
   }
-  const custom=list.filter(a=>a.category==='custom');if(custom.length)out.push({key:'custom',title:'Succès de la chronique',items:custom});
-  out.push({key:'general',title:'Succès généraux',items:list.filter(a=>a.category==='general')});
+  const custom=list.filter(a=>a.category==='custom');
+  if(custom.length)out.push({key:'custom',title:'Succès de la chronique',subgroups:[
+   {key:'visible',title:'',items:custom.filter(a=>!a.secret)},
+   {key:'secret',title:'Secrets',items:custom.filter(a=>a.secret)}].filter(s=>s.items.length)});
+  const general=list.filter(a=>a.category==='general');
+  out.push({key:'general',title:'Succès généraux',subgroups:[
+   {key:'visible',title:'',items:general.filter(a=>!a.secret)},
+   {key:'secret',title:'Secrets',items:general.filter(a=>a.secret)}].filter(s=>s.items.length)});
   return out;
  },[list]);
+ // Catégories repliables : la première est ouverte, le choix est mémorisé sur l'appareil.
+ const [opened,setOpened]=useState<Record<string,boolean>>({});
+ useEffect(()=>{try{const raw=localStorage.getItem('cartema.achievements.open');if(raw)setOpened(JSON.parse(raw));}catch{/* facultatif */}},[]);
+ const isOpen=(key:string,fallback:boolean)=>opened[key]??fallback;
+ const toggle=(key:string,fallback:boolean)=>setOpened(o=>{const n={...o,[key]:!(o[key]??fallback)};try{localStorage.setItem('cartema.achievements.open',JSON.stringify(n));}catch{/* facultatif */}return n;});
+ const count=(items:Achievement[])=>`${items.filter(a=>a.unlocked_at).length}/${items.length}`;
  const titles=list.filter(a=>a.unlocked_at&&a.title);
+
+ const item=(a:Achievement,i:number)=>{const done=!!a.unlocked_at;const hidden=a.secret&&!done;const hasInfo=!!a.description||!!a.reason;return <li key={a.code} className={`achievement rise ${done?'done':''} ${hidden?'secret':''}`} style={{'--i':Math.min(i,12),'--rc':a.rarity?palette[a.rarity]:'var(--gold)'} as React.CSSProperties}>
+  <span className="ach-medal" aria-hidden="true">{hidden?<Lock size={16}/>:<Award size={18}/>}</span>
+  <div className="ach-body">
+   <div className="ach-head"><strong>{hidden?'Succès secret':a.label}</strong>{hasInfo&&!hidden&&<button className="info-btn" aria-label="Explication" aria-expanded={info===a.code} onClick={()=>setInfo(info===a.code?null:a.code)}><Info size={13}/></button>}</div>
+   {info===a.code&&<p className="ach-bubble" role="note">{a.description}{a.reason&&<span className="ach-reason">Décerné : {a.reason}</span>}</p>}
+   {hidden?<small className="muted">Continuez à jouer pour le révéler.</small>
+    :done?<small className="ach-date">Obtenu le {new Date(a.unlocked_at!).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}{a.title?` · titre « ${a.title} »`:''}</small>
+    :<div className="ach-progress"><div className="meter"><i style={{'--v':`${a.target?Math.min(100,(a.progress??0)/a.target*100):0}%`} as React.CSSProperties}/></div><small>{a.progress??0}/{a.target}</small></div>}
+   {!hidden&&((a.reward_deniers??0)>0||(a.reward_boosters??0)>0)&&<small className="ach-reward">{(a.reward_deniers??0)>0&&`+${a.reward_deniers} Deniers`}{(a.reward_boosters??0)>0&&` · +${a.reward_boosters} booster${(a.reward_boosters??0)>1?'s':''}`}</small>}
+  </div>
+ </li>;};
+
  return <div className="social-col">
   <div className="panel title-panel"><div><span className="eyebrow">Succès</span><strong className="title-count">{unlocked} / {list.length}</strong></div>
    <label className="auth-field title-select"><span><Medal size={14}/> Titre porté</span><select value={titles.find(t=>t.title===currentTitle)?.code??''} disabled={busy||!titles.length} onChange={e=>onTitle(e.target.value||null)}><option value="">{titles.length?'Aucun titre':'Aucun titre débloqué'}</option>{titles.map(t=><option key={t.code} value={t.code}>{t.title}</option>)}</select></label>
   </div>
-  {groups.map(g=><section key={g.key} className="social-section"><h2>{g.title}</h2><ul className="achievement-grid">{g.items.map((a,i)=>{const done=!!a.unlocked_at;const hasInfo=!!a.description||!!a.reason;return <li key={a.code} className={`achievement rise ${done?'done':''} ${a.secret&&!done?'secret':''}`} style={{'--i':Math.min(i,12),'--rc':a.rarity?palette[a.rarity]:'var(--gold)'} as React.CSSProperties}>
-   <span className="ach-medal" aria-hidden="true">{a.secret&&!done?<Lock size={16}/>:<Award size={18}/>}</span>
-   <div className="ach-body">
-    <div className="ach-head"><strong>{a.secret&&!done?'Succès secret':a.label}</strong>{hasInfo&&!(a.secret&&!done)&&<button className="info-btn" aria-label="Explication" aria-expanded={open===a.code} onClick={()=>setOpen(open===a.code?null:a.code)}><Info size={13}/></button>}</div>
-    {open===a.code&&<p className="ach-bubble" role="note">{a.description}{a.reason&&<span className="ach-reason">Décerné : {a.reason}</span>}</p>}
-    {a.secret&&!done?<small className="muted">Continuez à jouer pour le révéler.</small>
-     :done?<small className="ach-date">Obtenu le {new Date(a.unlocked_at!).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}{a.title?` · titre « ${a.title} »`:''}</small>
-     :<div className="ach-progress"><div className="meter"><i style={{'--v':`${a.target?Math.min(100,(a.progress??0)/a.target*100):0}%`} as React.CSSProperties}/></div><small>{a.progress??0}/{a.target}</small></div>}
-    {!(a.secret&&!done)&&((a.reward_deniers??0)>0||(a.reward_boosters??0)>0)&&<small className="ach-reward">{(a.reward_deniers??0)>0&&`+${a.reward_deniers} Deniers`}{(a.reward_boosters??0)>0&&` · +${a.reward_boosters} booster${(a.reward_boosters??0)>1?'s':''}`}</small>}
-   </div>
-  </li>;})}</ul></section>)}
+  {groups.map((g,gi)=>{const all=g.subgroups.flatMap(s=>s.items);const open=isOpen(g.key,gi===0);return <section key={g.key} className={`ach-group ${open?'open':''}`}>
+   <button className="ach-group-head" aria-expanded={open} onClick={()=>toggle(g.key,gi===0)}><ChevronDown size={18} className="chevron"/><h2>{g.title}</h2><span className="ach-count">{count(all)}</span></button>
+   <div className={`collapsible ${open?'open':''}`} inert={!open}><div className="collapsible-inner"><div className="ach-group-body">
+    {g.subgroups.map(sg=>{const key=`${g.key}/${sg.key}`;if(!sg.title)return <ul key={key} className="achievement-grid">{sg.items.map(item)}</ul>;
+     const sOpen=isOpen(key,sg.key==='all'||sg.key==='visible');
+     return <div key={key} className={`ach-sub ${sOpen?'open':''}`}>
+      <button className="ach-sub-head" aria-expanded={sOpen} onClick={()=>toggle(key,sg.key==='all'||sg.key==='visible')}><ChevronDown size={15} className="chevron"/><span>{sg.title}</span><span className="ach-count">{count(sg.items)}</span></button>
+      <div className={`collapsible ${sOpen?'open':''}`} inert={!sOpen}><div className="collapsible-inner"><ul className="achievement-grid">{sg.items.map(item)}</ul></div></div>
+     </div>;})}
+   </div></div></div>
+  </section>;})}
  </div>;
 }

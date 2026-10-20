@@ -134,3 +134,16 @@ describe('succès conditionnels personnalisés',()=>{
     expect(a.unlocked_at).not.toBeNull();
   });
 });
+
+describe('succès conditionnels secrets',()=>{
+  it('apparaissent comme « succès secret » jusqu’au déblocage',async()=>{
+    const admin=(await db.query<{id:string}>(`select id from public.profiles where role='admin'`)).rows[0].id;
+    const {rows:chars}=await db.query<{id:string}>(`select id from public.characters where edition_id=$1 and number in (7,8)`,[edition]);
+    const code=await rpc<string>(db,admin,'admin_save_achievement',[null,'Le pacte caché','Avoir réuni les deux frères.',true,100,0,null,chars.map(c=>c.id)]);
+    const u=await player('curieux');
+    expect((await rpc<any[]>(db,u,'get_achievements')).find(x=>x.code===code)).toEqual({code,secret:true,category:'custom',label:null,unlocked_at:null});
+    await discover(u,`c.number in (7,8)`);
+    expect((await rpc<any[]>(db,u,'get_achievements')).find(x=>x.code===code)).toMatchObject({label:'Le pacte caché',description:'Avoir réuni les deux frères.'});
+    expect((await rpc(db,u,'get_player_state')).missions_ready).toBeGreaterThanOrEqual(0);
+  });
+});

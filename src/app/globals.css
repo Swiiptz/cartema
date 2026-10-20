@@ -593,3 +593,20 @@ a,button,.panel,.tarot-card,.inspect-card,input,select{transition:color var(--t-
 .rank-title{color:var(--gold)!important}.rank-score{font:600 18px var(--display);color:var(--gold2)}
 .dash-missions{display:flex;flex-direction:column;gap:12px}.dash-missions .section-header{margin:0}.dash-missions h2{margin:6px 0 0;font-size:20px}.dash-missions h2 small{font:400 13px var(--ui);color:var(--muted)}.dash-missions h2 time{color:var(--gold2)}
 .chip-row{display:flex;flex-wrap:wrap;gap:6px}.chip-row .chip{cursor:pointer}
+/* Succès : catégories repliables. */
+.ach-group{border:1px solid var(--line);border-radius:16px;background:#120c12;overflow:hidden}
+.ach-group-head{width:100%;display:flex;align-items:center;gap:10px;padding:14px 16px;border:0;background:none;color:var(--text);text-align:left;cursor:pointer}
+.ach-group-head h2{flex:1;margin:0;font-size:19px}
+.ach-group-head:hover{background:#ffffff05}
+.chevron{flex-shrink:0;color:var(--gold);transition:transform .35s var(--ease-out);transform:rotate(-90deg)}
+[aria-expanded=true]>.chevron{transform:none}
+.ach-count{font:600 12px var(--ui);color:var(--gold2);padding:3px 9px;border-radius:999px;border:1px solid #c9a45c44;font-variant-numeric:tabular-nums}
+.ach-group-body{display:flex;flex-direction:column;gap:10px;padding:0 12px 14px}
+.ach-sub{border-top:1px solid #c9a45c18;padding-top:4px}
+.ach-sub-head{width:100%;display:flex;align-items:center;gap:8px;padding:10px 4px;border:0;background:none;color:var(--muted);font:600 13px var(--ui);text-align:left;cursor:pointer}
+.ach-sub-head span:first-of-type{flex:1;color:var(--text)}
+.ach-sub .achievement-grid{padding-bottom:6px}
+/* Navigation à 6 onglets : plus compacte sur mobile. */
+@media(max-width:700px){.nav a{font-size:11px;gap:4px;padding-inline:2px}}
+@media(max-width:380px){.nav a{font-size:10px}}
+@media(min-width:701px){.nav{gap:30px}}
