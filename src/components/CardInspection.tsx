@@ -34,7 +34,7 @@ export function CardInspection({card,finishesSeen,characterId,onChanged}:{card:D
  };
  const untilt=(e:React.PointerEvent<HTMLDivElement>)=>{e.currentTarget.style.setProperty('--rx','0deg');e.currentTarget.style.setProperty('--ry','0deg');};
  return <><button className="inspect-card" aria-label={`Examiner ${card.known?card.name:'la carte inconnue'}`} onClick={()=>{setFinish(card.finish||'Standard');setOpen(true);dialog.current?.showModal();}}><TarotCard card={card}/><span className="inspect-hint"><Expand size={13}/> Examiner la carte</span></button>
- <dialog className="card-dialog" ref={dialog} aria-labelledby={title} onClose={()=>setOpen(false)} onCancel={e=>{e.preventDefault();close();}} onClick={e=>{if(e.target===e.currentTarget)close();}}><div className="card-dialog-content">
+ <dialog className="card-dialog" ref={dialog} aria-labelledby={title} onClose={e=>{if(e.target===e.currentTarget)setOpen(false);}} onCancel={e=>{if(e.target!==e.currentTarget)return;e.preventDefault();close();}} onClick={e=>{if(e.target===e.currentTarget)close();}}><div className="card-dialog-content">
   <button className="icon-button dialog-close" aria-label="Fermer le détail" onClick={close}><X size={20}/></button>
   <div className="dialog-art" onPointerMove={tilt} onPointerLeave={untilt}><TarotCard key={finish} card={{...card,finish:card.known?finish:card.finish}}/></div>
   <div className="dialog-copy">
@@ -90,11 +90,19 @@ function OwnedCopies({characterId,onChanged}:{characterId:string;onChanged:()=>v
  return <section className="owned-copies" aria-label="Vos exemplaires">
   {askNode}
   <div className="owned-head"><span className="eyebrow">Vos exemplaires</span><strong>{items.length}</strong></div>
-  {items.length===0?<p className="muted">Vous ne possédez plus d’exemplaire de cette carte. Elle reste découverte dans votre album.</p>:<ul className="owned-list">{items.map(it=><li key={it.instance_id} className={`finish-${it.finish==='Dorée'?'gold':it.finish==='Sanglante'?'blood':'standard'}`}>
-   <span className="owned-finish">{it.finish}<small>{new Date(it.acquired_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}{it.listing_id?` · en vente à ${(it.listing_price??0).toLocaleString('fr-FR')}`:it.reserved?' · engagée':''}</small></span>
-   <button className={`icon-button lock-button ${it.locked?'on':''}`} disabled={busy} aria-pressed={it.locked} aria-label={it.locked?'Déverrouiller cet exemplaire':'Verrouiller cet exemplaire'} title={it.locked?'Verrouillée : protégée du recyclage et des ventes':'Verrouiller'} onClick={()=>void toggleLock(it)}>{it.locked?<Lock size={16}/>:<LockOpen size={16}/>}</button>
-   {it.listing_id?<button className="text-link recycle-link" disabled={busy} onClick={()=>void unlist(it)}>Retirer</button>:<button className="text-link recycle-link" disabled={busy||it.locked||it.reserved} onClick={()=>void sell(it)} aria-label="Vendre cet exemplaire"><Tag size={13}/> Vendre</button>}
-   {it.unique?<span className="owned-note">Indestructible</span>:<button className="text-link recycle-link" disabled={busy||it.locked||it.reserved} onClick={()=>void recycle([it])} aria-label={`Recycler pour ${it.value} Deniers`}><Recycle size={13}/> {it.value.toLocaleString('fr-FR')}</button>}
+  {items.length===0?<p className="muted">Vous ne possédez plus d’exemplaire de cette carte. Elle reste découverte dans votre album.</p>:<ul className="owned-list">{items.map(it=><li key={it.instance_id} className={`finish-${it.finish==='Dorée'?'gold':it.finish==='Sanglante'?'blood':'standard'} ${it.listing_id?'listed':''}`}>
+   <div className="owned-top">
+    <span className="owned-finish">{it.finish}<small>Obtenue le {new Date(it.acquired_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}</small></span>
+    {it.listing_id?<span className="listed-badge"><Tag size={12}/> En vente · {(it.listing_price??0).toLocaleString('fr-FR')}</span>
+     :<button className={`lock-toggle ${it.locked?'on':''}`} disabled={busy} aria-pressed={it.locked} aria-label={it.locked?'Déverrouiller cet exemplaire':'Verrouiller cet exemplaire'} onClick={()=>void toggleLock(it)}>{it.locked?<Lock size={14}/>:<LockOpen size={14}/>}<span>{it.locked?'Verrouillée':'Verrouiller'}</span></button>}
+   </div>
+   <div className="owned-actions">
+    {it.listing_id?<button className="action-btn" disabled={busy} onClick={()=>void unlist(it)}><X size={14}/> Retirer la vente</button>
+     :<><button className="action-btn sell" disabled={busy||it.locked||it.reserved} onClick={()=>void sell(it)}><Tag size={14}/> Vendre</button>
+      <span className="action-sep" aria-hidden="true"/>
+      {it.unique?<span className="owned-note">Indestructible</span>:<button className="action-btn recycle" disabled={busy||it.locked||it.reserved} onClick={()=>void recycle([it])}><Recycle size={14}/> Recycler <b>+{it.value.toLocaleString('fr-FR')}</b></button>}</>}
+   </div>
+   {it.locked&&!it.listing_id&&<small className="owned-hint">Verrouillée : protégée de la vente et du recyclage.</small>}
   </li>)}</ul>}
   {extras.length>0&&<button className="primary ghost compact" disabled={busy} onClick={()=>void recycle(extras)}><Recycle size={14}/> Recycler les {extras.length} doublon{extras.length>1?'s':''} Standard · +{extras.reduce((s,i)=>s+i.value,0).toLocaleString('fr-FR')}</button>}
   {message.error&&<p className="auth-error" role="alert">{message.error}</p>}{message.notice&&<p className="auth-notice" role="status">{message.notice}</p>}

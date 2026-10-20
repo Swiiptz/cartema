@@ -483,3 +483,20 @@ a,button,.panel,.tarot-card,.inspect-card,input,select{transition:color var(--t-
 .history-name{display:flex;flex-direction:column;font-weight:600}.history-name small{font:400 11px var(--ui);color:var(--muted)}
 .history-kind{color:var(--muted);font-size:12px}.market-history strong{font-variant-numeric:tabular-nums}.market-history .gain{color:#9fd8b0}.market-history .loss{color:#e8a3b0}
 @media(max-width:700px){.market-filters{grid-template-columns:1fr 1fr}.market-filters .search-field{grid-column:1/-1}.market-history li{grid-template-columns:1fr auto}.history-kind{grid-column:1;grid-row:2;font-size:11px}}
+/* Exemplaires : informations en haut, actions séparées en bas. */
+.owned-list li{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:12px}
+.owned-list li.listed{border-color:#c9a45c66;background:linear-gradient(170deg,#c9a45c10,#160f16)}
+.owned-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.lock-toggle{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:4px 11px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--muted);font:500 12px var(--ui)}
+.lock-toggle.on{border-color:#c9a45c88;color:var(--gold2);background:#c9a45c14}
+.lock-toggle svg{transition:transform .3s var(--ease-out)}.lock-toggle:active svg{transform:scale(.85)}
+.listed-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;background:linear-gradient(170deg,#f0d79a,#b8893e);color:#2a170b;font:700 12px var(--ui)}
+.owned-actions{display:flex;align-items:stretch;border-top:1px solid #c9a45c18;padding-top:10px}
+.action-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;border:0;border-radius:10px;background:none;font:600 13px var(--ui);color:var(--muted);cursor:pointer}
+.action-btn:hover:not(:disabled){background:#ffffff08;color:var(--text)}
+.action-btn:disabled{opacity:.35;cursor:default}
+.action-btn.sell{color:var(--gold2)}.action-btn.sell:hover:not(:disabled){background:#c9a45c14;color:var(--gold2)}
+.action-btn.recycle b{color:var(--gold);font-weight:700}
+.action-sep{width:1px;margin:6px 4px;background:#c9a45c26}
+.owned-hint{font:400 11px var(--ui);color:var(--muted)}
+.owned-actions .owned-note{flex:1;display:grid;place-items:center}
