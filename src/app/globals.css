@@ -655,3 +655,24 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .featured-pick-mark{flex-shrink:0;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;border:1px solid color-mix(in srgb,var(--rc) 60%,transparent);color:var(--rc);font:700 13px var(--display)}
 .featured-picker button.on .featured-pick-mark{background:var(--rc);color:#1a0f08}
 .showcase .inspect-hint{display:none}.showcase .inspect-card{width:100%}
+
+/* Admin : joueurs */
+.admin-players{display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:16px;align-items:start}
+.admin-player-list{display:flex;flex-direction:column;gap:10px;padding:16px}.admin-player-list ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;max-height:60vh;overflow:auto}
+.admin-player-list li button{width:100%;display:flex;align-items:center;gap:10px;text-align:left;padding:8px 10px;border-radius:10px;border:1px solid transparent;background:none;flex-wrap:wrap}
+.admin-player-list li button:hover{background:#c9a45c0a}.admin-player-list li button.on{border-color:#c9a45c55;background:#c9a45c12}
+.admin-player-list .person-name{flex:1;min-width:0}.admin-player-list em{color:var(--muted)}
+.status-chip.danger{color:#ff8a9a;border-color:#d0344f66}.status-chip.warn{color:#f0c27a;border-color:#c9a45c66}
+.admin-player{display:flex;flex-direction:column;gap:16px}.admin-player .section-header{margin:0;align-items:flex-start}.admin-player h2{margin:4px 0}
+.admin-flags{gap:8px}
+.admin-player-stats{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.admin-player-stats li{display:flex;flex-direction:column;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#140d14}.admin-player-stats strong{font:600 20px var(--display);color:var(--gold2)}.admin-player-stats span{font:400 12px var(--ui);color:var(--muted)}
+.admin-adjust,.admin-moderation{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid #c9a45c18}
+.admin-adjust-line{display:flex;gap:8px}.admin-adjust-line input{flex:1;min-width:0;background:#140d14;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:500 15px var(--ui)}
+.primary.ghost.danger{color:#ff8a9a;border-color:#d0344f66}
+.admin-history{display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid #c9a45c18}
+.admin-history summary{cursor:pointer;font:600 13px var(--ui);color:var(--gold2);padding:6px 0}
+.admin-history ul{list-style:none;margin:4px 0 8px;padding:0;display:flex;flex-direction:column;gap:4px}
+.admin-history li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:baseline;padding:6px 10px;border-radius:8px;background:#140d14;font:400 13px var(--ui)}
+.admin-history li small{color:var(--muted);white-space:nowrap}.admin-history .pos{color:#8fd19e}.admin-history .neg{color:#ff8a9a}
+.admin-player-empty{display:grid;place-items:center;min-height:200px}
+@media(max-width:800px){.admin-players{grid-template-columns:1fr}.admin-player-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-history li{grid-template-columns:auto 1fr}.admin-history li small{grid-column:1/-1}}

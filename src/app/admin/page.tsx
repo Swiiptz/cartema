@@ -11,7 +11,7 @@ import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,silhouetteIndex} from '@/lib/game';
 import {ACCEPTED_TYPES,ENGRAVED_CLANS,matchIllustrations,nextNumber,uploadIllustration,type AdminCatalog,type AdminCharacter,type AdminEdition,type CharacterStatus,type IllustrationMeta} from '@/lib/admin';
 
-type Tab='characters'|'editions'|'clans'|'achievements';
+type Tab='characters'|'editions'|'clans'|'achievements'|'players';
 const STATUS_LABEL:Record<CharacterStatus,string>={draft:'Brouillon',published:'Publiée',archived:'Archivée'};
 // jsonb ne conserve pas l'ordre des clés : comparaison indépendante de l'ordre.
 const canonical=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
@@ -55,9 +55,9 @@ export default function Admin(){
 
  return <AskContext.Provider value={ask}><div className="page admin-page">{askNode}
   <header className="admin-heading"><div><span className="eyebrow">Back-office</span><h1>Le cabinet de l’archiviste</h1></div><p className="muted">Chaque modification est enregistrée dans le journal d’administration.</p></header>
-  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
+  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['players','Joueurs']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
   <div className="admin-toast" aria-live="polite">{error&&<p className="auth-error" role="alert">{error}<button className="icon-button" aria-label="Fermer" onClick={()=>setError(null)}><X size={16}/></button></p>}{notice&&<p className="auth-notice">{notice}<button className="icon-button" aria-label="Fermer" onClick={()=>setNotice(null)}><X size={16}/></button></p>}</div>
-  {!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:<AchievementsTab catalog={catalog} act={act} client={client!}/>}
+  {!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:<PlayersTab act={act} client={client!}/>}
  </div></AskContext.Provider>;
 }
 
@@ -287,7 +287,7 @@ function ClansTab({catalog,act}:{catalog:AdminCatalog;act:Act}){
 }
 
 // ------------------------------------------------------------------ succès personnalisés
-type CustomAchievement={code:string;label:string;description:string;secret:boolean;reward_deniers:number;reward_boosters:number;title:string|null;conditional:boolean;characters:{id:string;name:string;code:string}[];holders:string[]};
+type CustomAchievement={code:string;label:string;description:string;secret:boolean;reward_deniers:number;reward_boosters:number;title:string|null;conditional:boolean;automatic?:boolean;edition?:string|null;characters:{id:string;name:string;code:string}[];holders:string[]};
 type AchievementForm={code:string;label:string;description:string;secret:boolean;deniers:string;boosters:string;title:string;mode:'conditional'|'manual'};
 const emptyAchievement:AchievementForm={code:'',label:'',description:'',secret:false,deniers:'100',boosters:'0',title:'',mode:'conditional'};
 
@@ -324,12 +324,98 @@ function AchievementsTab({catalog,act,client}:{catalog:AdminCatalog;act:Act;clie
    <div className="admin-actions"><button className="primary" disabled={form.mode==='conditional'&&!chars.length}>{form.code?'Enregistrer':'Créer le succès'}</button>{form.code&&<button type="button" className="text-link" onClick={reset}>Annuler la modification</button>}</div>
   </form>
   {!list?<Skeleton style={{height:120}}/>:list.map(a=><section key={a.code} className="panel admin-edition">
-   <div className="section-header"><div><span className="eyebrow">{a.conditional?'Conditionnel':'Décerné à la main'}{a.secret?' · secret':''}</span><h2>{a.label}</h2></div><button className="text-link" onClick={()=>edit(a)}>Modifier</button></div>
+   <div className="section-header"><div><span className="eyebrow">{a.conditional?'Conditionnel':a.automatic?'Automatique':'Décerné à la main'}{a.edition?` · ${a.edition}`:''}{a.secret?' · secret':''}</span><h2>{a.label}</h2></div><button className="text-link" onClick={()=>edit(a)}>Modifier</button></div>
    <p className="admin-hint">{a.description||'Sans explication.'} · +{a.reward_deniers} Deniers{a.reward_boosters?` · +${a.reward_boosters} booster(s)`:''}{a.title?` · titre « ${a.title} »`:''}</p>
    {a.conditional&&<p className="admin-hint">Requis : {a.characters.map(c=>`${c.name} (${c.code})`).join(', ')}</p>}
    <p className="admin-hint">Obtenu par : {a.holders.length?a.holders.join(', '):'personne pour l’instant'}</p>
-   {!a.conditional&&(grant?.code===a.code?<form className="admin-row" onSubmit={doGrant}><input className="picker-search" placeholder="Pseudonyme" value={grant.handle} onChange={e=>setGrant({...grant,handle:e.target.value})} required/><input className="picker-search" placeholder="Motif" value={grant.reason} onChange={e=>setGrant({...grant,reason:e.target.value})} required/><button className="primary compact">Décerner</button></form>
+   {!a.automatic&&(grant?.code===a.code?<form className="admin-row" onSubmit={doGrant}><input className="picker-search" placeholder="Pseudonyme" value={grant.handle} onChange={e=>setGrant({...grant,handle:e.target.value})} required/><input className="picker-search" placeholder="Motif" value={grant.reason} onChange={e=>setGrant({...grant,reason:e.target.value})} required/><button className="primary compact">Décerner</button></form>
     :<button className="primary ghost compact" onClick={()=>setGrant({code:a.code,handle:'',reason:''})}>Décerner à un joueur</button>)}
   </section>)}
+ </div>;
+}
+
+// ------------------------------------------------------------------ joueurs
+type PlayerRow={id:string;handle:string|null;role:string;created_at:string;suspended:boolean;blocked:boolean};
+type PlayerDetail={id:string;handle:string|null;role:string;title:string|null;created_at:string;suspended_at:string|null;blocked_at:string|null;email:string|null;balance:number;boosters:{free:number;purchased:number};cards:number;faces:number;achievements:number;openings:number;active_listings:number;
+ ledger:{delta:number;balance_after:number;kind:string;created_at:string}[];grants:{source:string;pool:string;quantity:number;created_at:string}[];audit:{action:string;reason:string;created_at:string;actor:string|null}[]};
+const LEDGER_LABEL:Record<string,string>={achievement_reward:'Succès',admin_adjust:'Ajustement admin',auction_sale:'Vente aux enchères',bid_hold:'Enchère placée',bid_refund:'Enchère remboursée',daily_login:'Bonus quotidien',discovery_reward:'Découverte',market_purchase:'Achat au marché',market_sale:'Vente au marché',mission_reward:'Mission',recycle:'Recyclage',shop_booster:'Achat de boosters',trade_hold:'Échange (réserve)',trade_payment:'Échange payé',trade_receipt:'Échange reçu',trade_refund:'Échange remboursé'};
+const GRANT_LABEL:Record<string,string>={free_slot:'Créneau gratuit',welcome:'Bienvenue',shop:'Boutique',admin:'Ajustement admin',reward:'Récompense'};
+const AUDIT_LABEL:Record<string,string>={deniers_adjust:'Deniers ajustés',boosters_adjust:'Boosters ajustés',player_suspend:'Compte suspendu',player_unsuspend:'Compte réactivé',trade_block:'Échanges bloqués',trade_unblock:'Échanges débloqués',handle_reset:'Pseudonyme réinitialisé',achievement_grant:'Succès décerné',grant_test_boosters:'Boosters de test',grant_test_resources:'Ressources de test',admin_provision:'Nomination administrateur'};
+const when=(d:string)=>new Date(d).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+
+function PlayersTab({act,client}:{act:Act;client:SupabaseClient}){
+ const reason=useReason();
+ const [query,setQuery]=useState('');
+ const [rows,setRows]=useState<PlayerRow[]|null>(null);
+ const [selected,setSelected]=useState<string|null>(null);
+ const [detail,setDetail]=useState<PlayerDetail|null>(null);
+ const [adjust,setAdjust]=useState({deniers:'',boosters:'',reason:''});
+ useEffect(()=>{const t=setTimeout(()=>{void callRpc<PlayerRow[]>(client,'admin_search_players',{p_query:query}).then(setRows).catch(()=>setRows([]));},250);return()=>clearTimeout(t);},[client,query]);
+ const loadDetail=useCallback(async(id:string)=>{setDetail(await callRpc<PlayerDetail>(client,'admin_player',{p_id:id}));},[client]);
+ useEffect(()=>{setDetail(null);if(selected)void loadDetail(selected).catch(()=>{});},[selected,loadDetail]);
+ const refresh=()=>{if(selected)void loadDetail(selected);void callRpc<PlayerRow[]>(client,'admin_search_players',{p_query:query}).then(setRows);};
+ const signed=(v:string)=>v.replace(/[^\d-]/g,'').replace(/(?!^)-/g,'');
+ const name=detail?.handle??'ce joueur';
+
+ const applyAdjust=(kind:'deniers'|'boosters')=>{
+  const delta=Number(adjust[kind]);if(!delta||!detail)return;
+  if(!adjust.reason.trim())return;
+  void act(`${delta>0?'+':''}${delta} ${kind==='deniers'?'Deniers':'booster(s)'} pour ${name}.`,c=>callRpc(c,kind==='deniers'?'admin_adjust_deniers':'admin_adjust_boosters',{p_id:detail.id,p_delta:delta,p_reason:adjust.reason,p_request_id:crypto.randomUUID()}))
+   .then(ok=>{if(ok){setAdjust({deniers:'',boosters:'',reason:''});refresh();}});
+ };
+ const sanction=async(label:string,question:string,fn:string,args:Record<string,unknown>)=>{
+  if(!detail)return;const r=await reason(question,label);if(r===null)return;
+  if(await act(`${label} : ${name}.`,c=>callRpc(c,fn,{p_id:detail.id,...args,p_reason:r})))refresh();
+ };
+
+ return <div className="admin-players">
+  <section className="panel admin-player-list">
+   <input className="picker-search" placeholder="Rechercher un pseudonyme…" value={query} onChange={e=>setQuery(e.target.value)} aria-label="Rechercher un joueur"/>
+   {!rows?<Skeleton style={{height:160}}/>:rows.length===0?<p className="muted">Aucun joueur.</p>
+    :<ul>{rows.map(p=><li key={p.id}><button className={selected===p.id?'on':''} aria-pressed={selected===p.id} onClick={()=>setSelected(p.id)}>
+     <span className="person-sigil">{(p.handle??'?')[0]?.toUpperCase()}</span><span className="person-name">{p.handle??<em>sans pseudonyme</em>}<small>inscrit le {new Date(p.created_at).toLocaleDateString('fr-FR')}</small></span>
+     {p.role==='admin'&&<span className="status-chip">admin</span>}{p.suspended&&<span className="status-chip danger">suspendu</span>}{p.blocked&&<span className="status-chip warn">échanges bloqués</span>}
+    </button></li>)}</ul>}
+  </section>
+
+  {!selected?<section className="panel admin-player-empty"><p className="muted">Choisissez un joueur pour voir sa fiche.</p></section>
+   :!detail?<Skeleton style={{height:420}}/>:<section className="panel admin-player">
+   <div className="section-header"><div><span className="eyebrow">{detail.title??'Joueur'}{detail.role==='admin'?' · administrateur':''}</span><h2>{detail.handle??'Sans pseudonyme'}</h2><p className="admin-hint">{detail.email??'—'} · inscrit le {new Date(detail.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</p></div>
+    {detail.handle&&<Link className="text-link" href={`/joueur/?h=${encodeURIComponent(detail.handle)}`}>Profil public</Link>}</div>
+   {(detail.suspended_at||detail.blocked_at)&&<p className="admin-hint admin-flags">{detail.suspended_at&&<span className="status-chip danger">Suspendu depuis le {when(detail.suspended_at)}</span>}{detail.blocked_at&&<span className="status-chip warn">Échanges bloqués depuis le {when(detail.blocked_at)}</span>}</p>}
+   <ul className="admin-player-stats">
+    <li><strong>{detail.balance.toLocaleString('fr-FR')}</strong><span>Deniers</span></li>
+    <li><strong>{detail.boosters.free}+{detail.boosters.purchased}</strong><span>Boosters (gratuits + achetés)</span></li>
+    <li><strong>{detail.cards}</strong><span>Cartes</span></li><li><strong>{detail.faces}</strong><span>Visages</span></li>
+    <li><strong>{detail.achievements}</strong><span>Succès</span></li><li><strong>{detail.openings}</strong><span>Ouvertures</span></li>
+   </ul>
+
+   <div className="admin-adjust">
+    <span className="eyebrow">Ajustement économique</span>
+    <label className="auth-field"><span>Motif (inscrit au journal)</span><input value={adjust.reason} onChange={e=>setAdjust({...adjust,reason:e.target.value})} placeholder="Lot du tournoi, compensation…"/></label>
+    <div className="admin-row">
+     <div className="admin-adjust-line"><input inputMode="numeric" aria-label="Deniers à ajouter ou retirer" placeholder="+500 ou -200" value={adjust.deniers} onChange={e=>setAdjust({...adjust,deniers:signed(e.target.value)})}/><button className="primary compact" disabled={!Number(adjust.deniers)||!adjust.reason.trim()} onClick={()=>applyAdjust('deniers')}>Deniers</button></div>
+     <div className="admin-adjust-line"><input inputMode="numeric" aria-label="Boosters à ajouter ou retirer" placeholder="+3 ou -1" value={adjust.boosters} onChange={e=>setAdjust({...adjust,boosters:signed(e.target.value)})}/><button className="primary compact" disabled={!Number(adjust.boosters)||!adjust.reason.trim()} onClick={()=>applyAdjust('boosters')}>Boosters</button></div>
+    </div>
+    <p className="admin-hint">Valeur négative pour retirer. Les boosters retirés ne concernent que la réserve achetée.</p>
+   </div>
+
+   {detail.role!=='admin'&&<div className="admin-moderation">
+    <span className="eyebrow">Modération</span>
+    <div className="admin-actions">
+     {detail.suspended_at?<button className="primary ghost compact" onClick={()=>void sanction('Compte réactivé',`Réactiver le compte de ${name} ?`,'admin_set_suspended',{p_suspended:false})}>Réactiver le compte</button>
+      :<button className="primary ghost compact danger" onClick={()=>void sanction('Compte suspendu',`Suspendre ${name} ? Il ne pourra plus rien faire et ses ventes sans offre seront retirées.`,'admin_set_suspended',{p_suspended:true})}>Suspendre</button>}
+     {detail.blocked_at?<button className="primary ghost compact" onClick={()=>void sanction('Échanges débloqués',`Rendre le marché et les échanges à ${name} ?`,'admin_set_trade_block',{p_blocked:false})}>Débloquer les échanges</button>
+      :<button className="primary ghost compact" onClick={()=>void sanction('Échanges bloqués',`Bloquer le marché, les cadeaux et les échanges de ${name} ?`,'admin_set_trade_block',{p_blocked:true})}>Bloquer les échanges</button>}
+     {detail.handle&&<button className="primary ghost compact" onClick={()=>void sanction('Pseudonyme réinitialisé',`Effacer le pseudonyme « ${detail.handle} » ? Le joueur devra en choisir un autre.`,'admin_reset_handle',{})}>Réinitialiser le pseudonyme</button>}
+    </div>
+   </div>}
+
+   <div className="admin-history">
+    <details open><summary>Journal d’administration ({detail.audit.length})</summary>{detail.audit.length?<ul>{detail.audit.map((a,i)=><li key={i}><strong>{AUDIT_LABEL[a.action]??a.action}</strong><span>{a.reason}</span><small>{when(a.created_at)}{a.actor?` · ${a.actor}`:''}</small></li>)}</ul>:<p className="admin-hint">Aucune intervention.</p>}</details>
+    <details><summary>Mouvements de Deniers (30 derniers)</summary><ul>{detail.ledger.map((l,i)=><li key={i}><strong className={l.delta<0?'neg':'pos'}>{l.delta>0?'+':''}{l.delta.toLocaleString('fr-FR')}</strong><span>{LEDGER_LABEL[l.kind]??l.kind}</span><small>{when(l.created_at)} · solde {l.balance_after.toLocaleString('fr-FR')}</small></li>)}</ul></details>
+    <details><summary>Boosters reçus (20 derniers)</summary><ul>{detail.grants.map((g,i)=><li key={i}><strong className={g.quantity<0?'neg':'pos'}>{g.quantity>0?'+':''}{g.quantity}</strong><span>{GRANT_LABEL[g.source]??g.source}</span><small>{when(g.created_at)} · {g.pool==='free'?'gratuit':'acheté'}</small></li>)}</ul></details>
+   </div>
+  </section>}
  </div>;
 }
