@@ -41,7 +41,7 @@ describe('carte unique',()=>{
  it('a son propre habillage clair une fois identifiée, et absorbe le fond blanc de l’illustration',()=>{
   const html=renderCard(['CAM-001','Caïn','?','','Mythique',1,''],'u1','/illustrations/originals/cain.png','cover',false,0,undefined,true);
   expect(html).toContain('unique-card');expect(html).toContain('UNIQUE · I / I');
-  expect(html).toContain('mix-blend-mode:multiply');
+  expect(html).toContain('style="mix-blend-mode:multiply"><image');
   expect(html).not.toContain('MYTHIQUE');
  });
  it('reste voilée tant qu’elle n’est pas découverte',()=>{
