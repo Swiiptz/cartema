@@ -454,3 +454,11 @@ a,button,.panel,.tarot-card,.inspect-card,input,select{transition:color var(--t-
 .finish-ribbon.gold{background:linear-gradient(170deg,#f6e3a8,#b8893e);color:#2a170b;box-shadow:0 0 12px #d5b87088}
 .finish-ribbon.blood{background:linear-gradient(170deg,#c41a36,#6e0b1c);color:#ffe3e8;box-shadow:0 0 12px #a9264699}
 @media(prefers-reduced-motion:reduce){.epic-reveal{animation:none;opacity:1}.epic-reveal:before,.epic-reveal .epic-rays,.epic-reveal .epic-ring{display:none}}
+/* Finition seule : effet discret, limité à la carte. */
+.stack-active.hint-soft .flip-card{animation:hint-soft 2.4s ease-in-out infinite}
+@keyframes hint-soft{0%,100%{filter:drop-shadow(0 0 3px color-mix(in srgb,var(--epic) 25%,transparent))}50%{filter:drop-shadow(0 0 10px color-mix(in srgb,var(--epic) 55%,transparent))}}
+.stack-active.finish-flash .flip-front{position:relative;overflow:hidden;border-radius:12px}
+.stack-active.finish-flash .flip-front:after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,color-mix(in srgb,var(--epic-2) 55%,transparent) 50%,transparent 65%);background-size:250% 100%;mix-blend-mode:screen;animation:finish-sweep 1.3s .35s var(--ease-out) both}
+.stack-active.finish-flash .flip-card{animation:finish-glow 1.6s .3s ease-out both}
+@keyframes finish-sweep{from{background-position:120% 0;opacity:1}to{background-position:-60% 0;opacity:0}}
+@keyframes finish-glow{0%{filter:none}35%{filter:drop-shadow(0 0 16px var(--epic))}100%{filter:drop-shadow(0 0 6px color-mix(in srgb,var(--epic) 40%,transparent))}}
