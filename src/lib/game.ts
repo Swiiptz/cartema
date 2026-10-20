@@ -23,6 +23,14 @@ export type AlbumCard=DemoCard&{characterId?:string;editionId?:string;finishesSe
 export type InventoryItem={instance_id:string;finish:Finish;locked:boolean;reserved:boolean;reserved_kind?:string|null;listing_id?:string|null;listing_price?:number|null;listing_kind?:'fixed'|'auction'|null;acquired_at:string;unique:boolean;value:number};
 export type ListingCard={character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
 export type Listing={listing_id:string;price:number;net:number;status:'active'|'sold'|'cancelled'|'expired';kind:'fixed'|'auction';ends_at:string|null;current_bid:number|null;bid_count:number;min_next_bid:number;leading:boolean;won:boolean;created_at:string;closed_at:string|null;mine:boolean;seller:string|null;buyer:string|null;finish:Finish;discovered:boolean;card:ListingCard};
+export type SocialCard={instance_id:string|null;finish:Finish;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
+export type Friend={profile_id:string;handle:string;since:string;discovered:number};
+export type FriendRequest={request_id:string;profile_id:string;handle:string;created_at:string};
+export type Friends={friends:Friend[];incoming:FriendRequest[];outgoing:FriendRequest[]};
+export type Gift={gift_id:string;status:'pending'|'accepted'|'declined'|'cancelled'|'expired';incoming:boolean;other:string|null;created_at:string;expires_at:string;closed_at:string|null;card:SocialCard};
+export type Trade={trade_id:string;status:'pending'|'accepted'|'declined'|'cancelled'|'expired'|'countered';incoming:boolean;other_id:string;other:string|null;proposer_deniers:number;recipient_deniers:number;created_at:string;expires_at:string;closed_at:string|null;proposer_cards:SocialCard[];recipient_cards:SocialCard[]};
+export type Social={gifts:Gift[];trades:Trade[];pending_count:number};
+export function socialToCard(c:SocialCard):DemoCard{return {id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish:c.finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
 export type TradeStatus={allowed:boolean;blocked:boolean;available_at:string|null;commission_pct:number};
 export function listingToCard(l:Listing):DemoCard{const c=l.card;return {id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish:l.finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
 export type RecycleResult={operation_id?:string;total:number;count:number;balance:number;replayed:boolean};
@@ -48,8 +56,12 @@ export function openedToCard(c:OpenedCard):DemoCard{
 export function albumToCard(e:AlbumEntry):AlbumCard{
  if(!e.known)return {id:e.code,name:'Inconnu',clan:'Inconnu',role:'',rarity:e.rarity,unique:!!e.unique,known:false,silhouette:silhouetteIndex(e.silhouette_key),editionId:e.edition_id};
  const owned=Object.values(e.owned).reduce((s,n)=>s+(n??0),0);
- // Affichée dans sa meilleure finition obtenue si le joueur n'a pas la Standard.
- const shown=e.finishes_seen.includes('Standard')?undefined:e.finishes_seen.at(-1);
+ // Affichée dans la finition la plus rare possédée, sinon la plus rare déjà obtenue.
+ const rank=(f:Finish)=>(['Standard','Dorée','Sanglante'] as Finish[]).indexOf(f);
+ const ownedFinishes=(Object.keys(e.owned) as Finish[]).filter(f=>(e.owned[f]??0)>0);
+ const pool=ownedFinishes.length?ownedFinishes:e.finishes_seen;
+ const best=[...pool].sort((x,y)=>rank(y)-rank(x))[0];
+ const shown=best&&best!=='Standard'?best:undefined;
  return {id:e.code,name:e.name,clan:e.clan??'?',role:e.role_title,rarity:e.rarity,unique:!!e.unique,known:true,finish:shown,
   illustration:e.art_path??undefined,silhouette:silhouetteIndex(e.silhouette_key),...art(e.art_meta),
   characterId:e.character_id,editionId:e.edition_id,finishesSeen:e.finishes_seen,owned};
@@ -97,6 +109,16 @@ const messages:Record<string,string>={
  bid_too_low:'Mise trop basse : respectez le palier minimum.',
  auction_has_bids:'Une enchère qui a reçu une mise ne peut plus être retirée.',
  not_fixed_price:'Cette annonce est une enchère.',
+ player_not_found:'Aucun joueur avec ce pseudonyme.',
+ self_request:'Vous ne pouvez pas vous ajouter vous-même.',
+ already_friends:'Vous êtes déjà amis.',
+ request_pending:'Demande déjà envoyée.',
+ not_friends:'Réservé à vos amis.',
+ gift_unavailable:'Ce cadeau n’est plus disponible.',
+ trade_unavailable:'Cet échange n’est plus disponible.',
+ card_unavailable:'Une des cartes n’est plus disponible (vendue, verrouillée ou engagée).',
+ empty_trade:'Ajoutez au moins une carte à l’échange.',
+ too_many_cards:'10 cartes maximum de chaque côté.',
 };
 export class GameError extends Error{
  constructor(public code:string,message:string,public definitive:boolean){super(message);}

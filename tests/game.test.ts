@@ -51,9 +51,11 @@ describe('erreurs et chemins',()=>{
 });
 
 describe('finition affichée dans l’album',()=>{
-  it('montre la meilleure finition obtenue quand la Standard manque',()=>{
+  it('montre la finition la plus rare possédée, sinon obtenue',()=>{
     const base={known:true,character_id:'c',edition_id:'e',code:'CAM-002',number:2,rarity:'Rare',name:'X',role_title:'',clan:null,art_path:null,art_meta:{},silhouette_key:null,discovered_at:'',owned:{}} as const;
     expect(albumToCard({...base,finishes_seen:['Dorée']} as any).finish).toBe('Dorée');
-    expect(albumToCard({...base,finishes_seen:['Standard','Sanglante']} as any).finish).toBeUndefined();
+    expect(albumToCard({...base,finishes_seen:['Standard','Sanglante'],owned:{Standard:1,Sanglante:1}} as any).finish).toBe('Sanglante');
+    expect(albumToCard({...base,finishes_seen:['Standard','Sanglante'],owned:{Standard:2}} as any).finish).toBeUndefined(); // Sanglante cédée
+    expect(albumToCard({...base,finishes_seen:['Standard','Dorée','Sanglante'],owned:{}} as any).finish).toBe('Sanglante');
   });
 });
