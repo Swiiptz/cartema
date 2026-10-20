@@ -70,8 +70,9 @@ describe('succès',()=>{
   it('proportionne les récompenses de collection à la taille du groupe',async()=>{
     const u=await player('comptable');
     const list=await rpc<any[]>(db,u,'get_achievements');
-    expect(list.find(a=>a.code==='set:CAM:rarity:Commun').reward_deniers).toBe(2*3);
-    expect(list.find(a=>a.code==='set:CAM:rarity:Mythique')).toMatchObject({reward_deniers:2*200,reward_boosters:1});
+    expect(list.find(a=>a.code==='set:CAM:rarity:Commun').reward_deniers).toBe(2*8);
+    expect(list.find(a=>a.code==='set:CAM:rarity:Mythique')).toMatchObject({reward_deniers:2*500,reward_boosters:4});
+    expect(list.find(a=>a.code==='set:CAM:all')).toMatchObject({reward_deniers:8000,reward_boosters:12});
   });
   it('débloque « toutes les Communes » une seule fois avec sa récompense',async()=>{
     const u=await player('communard');
@@ -155,5 +156,49 @@ describe('succès conditionnels secrets',()=>{
     await discover(u,`c.number in (7,8)`);
     expect((await rpc<any[]>(db,u,'get_achievements')).find(x=>x.code===code)).toMatchObject({label:'Le pacte caché',description:'Avoir réuni les deux frères.'});
     expect((await rpc(db,u,'get_player_state')).missions_ready).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('séries de succès à paliers',()=>{
+  it('regroupe les paliers d’une même famille, chacun restant un succès distinct',async()=>{
+    const u=await player('palier');
+    await discover(u,`c.number<=10`);
+    const list=await rpc<any[]>(db,u,'get_achievements');
+    const faces=list.filter(a=>a.series==='faces').sort((a,b)=>a.tier-b.tier);
+    expect(faces.map(a=>[a.code,a.tier])).toEqual([['faces_10',1],['faces_50',2],['faces_100',3],['faces_200',4]]);
+    expect(faces[0].unlocked_at).not.toBeNull();expect(faces[1].unlocked_at).toBeNull();
+    expect(list.find(a=>a.code==='gold_10')).toMatchObject({secret:false,series:'gold',tier:3});
+    expect(list.filter(a=>a.series==='packs')).toHaveLength(4);
+  });
+});
+
+describe('missions longues et bonus',()=>{
+  it('garde « Venir 5 jours » dans les hebdomadaires, sans remplacement possible',async()=>{
+    await db.query(`update public.mission_templates set active = fixed or code like 'w\_%days%' or code in ('w_open_25','w_rare_15') or kind='daily'`);
+    const u=await player('assidu');
+    const m=await rpc(db,u,'get_missions');
+    const login=m.weekly.find((x:any)=>x.label==='Venir 5 jours dans la semaine');
+    expect(login).toMatchObject({replaceable:false});
+    expect(m.weekly).toHaveLength(3);
+    await expectError(rpc(db,u,'replace_mission',[login.assignment_id]),/not_replaceable/);
+  });
+  it('découpe les journées de jeu de 06 h à 06 h (heure de Paris)',async()=>{
+    const {rows}=await db.query<{d:string}>(`select private.game_day(t)::text d from unnest(array['2026-10-19 07:00+02','2026-10-19 23:00+02','2026-10-20 05:59+02','2026-10-20 06:00+02']::timestamptz[]) t`);
+    expect(rows.map(r=>r.d)).toEqual(['2026-10-19','2026-10-19','2026-10-19','2026-10-20']);
+  });
+  it('offre 1 booster quand toutes les missions du jour sont réclamées, une seule fois',async()=>{
+    await db.query(`update public.mission_templates set active = code in ('d_open_1','d_open_2','d_open_3') or kind='weekly'`);
+    const u=await player('bonus');
+    const m=await rpc(db,u,'get_missions');
+    expect(m.daily_bonus).toEqual({boosters:1,claimed:false});
+    expect(m.weekly_bonus).toEqual({boosters:4,claimed:false});
+    await db.query('update public.booster_balances set free_count=3, purchased_count=0 where owner_id=$1',[u]);
+    for(let i=0;i<3;i++)await rpc(db,u,'open_booster',[edition,randomUUID()]);
+    const results=[];
+    for(const x of m.daily)results.push(await rpc(db,u,'claim_mission',[x.assignment_id]));
+    expect(results.map(r=>r.bonus_boosters)).toEqual([0,0,1]);
+    const {rows:[b]}=await db.query<{purchased_count:number}>('select purchased_count from public.booster_balances where owner_id=$1',[u]);
+    expect(b.purchased_count).toBe(1);
+    expect((await rpc(db,u,'get_missions')).daily_bonus).toEqual({boosters:1,claimed:true});
   });
 });

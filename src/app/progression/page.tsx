@@ -5,7 +5,7 @@ import {Award,ChevronDown,Clock,Crown,Info,Lock,Medal,ScrollText,Trophy,X} from 
 import {useAuth} from '@/components/AuthProvider';
 import {useAsk} from '@/components/AskDialog';
 import {Countdown,Skeleton} from '@/components/ui';
-import {MissionList} from '@/components/MissionList';
+import {MissionBonusBar,MissionList} from '@/components/MissionList';
 import {palette} from '@/components/Card';
 import {callRpc,type Achievement,type Leaderboard,type Mission,type Missions} from '@/lib/game';
 
@@ -36,7 +36,7 @@ export default function Progression(){
   catch(e){setMessage({error:(e as Error).message});}
   finally{setBusy(false);}
  }
- const claim=(m:Mission)=>void run(async()=>{const r=await callRpc<{reward:number}>(client!,'claim_mission',{p_assignment_id:m.assignment_id});return `+${r.reward} Deniers · ${m.label}`;});
+ const claim=(m:Mission)=>void run(async()=>{const r=await callRpc<{reward:number;bonus_boosters?:number}>(client!,'claim_mission',{p_assignment_id:m.assignment_id});const b=r.bonus_boosters??0;return `+${r.reward} Deniers · ${m.label}${b?` — toutes réclamées : +${b} booster${b>1?'s':''} !`:''}`;});
  const replace=(m:Mission)=>void (async()=>{if((await ask({title:'Remplacer cette mission ?',message:`« ${m.label} » sera remplacée par une autre. Un seul remplacement gratuit par jour.`,confirmLabel:'Remplacer'}))===null)return;void run(async()=>{await callRpc(client!,'replace_mission',{p_assignment_id:m.assignment_id});return 'Mission remplacée.';});})();
 
  if(!configured||!ready)return <div className="page"><Skeleton style={{height:40,width:'40%'}}/><Skeleton style={{height:260,marginTop:16}}/></div>;
@@ -51,8 +51,10 @@ export default function Progression(){
 
   {tab==='missions'&&(!missions?<Skeleton style={{height:300}}/>:<div className="social-col">
    <section className="social-section"><div className="section-header"><h2>Quotidiennes</h2><span className="muted reset-in"><Clock size={12}/> renouvelées dans <Countdown to={missions.daily_reset} onDone={()=>void load()}/></span></div>
+    <MissionBonusBar bonus={missions.daily_bonus} missions={missions.daily} period="du jour"/>
     <MissionList missions={missions.daily} busy={busy} canReplace={missions.replacement_available} onClaim={claim} onReplace={replace}/></section>
    <section className="social-section"><div className="section-header"><h2>Hebdomadaires</h2><span className="muted reset-in"><Clock size={12}/> renouvelées dans <Countdown to={missions.weekly_reset} onDone={()=>void load()}/></span></div>
+    <MissionBonusBar bonus={missions.weekly_bonus} missions={missions.weekly} period="de la semaine"/>
     <MissionList missions={missions.weekly} busy={busy} canReplace={missions.replacement_available} onClaim={claim} onReplace={replace}/></section>
    <p className="muted small-note">{missions.replacement_available?'Une mission vous déplaît ? Vous pouvez en remplacer une gratuitement aujourd’hui.':'Remplacement gratuit utilisé aujourd’hui.'}</p>
   </div>)}
@@ -72,6 +74,16 @@ export default function Progression(){
 }
 
 type Group={key:string;title:string;subgroups:{key:string;title:string;items:Achievement[]}[]};
+const TIERS=['Bronze','Argent','Or','Platine','Sang'];
+const TIER_COLORS=['#c58a5a','#c9ccd6','#e7c46a','#a9e4e8','#d0344f'];
+const reward=(a:Achievement)=>[(a.reward_deniers??0)>0&&`+${a.reward_deniers} Deniers`,(a.reward_boosters??0)>0&&`+${a.reward_boosters} booster${(a.reward_boosters??0)>1?'s':''}`].filter(Boolean).join(' · ');
+/** Une série regroupe ses paliers ; les autres succès restent seuls. */
+function bySeries(items:Achievement[]){
+ const out:(Achievement|Achievement[])[]=[];const seen=new Map<string,Achievement[]>();
+ for(const a of items){if(!a.series){out.push(a);continue;}let s=seen.get(a.series);if(!s){s=[];seen.set(a.series,s);out.push(s);}s.push(a);}
+ for(const s of seen.values())s.sort((x,y)=>(x.tier??0)-(y.tier??0));
+ return out;
+}
 
 function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievement[];unlocked:number;currentTitle:string|null;busy:boolean;onTitle:(code:string|null)=>void}){
  const [info,setInfo]=useState<string|null>(null);
@@ -106,6 +118,24 @@ function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievemen
  const count=(items:Achievement[])=>`${items.filter(a=>a.unlocked_at).length}/${items.length}`;
  const titles=list.filter(a=>a.unlocked_at&&a.title);
 
+ const series=(tiers:Achievement[],i:number)=>{
+  const done=tiers.filter(a=>a.unlocked_at);const top=done[done.length-1];const next=tiers.find(a=>!a.unlocked_at);
+  const key=`series:${tiers[0].series}`;const level=top?.tier??0;
+  const color=level?TIER_COLORS[Math.min(level,TIER_COLORS.length)-1]:'var(--gold)';
+  return <li key={key} className={`achievement series rise ${top?'done':''} ${next?'':'complete'}`} style={{'--i':Math.min(i,12),'--rc':color} as React.CSSProperties}>
+   <span className="ach-medal tier-medal" aria-hidden="true"><Award size={18}/>{level>0&&<b>{['I','II','III','IV','V'][level-1]}</b>}</span>
+   <div className="ach-body">
+    <div className="ach-head"><strong>{tiers[0].series_label}</strong>{top&&<span className="tier-name">{TIERS[level-1]}</span>}<button className="info-btn" aria-label="Paliers" aria-expanded={info===key} onClick={()=>setInfo(info===key?null:key)}><Info size={13}/></button></div>
+    {info===key&&<ol className="ach-bubble tier-list" role="note">{tiers.map(a=><li key={a.code} className={a.unlocked_at?'on':''} style={{'--tc':TIER_COLORS[(a.tier??1)-1]} as React.CSSProperties}>
+     <b>{TIERS[(a.tier??1)-1]}</b> <span>{a.label} — {a.description}</span>{reward(a)&&<small>{reward(a)}{a.title?` · titre « ${a.title} »`:''}</small>}</li>)}</ol>}
+    <small className="ach-date">{top?top.label:'Aucun palier atteint'}{top?.title?` · titre « ${top.title} »`:''}</small>
+    {next?<div className="ach-progress"><div className="meter"><i style={{'--v':`${next.target?Math.min(100,(next.progress??0)/next.target*100):0}%`} as React.CSSProperties}/></div><small>{next.progress??0}/{next.target}</small></div>
+     :<small className="ach-reward">Tous les paliers obtenus</small>}
+    <div className="tier-pips">{tiers.map(a=><i key={a.code} title={`${TIERS[(a.tier??1)-1]} : ${a.label}`} className={a.unlocked_at?'on':''} style={{'--tc':TIER_COLORS[(a.tier??1)-1]} as React.CSSProperties}/>)}</div>
+    {next&&reward(next)&&<small className="ach-reward">Prochain palier ({TIERS[(next.tier??1)-1]}) : {reward(next)}</small>}
+   </div>
+  </li>;};
+ const render=(items:Achievement[])=>bySeries(items).map((x,i)=>Array.isArray(x)?series(x,i):item(x,i));
  const item=(a:Achievement,i:number)=>{const done=!!a.unlocked_at;const hidden=a.secret&&!done;const hasInfo=!!a.description||!!a.reason;return <li key={a.code} className={`achievement rise ${done?'done':''} ${hidden?'secret':''}`} style={{'--i':Math.min(i,12),'--rc':a.rarity?palette[a.rarity]:'var(--gold)'} as React.CSSProperties}>
   <span className="ach-medal" aria-hidden="true">{hidden?<Lock size={16}/>:<Award size={18}/>}</span>
   <div className="ach-body">
@@ -125,11 +155,11 @@ function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievemen
   {groups.map((g,gi)=>{const all=g.subgroups.flatMap(s=>s.items);const open=isOpen(g.key,gi===0);return <section key={g.key} className={`ach-group ${open?'open':''}`}>
    <button className="ach-group-head" aria-expanded={open} onClick={()=>toggle(g.key,gi===0)}><ChevronDown size={18} className="chevron"/><h2>{g.title}</h2><span className="ach-count">{count(all)}</span></button>
    <div className={`collapsible ${open?'open':''}`} inert={!open}><div className="collapsible-inner"><div className="ach-group-body">
-    {g.subgroups.map(sg=>{const key=`${g.key}/${sg.key}`;if(!sg.title)return <ul key={key} className="achievement-grid">{sg.items.map(item)}</ul>;
+    {g.subgroups.map(sg=>{const key=`${g.key}/${sg.key}`;if(!sg.title)return <ul key={key} className="achievement-grid">{render(sg.items)}</ul>;
      const sOpen=isOpen(key,sg.key==='all'||sg.key==='visible');
      return <div key={key} className={`ach-sub ${sOpen?'open':''}`}>
       <button className="ach-sub-head" aria-expanded={sOpen} onClick={()=>toggle(key,sg.key==='all'||sg.key==='visible')}><ChevronDown size={15} className="chevron"/><span>{sg.title}</span><span className="ach-count">{count(sg.items)}</span></button>
-      <div className={`collapsible ${sOpen?'open':''}`} inert={!sOpen}><div className="collapsible-inner"><ul className="achievement-grid">{sg.items.map(item)}</ul></div></div>
+      <div className={`collapsible ${sOpen?'open':''}`} inert={!sOpen}><div className="collapsible-inner"><ul className="achievement-grid">{render(sg.items)}</ul></div></div>
      </div>;})}
    </div></div></div>
   </section>;})}
