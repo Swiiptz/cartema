@@ -69,10 +69,12 @@ describe('crédit des boosters gratuits',()=>{
     expect((await sync(u,'2026-10-21 19:00+02')).free_count).toBe(5);
     expect((await sync(u,'2026-10-22 06:00+02')).free_count).toBe(6);
   });
-  it('ne crédite rien rétroactivement à un nouveau compte',async()=>{
+  it('offre 3 boosters de bienvenue sans créneau rétroactif',async()=>{
     const u=await createUser(db);
     const {rows:[b]}=await db.query<{free_count:number}>('select free_count from public.booster_balances where owner_id=$1',[u]);
-    expect(b.free_count).toBe(0);
-    expect((await db.query('select * from private.sync_free_boosters($1)',[u])).rows[0]).toMatchObject({free_count:0});
+    expect(b.free_count).toBe(3);
+    expect((await db.query('select * from private.sync_free_boosters($1)',[u])).rows[0]).toMatchObject({free_count:3});
+    const {rows}=await db.query(`select source,quantity from public.booster_grants where owner_id=$1`,[u]);
+    expect(rows).toEqual([{source:'welcome',quantity:3}]);
   });
 });

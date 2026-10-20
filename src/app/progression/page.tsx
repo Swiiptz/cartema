@@ -32,7 +32,7 @@ export default function Progression(){
 
  async function run(action:()=>Promise<string|null>){
   setBusy(true);setMessage({});
-  try{const n=await action();await load();void refreshPlayer();if(n)setMessage({notice:n});}
+  try{const n=await action();await Promise.all([load(),refreshPlayer()]);if(n)setMessage({notice:n});}
   catch(e){setMessage({error:(e as Error).message});}
   finally{setBusy(false);}
  }
@@ -45,7 +45,7 @@ export default function Progression(){
  const unlockedCount=achievements?.filter(a=>a.unlocked_at).length??0;
  return <div className="page progression-page">
   {askNode}
-  <header className="market-head rise"><div><span className="eyebrow">Progression</span><h1>Le grand livre</h1></div>{board?.me&&<span className="chip gold"><Trophy size={15}/> {board.me.position}<small>e · {board.me.score} visages</small></span>}</header>
+  <header className="market-head rise"><div><span className="eyebrow">Progression</span><h1>Le grand livre</h1></div>{board?.me&&<span className="chip gold"><Trophy size={15}/> {board.me.position}<small>{board.me.position===1?'er':'e'} · {board.me.achievements} succès</small></span>}</header>
   <div className="segmented social-tabs" role="tablist">{([['missions','Missions',ScrollText],['achievements','Succès',Award],['ranking','Classement',Trophy]] as const).map(([k,l,I])=><button key={k} role="tab" aria-selected={tab===k} onClick={()=>setTab(k)}><I size={15}/> {l}</button>)}</div>
   <div className="admin-toast" aria-live="polite">{message.error&&<p className="auth-error" role="alert">{message.error}<button className="icon-button" aria-label="Fermer" onClick={()=>setMessage({})}><X size={16}/></button></p>}{message.notice&&<p className="auth-notice">{message.notice}</p>}</div>
 
@@ -60,13 +60,13 @@ export default function Progression(){
   {tab==='achievements'&&(!achievements?<Skeleton style={{height:300}}/>:<Achievements list={achievements} unlocked={unlockedCount} currentTitle={player?.profile.title??null} busy={busy} onTitle={code=>void run(async()=>{const t=await callRpc<string|null>(client!,'set_title',{p_code:code});return t?`Vous portez désormais le titre « ${t} ».`:'Titre retiré.';})}/>)}
 
   {tab==='ranking'&&(!board?<Skeleton style={{height:300}}/>:<section className="social-section">
-   <p className="muted">Classement par nombre de personnages découverts ({board.total_characters} au total). Les finitions ne comptent pas, et une carte cédée reste découverte.</p>
+   <p className="muted">Classement par nombre de succès obtenus, puis par personnages découverts en cas d’égalité. Les succès sont définitifs et une carte cédée reste découverte.</p>
    <ol className="ranking">{board.top.map((r,i)=><li key={`${r.handle}-${i}`} className={`rise ${r.me?'me':''} top-${r.position}`} style={{'--i':Math.min(i,15)} as React.CSSProperties}>
     <span className="rank-pos">{r.position<=3?<Crown size={16}/>:r.position}</span>
     <span className="person-name">{r.handle}{r.title&&<small className="rank-title">{r.title}</small>}</span>
-    <strong className="rank-score">{r.score}</strong>
+    <span className="rank-scores"><strong className="rank-score">{r.achievements}<small> succès</small></strong><small>{r.faces} visage{r.faces>1?'s':''}</small></span>
    </li>)}</ol>
-   {board.me&&!board.top.some(r=>r.me)&&<p className="muted">Vous êtes {board.me.position}e avec {board.me.score} visages.</p>}
+   {board.me&&!board.top.some(r=>r.me)&&<p className="muted">Vous êtes {board.me.position}e avec {board.me.achievements} succès et {board.me.faces} visages.</p>}
   </section>)}
  </div>;
 }
@@ -75,6 +75,9 @@ type Group={key:string;title:string;subgroups:{key:string;title:string;items:Ach
 
 function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievement[];unlocked:number;currentTitle:string|null;busy:boolean;onTitle:(code:string|null)=>void}){
  const [info,setInfo]=useState<string|null>(null);
+ // Choix affiché immédiatement, puis confirmé par le profil rechargé.
+ const [chosen,setChosen]=useState<string|null|undefined>(undefined);
+ useEffect(()=>{setChosen(undefined);},[currentTitle]);
  const groups=useMemo(()=>{
   const out:Group[]=[];
   const editions=[...new Set(list.filter(a=>a.category==='collection').map(a=>a.edition??''))];
@@ -117,7 +120,7 @@ function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievemen
 
  return <div className="social-col">
   <div className="panel title-panel"><div><span className="eyebrow">Succès</span><strong className="title-count">{unlocked} / {list.length}</strong></div>
-   <label className="auth-field title-select"><span><Medal size={14}/> Titre porté</span><select value={titles.find(t=>t.title===currentTitle)?.code??''} disabled={busy||!titles.length} onChange={e=>onTitle(e.target.value||null)}><option value="">{titles.length?'Aucun titre':'Aucun titre débloqué'}</option>{titles.map(t=><option key={t.code} value={t.code}>{t.title}</option>)}</select></label>
+   <label className="auth-field title-select"><span><Medal size={14}/> Titre porté</span><select value={chosen!==undefined?(chosen??''):(titles.find(t=>t.title===currentTitle)?.code??'')} disabled={busy||!titles.length} onChange={e=>{setChosen(e.target.value||null);onTitle(e.target.value||null);}}><option value="">{titles.length?'Aucun titre':'Aucun titre débloqué'}</option>{titles.map(t=><option key={t.code} value={t.code}>{t.title}</option>)}</select></label>
   </div>
   {groups.map((g,gi)=>{const all=g.subgroups.flatMap(s=>s.items);const open=isOpen(g.key,gi===0);return <section key={g.key} className={`ach-group ${open?'open':''}`}>
    <button className="ach-group-head" aria-expanded={open} onClick={()=>toggle(g.key,gi===0)}><ChevronDown size={18} className="chevron"/><h2>{g.title}</h2><span className="ach-count">{count(all)}</span></button>

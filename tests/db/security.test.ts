@@ -16,7 +16,7 @@ describe('comptes',()=>{
     expect(state.daily_reward).toBe(25); // bonus de connexion du jour
     expect(state.balance).toBe(1025);
     expect((await rpc(db,alice,'get_player_state')).daily_reward).toBe(0);
-    expect(state.boosters).toMatchObject({free:0,purchased:0,free_capacity:6});
+    expect(state.boosters).toMatchObject({free:3,purchased:0,free_capacity:6}); // 3 boosters de bienvenue
   });
   it('impose un pseudo unique sans tenir compte de la casse',async()=>{
     expect(await rpc(db,alice,'set_handle',['Lilith_9'])).toBe('Lilith_9');

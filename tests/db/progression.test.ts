@@ -67,6 +67,12 @@ describe('succès',()=>{
     expect(sets.filter(a=>a.code.includes(':rarity:'))).toHaveLength(7);
     expect(sets.find(a=>a.code==='set:CAM:all')).toMatchObject({label:'Maître de Édition CAM',target:14,progress:0});
   });
+  it('proportionne les récompenses de collection à la taille du groupe',async()=>{
+    const u=await player('comptable');
+    const list=await rpc<any[]>(db,u,'get_achievements');
+    expect(list.find(a=>a.code==='set:CAM:rarity:Commun').reward_deniers).toBe(2*3);
+    expect(list.find(a=>a.code==='set:CAM:rarity:Mythique')).toMatchObject({reward_deniers:2*200,reward_boosters:1});
+  });
   it('débloque « toutes les Communes » une seule fois avec sa récompense',async()=>{
     const u=await player('communard');
     await discover(u,`c.rarity='Commun'`);
@@ -104,15 +110,19 @@ describe('succès',()=>{
 });
 
 describe('classement',()=>{
-  it('classe par personnages découverts, sans compter les finitions ni baisser après cession',async()=>{
-    const a=await player('premier');const b=await player('second');
-    await discover(a,`c.number<=10`);await discover(b,`c.number<=3`);
+  it('classe par succès, puis par personnages découverts (finitions ignorées)',async()=>{
+    const a=await player('premier');const b=await player('second');const c=await player('troisieme');
+    await discover(a,`c.number<=10`);await discover(b,`c.number<=3`);await discover(c,`c.number<=12`);
     await db.query(`insert into public.finish_discoveries (owner_id,character_id,finish) select $1,id,'Dorée' from public.characters where edition_id=$2 and number<=3`,[b,edition]);
+    await rpc(db,a,'get_achievements'); // débloque « Premiers visages » (10 découvertes)
     const board=await rpc(db,b,'get_leaderboard',[50]);
-    const pa=board.top.find((x:any)=>x.handle==='premier');const pb=board.top.find((x:any)=>x.handle==='second');
-    expect(pa.score).toBe(10);expect(pb.score).toBe(3);
-    expect(pa.position).toBeLessThan(pb.position);
-    expect(board.me).toMatchObject({score:3});
+    const row=(h:string)=>board.top.find((x:any)=>x.handle===h);
+    expect(row('premier')).toMatchObject({faces:10});expect(row('premier').achievements).toBeGreaterThan(0);
+    expect(row('troisieme')).toMatchObject({faces:12,achievements:0});
+    expect(row('second')).toMatchObject({faces:3,achievements:0});
+    expect(row('premier').position).toBeLessThan(row('troisieme').position); // les succès priment
+    expect(row('troisieme').position).toBeLessThan(row('second').position);  // puis les découvertes
+    expect(board.me).toMatchObject({faces:3});
   });
 });
 

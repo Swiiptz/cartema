@@ -38,7 +38,7 @@ export function socialToCard(c:SocialCard):DemoCard{return {id:c.code,name:c.nam
 export type Mission={assignment_id:string;kind:'daily'|'weekly';label:string;target:number;reward:number;progress:number;claimed:boolean;ends_at:string};
 export type Missions={daily:Mission[];weekly:Mission[];replacement_available:boolean;daily_reset:string;weekly_reset:string};
 export type Achievement={code:string;secret:boolean;category:'collection'|'general'|'custom';label:string|null;description?:string|null;title?:string|null;edition?:string|null;edition_prefix?:string|null;rarity?:Rarity|null;reward_deniers?:number;reward_boosters?:number;progress?:number;target?:number;unlocked_at:string|null;reason?:string|null;conditional?:boolean};
-export type Leaderboard={top:{position:number;handle:string;title:string|null;score:number;me:boolean}[];me:{position:number;score:number}|null;total_characters:number};
+export type Leaderboard={top:{position:number;handle:string;title:string|null;score:number;achievements:number;faces:number;me:boolean}[];me:{position:number;score:number;achievements:number;faces:number}|null;total_characters:number;total_achievements:number};
 export type TradeStatus={allowed:boolean;blocked:boolean;available_at:string|null;commission_pct:number};
 export function listingToCard(l:Listing):DemoCard{const c=l.card;return {id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish:l.finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
 export type RecycleResult={operation_id?:string;total:number;count:number;balance:number;replayed:boolean};

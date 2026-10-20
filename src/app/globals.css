@@ -610,3 +610,4 @@ a,button,.panel,.tarot-card,.inspect-card,input,select{transition:color var(--t-
 @media(max-width:700px){.nav a{font-size:11px;gap:4px;padding-inline:2px}}
 @media(max-width:380px){.nav a{font-size:10px}}
 @media(min-width:701px){.nav{gap:30px}}
+.rank-scores{display:flex;flex-direction:column;align-items:flex-end;font:400 11px var(--ui);color:var(--muted)}.rank-score small{font:500 11px var(--ui);color:var(--muted)}
