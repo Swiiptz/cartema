@@ -162,7 +162,7 @@ site_url = "https://swiiptz.github.io/cartema/"
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 # Site en ligne (GitHub Pages) et développement local.
-additional_redirect_urls = ["https://swiiptz.github.io/cartema/connexion/", "http://localhost:3000/connexion/", "http://127.0.0.1:3000/connexion/"]
+additional_redirect_urls = ["https://swiiptz.github.io/cartema/connexion/", "https://swiiptz.github.io/cartema/profile/", "http://localhost:3000/connexion/", "http://localhost:3000/profile/", "http://127.0.0.1:3000/connexion/"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
