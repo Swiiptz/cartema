@@ -24,6 +24,10 @@ export function describe(n:AppNotification):{text:string;icon:typeof Bell;href:s
   case 'outbid':return {text:`Enchère dépassée sur ${card} : ${d(p.amount)}.`,icon:Gavel,href:'/market/'};
   case 'auction_won':return {text:`Vous remportez ${card} pour ${d(p.price)}.`,icon:Gavel,href:'/collection/'};
   case 'report_received':return {text:`Nouveau signalement : ${p.target} (par ${p.from}).`,icon:Flag,href:'/admin/'};
+  case 'submission_received':return {text:`${p.from} propose ${p.kind==='illustration'?'une illustration':'une correction'} pour ${p.card}.`,icon:Flag,href:'/admin/'};
+  case 'submission_decided':{
+   const r=[(p.reward_deniers??0)>0&&`+${d(p.reward_deniers)}`,(p.reward_boosters??0)>0&&`+${p.reward_boosters} booster${(p.reward_boosters??0)>1?'s':''}`].filter(Boolean).join(' · ');
+   return {text:p.accepted?`Votre ${p.kind==='illustration'?'illustration':'correction'} pour ${p.card} est acceptée${r?` (${r})`:''}. Merci !`:`Votre proposition pour ${p.card} n’a pas été retenue${p.note?` : ${p.note}`:''}.`,icon:Award,href:'/collection/'};}
   case 'wish_listed':return {text:`Carte souhaitée en vente : ${card}, ${p.auction?'enchères à partir de ':''}${d(p.price)}.`,icon:Heart,href:'/market/'};
   case 'auction_unsold':return {text:`Enchère close sans offre : ${card} vous revient.`,icon:Gavel,href:'/market/'};
   case 'achievement':{

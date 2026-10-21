@@ -17,24 +17,25 @@ export type PlayerState={
  missions_ready?:number;
  editions:{id:string;name:string;prefix:string;cover_path:string|null;openable:boolean}[];
 };
-export type OpenedCard={position:number;instance_id:string;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique?:boolean;finish:Finish;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
+export type OpenedCard={position:number;instance_id:string;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique?:boolean;finish:Finish;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;variant?:string|null;variant_kind?:string|null};
 export type Opening={opening_id:string;edition_id:string;ruleset_version:number;pool:'free'|'purchased';created_at:string;cards:OpenedCard[];replayed:boolean};
-export type KnownAlbumEntry={known:true;character_id:string;edition_id:string;code:string;number:number;rarity:Rarity;unique?:boolean;name:string;role_title:string;clan:string|null;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;discovered_at:string;finishes_seen:Finish[];owned:Partial<Record<Finish,number>>};
+export type KnownAlbumEntry={known:true;character_id:string;edition_id:string;code:string;number:number;rarity:Rarity;unique?:boolean;name:string;role_title:string;clan:string|null;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;discovered_at:string;finishes_seen:Finish[];owned:Partial<Record<Finish,number>>;variants?:ArtVariant[];art_credit?:string|null};
+export type ArtVariant={label:string;kind:string;art_path:string;art_meta:ArtMeta;credit?:string|null;count:number};
 export type UnknownAlbumEntry={known:false;edition_id:string;code:string;number:number;rarity:Rarity;unique?:boolean;silhouette_key:string|null};
 export type AlbumEntry=KnownAlbumEntry|UnknownAlbumEntry;
 /** Carte d'album : rendu + informations de possession. */
-export type AlbumCard=DemoCard&{characterId?:string;editionId?:string;finishesSeen?:Finish[];owned?:number};
-export type InventoryItem={instance_id:string;finish:Finish;locked:boolean;reserved:boolean;reserved_kind?:string|null;listing_id?:string|null;listing_price?:number|null;listing_kind?:'fixed'|'auction'|null;acquired_at:string;unique:boolean;value:number};
+export type AlbumCard=DemoCard&{variants?:ArtVariant[];characterId?:string;editionId?:string;finishesSeen?:Finish[];owned?:number};
+export type InventoryItem={variant?:string|null;variant_kind?:string|null;instance_id:string;finish:Finish;locked:boolean;reserved:boolean;reserved_kind?:string|null;listing_id?:string|null;listing_price?:number|null;listing_kind?:'fixed'|'auction'|null;acquired_at:string;unique:boolean;value:number};
 export type ListingCard={character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
 export type Listing={listing_id:string;price:number;net:number;status:'active'|'sold'|'cancelled'|'expired';kind:'fixed'|'auction';ends_at:string|null;current_bid:number|null;bid_count:number;min_next_bid:number;leading:boolean;won:boolean;created_at:string;closed_at:string|null;mine:boolean;seller:string|null;buyer:string|null;finish:Finish;discovered:boolean;card:ListingCard};
-export type SocialCard={instance_id:string|null;finish:Finish;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
+export type SocialCard={instance_id:string|null;finish:Finish;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;art_credit?:string|null};
 export type Friend={profile_id:string;handle:string;since:string;discovered:number};
 export type FriendRequest={request_id:string;profile_id:string;handle:string;created_at:string};
 export type Friends={friends:Friend[];incoming:FriendRequest[];outgoing:FriendRequest[]};
 export type Gift={gift_id:string;status:'pending'|'accepted'|'declined'|'cancelled'|'expired';incoming:boolean;other:string|null;created_at:string;expires_at:string;closed_at:string|null;card:SocialCard};
 export type Trade={trade_id:string;status:'pending'|'accepted'|'declined'|'cancelled'|'expired'|'countered';incoming:boolean;other_id:string;other:string|null;proposer_deniers:number;recipient_deniers:number;created_at:string;expires_at:string;closed_at:string|null;proposer_cards:SocialCard[];recipient_cards:SocialCard[]};
 export type Social={gifts:Gift[];trades:Trade[];pending_count:number};
-export function socialToCard(c:SocialCard):DemoCard{return {id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish:c.finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
+export function socialToCard(c:SocialCard):DemoCard{return {credit:c.art_credit??undefined,id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish:c.finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
 export type Mission={assignment_id:string;kind:'daily'|'weekly';label:string;target:number;reward:number;progress:number;claimed:boolean;ends_at:string;replaceable?:boolean};
 export type MissionBonus={boosters:number;claimed:boolean};
 export type Missions={daily:Mission[];weekly:Mission[];replacement_available:boolean;daily_reset:string;weekly_reset:string;daily_bonus?:MissionBonus;weekly_bonus?:MissionBonus};
@@ -44,7 +45,7 @@ export type WishItem={code:string;number:number;rarity:string;finish:string|null
 export type Wishlist={visible:boolean;items:WishItem[]};
 export type GameEvent={id:string;name:string;description:string;starts_at:string;ends_at:string;active:boolean;finish_multiplier:number;deniers_multiplier:number;bonus_boosters:number;free_interval_hours:number|null;claimed:boolean};
 export type NotificationPrefs={friends:boolean;social:boolean;market:boolean;achievements:boolean};
-export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{target?:string;category?:string;from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number}};
+export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{accepted?:boolean;kind?:string;note?:string|null;target?:string;category?:string;from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number}};
 export type Notifications={items:AppNotification[];unread:number;prefs:NotificationPrefs};
 export type PublicProfile={featured:FeaturedAchievement[];profile_id:string;handle:string;title:string|null;created_at:string;relation:'self'|'friends'|'pending_out'|'pending_in'|'none';visible:boolean;settings:{visibility:'public'|'friends'|'private';show_stats:boolean}|null;showcase:SocialCard[]|null;stats:{faces:number;total_characters:number;achievements:number;gold:number;blood:number;position:number}|null;recent:{label:string;unlocked_at:string;tier:number|null}[]|null};
 export type Leaderboard={top:{position:number;handle:string;title:string|null;score:number;achievements:number;faces:number;me:boolean}[];me:{position:number;score:number;achievements:number;faces:number}|null;total_characters:number;total_achievements:number};
@@ -67,7 +68,7 @@ function art(meta:ArtMeta|null|undefined){
 
 export function openedToCard(c:OpenedCard):DemoCard{
  return {id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:!!c.unique,known:true,finish:c.finish,
-  illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};
+  illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),variant:c.variant_kind==='alternate'?c.variant??undefined:undefined,...art(c.art_meta)};
 }
 
 export function albumToCard(e:AlbumEntry):AlbumCard{
@@ -81,7 +82,7 @@ export function albumToCard(e:AlbumEntry):AlbumCard{
  const shown=best&&best!=='Standard'?best:undefined;
  return {id:e.code,name:e.name,clan:e.clan??'?',role:e.role_title,rarity:e.rarity,unique:!!e.unique,known:true,finish:shown,
   illustration:e.art_path??undefined,silhouette:silhouetteIndex(e.silhouette_key),...art(e.art_meta),
-  characterId:e.character_id,editionId:e.edition_id,finishesSeen:e.finishes_seen,owned};
+  characterId:e.character_id,editionId:e.edition_id,finishesSeen:e.finishes_seen,owned,variants:e.variants,credit:e.art_credit??undefined};
 }
 
 const messages:Record<string,string>={
@@ -129,6 +130,11 @@ const messages:Record<string,string>={
  player_not_found:'Aucun joueur avec ce pseudonyme.',
  duplicate_card:'Cette carte est déjà dans la vitrine.',
  invalid_amount:'Indiquez un montant non nul.',
+ not_discovered:'Découvrez d’abord cette carte.',
+ image_required:'Ajoutez une image.',
+ credit_required:'Indiquez le nom à créditer (2 à 80 caractères).',
+ too_many_submissions:'Trop de propositions aujourd’hui, réessayez demain.',
+ already_submitted:'Vous avez déjà une proposition en attente pour cette carte.',
  self_report:'Vous ne pouvez pas vous signaler vous-même.',
  message_required:'Décrivez les faits (5 caractères minimum).',
  too_many_reports:'Trop de signalements aujourd’hui, réessayez demain.',

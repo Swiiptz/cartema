@@ -10,12 +10,13 @@ import {eventEffects} from '@/components/EventBanner';
 import {StatsTab} from '@/components/admin/StatsTab';
 import {EconomyTab} from '@/components/admin/EconomyTab';
 import {PlayerCards,ReportsTab} from '@/components/admin/ModerationTabs';
+import {CardArtsPanel,ContributionsTab} from '@/components/admin/ContributionsTab';
 import {TarotCard,palette,type DemoCard} from '@/components/Card';
 import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,silhouetteIndex} from '@/lib/game';
 import {ACCEPTED_TYPES,ENGRAVED_CLANS,matchIllustrations,nextNumber,uploadIllustration,type AdminCatalog,type AdminCharacter,type AdminEdition,type CharacterStatus,type IllustrationMeta} from '@/lib/admin';
 
-type Tab='characters'|'editions'|'clans'|'achievements'|'players'|'events'|'stats'|'economy'|'reports';
+type Tab='characters'|'editions'|'clans'|'achievements'|'players'|'events'|'stats'|'economy'|'reports'|'contributions';
 const STATUS_LABEL:Record<CharacterStatus,string>={draft:'Brouillon',published:'Publiée',archived:'Archivée'};
 // jsonb ne conserve pas l'ordre des clés : comparaison indépendante de l'ordre.
 const canonical=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
@@ -59,9 +60,9 @@ export default function Admin(){
 
  return <AskContext.Provider value={ask}><div className="page admin-page">{askNode}
   <header className="admin-heading"><div><span className="eyebrow">Back-office</span><h1>Le cabinet de l’archiviste</h1></div><p className="muted">Chaque modification est enregistrée dans le journal d’administration.</p></header>
-  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['economy','Économie'],['players','Joueurs'],['reports','Signalements'],['stats','Statistiques']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
+  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['economy','Économie'],['players','Joueurs'],['contributions','Contributions'],['reports','Signalements'],['stats','Statistiques']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
   <div className="admin-toast" aria-live="polite">{error&&<p className="auth-error" role="alert">{error}<button className="icon-button" aria-label="Fermer" onClick={()=>setError(null)}><X size={16}/></button></p>}{notice&&<p className="auth-notice">{notice}<button className="icon-button" aria-label="Fermer" onClick={()=>setNotice(null)}><X size={16}/></button></p>}</div>
-  {!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!}/>:tab==='stats'?<StatsTab client={client!}/>:tab==='economy'?<EconomyHost act={act} client={client!}/>:tab==='reports'?<ReportsHost act={act} client={client!}/>:<PlayersTab act={act} client={client!} characters={catalog.characters}/>}
+  {!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!}/>:tab==='stats'?<StatsTab client={client!}/>:tab==='economy'?<EconomyHost act={act} client={client!}/>:tab==='reports'?<ReportsHost act={act} client={client!}/>:tab==='contributions'?<ContributionsHost act={act} client={client!} catalog={catalog}/>:<PlayersTab act={act} client={client!} characters={catalog.characters}/>}
  </div></AskContext.Provider>;
 }
 
@@ -186,6 +187,7 @@ function CharacterEditor({draft,setDraft,catalog,act,client,onError}:{draft:Draf
      </>}
      {!draft.art_path&&<p className="admin-hint"><ImagePlus size={13}/> Sans illustration, la silhouette attribuée au personnage est utilisée.</p>}
     </fieldset>
+    {!creating&&draft.id&&!draft.unique&&<CardArtsPanel client={client} act={act} reason={askReason} characterId={draft.id} prefix={catalog.editions.find(e=>e.id===draft.edition_id)?.prefix??'CAM'} number={draft.number} officialCredit={catalog.characters.find(c=>c.id===draft.id)?.art_credit}/>}
     <div className="admin-actions">
      <button className="primary" disabled={busy||!draft.name.trim()||!dirty} onClick={()=>void save()}><Save size={16}/> {creating?'Créer le brouillon':'Enregistrer'}</button>
      {!creating&&draft.status!=='published'&&<button className="primary ghost" disabled={busy||dirty} onClick={()=>void changeStatus('published','Publier cette carte : elle apparaîtra dans l’album (si l’album de l’édition est publié).','Carte publiée : elle apparaît dans l’album.')}><Check size={16}/> Publier</button>}
@@ -358,7 +360,7 @@ type PlayerDetail={id:string;handle:string|null;role:string;title:string|null;cr
  ledger:{delta:number;balance_after:number;kind:string;created_at:string}[];grants:{source:string;pool:string;quantity:number;created_at:string}[];audit:{action:string;reason:string;created_at:string;actor:string|null}[]};
 const LEDGER_LABEL:Record<string,string>={achievement_reward:'Succès',admin_adjust:'Ajustement admin',auction_sale:'Vente aux enchères',bid_hold:'Enchère placée',bid_refund:'Enchère remboursée',daily_login:'Bonus quotidien',discovery_reward:'Découverte',market_purchase:'Achat au marché',market_sale:'Vente au marché',mission_reward:'Mission',recycle:'Recyclage',shop_booster:'Achat de boosters',trade_hold:'Échange (réserve)',trade_payment:'Échange payé',trade_receipt:'Échange reçu',trade_refund:'Échange remboursé'};
 const GRANT_LABEL:Record<string,string>={free_slot:'Créneau gratuit',welcome:'Bienvenue',shop:'Boutique',admin:'Ajustement admin',reward:'Récompense'};
-const AUDIT_LABEL:Record<string,string>={deniers_adjust:'Deniers ajustés',boosters_adjust:'Boosters ajustés',player_suspend:'Compte suspendu',player_unsuspend:'Compte réactivé',trade_block:'Échanges bloqués',trade_unblock:'Échanges débloqués',handle_reset:'Pseudonyme réinitialisé',achievement_grant:'Succès décerné',card_grant:'Carte donnée',card_remove:'Carte retirée',report_resolved:'Signalement traité',report_dismissed:'Signalement classé',grant_test_boosters:'Boosters de test',grant_test_resources:'Ressources de test',admin_provision:'Nomination administrateur'};
+const AUDIT_LABEL:Record<string,string>={deniers_adjust:'Deniers ajustés',boosters_adjust:'Boosters ajustés',player_suspend:'Compte suspendu',player_unsuspend:'Compte réactivé',trade_block:'Échanges bloqués',trade_unblock:'Échanges débloqués',handle_reset:'Pseudonyme réinitialisé',achievement_grant:'Succès décerné',art_credit:'Crédit d’illustration',art_alternate_add:'Version alternative ajoutée',submission_accept:'Contribution acceptée',submission_reject:'Contribution refusée',card_grant:'Carte donnée',card_remove:'Carte retirée',report_resolved:'Signalement traité',report_dismissed:'Signalement classé',grant_test_boosters:'Boosters de test',grant_test_resources:'Ressources de test',admin_provision:'Nomination administrateur'};
 const when=(d:string)=>new Date(d).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 
 function PlayersTab({act,client,characters}:{act:Act;client:SupabaseClient;characters:AdminCharacter[]}){
@@ -506,4 +508,9 @@ function EconomyHost({act,client}:{act:Act;client:SupabaseClient}){
 function ReportsHost({act,client}:{act:Act;client:SupabaseClient}){
  const reason=useReason();
  return <ReportsTab act={act} client={client} reason={reason}/>;
+}
+
+function ContributionsHost({act,client,catalog}:{act:Act;client:SupabaseClient;catalog:AdminCatalog}){
+ const reason=useReason();
+ return <ContributionsTab act={act} client={client} reason={reason} catalog={catalog}/>;
 }

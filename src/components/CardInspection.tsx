@@ -10,17 +10,21 @@ import {SellDialog,type SellChoice} from './SellDialog';
 import {GiftDialog} from './GiftDialog';
 import {callRpc,type InventoryItem,type RecycleResult} from '@/lib/game';
 import {WishPicker} from './Wishes';
+import {CardFeedback} from './CardFeedback';
+import type {ArtVariant} from '@/lib/game';
 
 const FINISHES=['Standard','Dorée','Sanglante'];
 /**
  * finishesSeen : finitions débloquées par le joueur ; seules celles-ci sont proposées en aperçu.
  * characterId + onChanged : album réel, affiche les exemplaires possédés (verrouiller, recycler).
  */
-export function CardInspection({card,finishesSeen,characterId,onChanged,wishes,onWish}:{card:DemoCard;finishesSeen?:readonly string[];characterId?:string;onChanged?:()=>void;wishes?:Set<string>;onWish?:(code:string,finish:string|null,on:boolean)=>Promise<void>}){
+export function CardInspection({card,finishesSeen,characterId,onChanged,wishes,onWish,variants}:{card:DemoCard;finishesSeen?:readonly string[];characterId?:string;onChanged?:()=>void;wishes?:Set<string>;onWish?:(code:string,finish:string|null,on:boolean)=>Promise<void>;variants?:ArtVariant[]}){
  const options=finishesSeen?FINISHES.filter(f=>finishesSeen.includes(f)):FINISHES;
  const dialog=useRef<HTMLDialogElement>(null);
  const title=useId();
  const [finish,setFinish]=useState(card.finish||'Standard');
+ // Version d'illustration affichée dans la fiche : officielle (null) ou une version possédée.
+ const [version,setVersion]=useState<ArtVariant|null>(null);
  const [open,setOpen]=useState(false);
  // Fermeture animée : la fenêtre se retire en fondu avant d'être réellement fermée.
  const close=()=>{
@@ -40,15 +44,17 @@ export function CardInspection({card,finishesSeen,characterId,onChanged,wishes,o
  return <><button className="inspect-card" aria-label={`Examiner ${card.known?card.name:'la carte inconnue'}`} onClick={()=>{setFinish(card.finish||'Standard');setOpen(true);dialog.current?.showModal();}}><TarotCard card={card}/><span className="inspect-hint"><Expand size={13}/> Examiner la carte</span></button>
  <dialog className="card-dialog" ref={dialog} aria-labelledby={title} onClose={e=>{if(e.target===e.currentTarget)setOpen(false);}} onCancel={e=>{if(e.target!==e.currentTarget)return;e.preventDefault();close();}} onClick={e=>{if(e.target===e.currentTarget)close();}}><div className="card-dialog-content">
   <button className="icon-button dialog-close" aria-label="Fermer le détail" onClick={close}><X size={20}/></button>
-  <div className="dialog-art" onPointerMove={tilt} onPointerLeave={untilt}><TarotCard key={finish} card={{...card,finish:card.known?finish:card.finish}}/></div>
+  <div className="dialog-art" onPointerMove={tilt} onPointerLeave={untilt}><TarotCard key={`${finish}|${version?.label??''}`} card={{...card,finish:card.known?finish:card.finish,...(version?{illustration:version.art_path,artLayout:version.art_meta?.layout==='full'||version.art_meta?.layout==='cover'?version.art_meta.layout:undefined,artOffsetY:Number(version.art_meta?.offsetY)||undefined}:{})}}/></div>
   <div className="dialog-copy">
    <span className="eyebrow">Détail de la carte</span>
    <h2 id={title}>{card.known?card.name:'Identité voilée'}</h2>
    <span className="detail-rarity">{card.provisional?'Rareté à définir':card.unique?'Carte unique':card.rarity}</span>
    {card.known&&!card.unique&&options.length>1&&<div className="finish-preview"><span className="eyebrow">Aperçu des finitions</span><div className="finish-switch" aria-label="Prévisualiser une finition">{options.map(f=><button key={f} className={finish===f?'active':''} aria-pressed={finish===f} onClick={()=>setFinish(f)}>{f}</button>)}</div><small>{finishesSeen?'Finitions que vous avez obtenues.':'Comparaison visuelle de la même carte.'}</small></div>}
-   <dl><div><dt>Numéro</dt><dd>{card.id}</dd></div><div><dt>Clan</dt><dd>{card.known?(card.clan!=='?'?card.clan:'À définir'):'À découvrir'}</dd></div><div><dt>Titre / fonction</dt><dd>{card.known?card.role||'À définir':'Identité voilée'}</dd></div>{finishesSeen?card.known&&<div><dt>Finitions obtenues</dt><dd>{options.join(', ')||'—'}</dd></div>:<div><dt>Finition d’origine</dt><dd>{card.finish||'Standard'}</dd></div>}</dl>
+   <dl><div><dt>Numéro</dt><dd>{card.id}</dd></div><div><dt>Clan</dt><dd>{card.known?(card.clan!=='?'?card.clan:'À définir'):'À découvrir'}</dd></div>{card.known&&(version?version.credit:card.illustration&&card.credit)&&<div><dt>Illustration</dt><dd>{version?version.credit:card.credit}</dd></div>}<div><dt>Titre / fonction</dt><dd>{card.known?card.role||'À définir':'Identité voilée'}</dd></div>{finishesSeen?card.known&&<div><dt>Finitions obtenues</dt><dd>{options.join(', ')||'—'}</dd></div>:<div><dt>Finition d’origine</dt><dd>{card.finish||'Standard'}</dd></div>}</dl>
+   {card.known&&variants&&variants.length>0&&<div className="finish-preview"><span className="eyebrow">Versions d’illustration possédées</span><div className="finish-switch" aria-label="Choisir la version affichée"><button className={version?'':'active'} aria-pressed={!version} onClick={()=>setVersion(null)}>Officielle</button>{variants.map(v=><button key={v.label} className={version?.label===v.label?'active':''} aria-pressed={version?.label===v.label} onClick={()=>setVersion(v)}>{v.label} ×{v.count}</button>)}</div><small>Les exemplaires gardent l’illustration qu’ils avaient quand vous les avez obtenus.</small></div>}
    {wishes&&onWish&&!card.unique&&<WishPicker code={card.id} keys={wishes} onToggle={onWish}/>}
    {open&&card.known&&characterId&&onChanged&&<OwnedCopies characterId={characterId} cardName={card.name} onChanged={onChanged}/>}
+   {characterId&&card.known&&!card.unique&&<CardFeedback code={card.id} name={card.name} hasArt={!!card.illustration}/>}
    {card.provisional&&<p className="detail-note">Étude graphique de {card.name} · Clan et rareté à définir.</p>}
   </div>
  </div></dialog></>;
@@ -106,7 +112,7 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
   <div className="owned-head"><span className="eyebrow">Vos exemplaires</span><strong>{items.length}</strong></div>
   {items.length===0?<p className="muted">Vous ne possédez plus d’exemplaire de cette carte. Elle reste découverte dans votre album.</p>:<ul className="owned-list">{items.map(it=><li key={it.instance_id} className={`finish-${it.finish==='Dorée'?'gold':it.finish==='Sanglante'?'blood':'standard'} ${it.listing_id?'listed':''}`}>
    <div className="owned-top">
-    <span className="owned-finish">{it.finish}<small>Obtenue le {new Date(it.acquired_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}</small></span>
+    <span className="owned-finish">{it.finish}{it.variant&&<em className="owned-variant"> · {it.variant}</em>}<small>Obtenue le {new Date(it.acquired_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}</small></span>
     {it.reserved&&!it.listing_id?<span className="listed-badge"><Gift size={12}/> {it.reserved_kind==='gift'?'Cadeau en attente':'Proposée en échange'}</span>:it.listing_id?<span className="listed-badge"><Tag size={12}/> {it.reserved_kind==='gift'?'Offerte':it.reserved_kind==='trade'?'Échange':it.listing_kind==='auction'?'Enchère':'En vente'} · {(it.listing_price??0).toLocaleString('fr-FR')}</span>
      :<button className={`lock-toggle ${it.locked?'on':''}`} disabled={busy} aria-pressed={it.locked} aria-label={it.locked?'Déverrouiller cet exemplaire':'Verrouiller cet exemplaire'} onClick={()=>void toggleLock(it)}>{it.locked?<Lock size={14}/>:<LockOpen size={14}/>}<span>{it.locked?'Verrouillée':'Verrouiller'}</span></button>}
    </div>

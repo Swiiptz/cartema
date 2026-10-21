@@ -4,7 +4,7 @@ import {resolveIllustration} from '@/lib/paths';
 import {renderCard,renderBack} from './tarot-renderer';
 
 export const palette:Record<Rarity,string>={'Commun':'#8d8a8f','Peu commun':'#5f9c7a','Rare':'#4a86c9','Très rare':'#3fb0b8','Épique':'#9b72e0','Légendaire':'#e0b04a','Mythique':'#e0405f'};
-export type DemoCard={id:string;name:string;clan:string;role:string;rarity:Rarity;known:boolean;finish?:string;illustration?:string;originalIllustration?:string;artLayout?:'portrait'|'full'|'cover';artOffsetY?:number;provisional?:boolean;silhouette?:number;unique?:boolean};
+export type DemoCard={id:string;name:string;clan:string;role:string;rarity:Rarity;known:boolean;finish?:string;illustration?:string;originalIllustration?:string;artLayout?:'portrait'|'full'|'cover';artOffsetY?:number;provisional?:boolean;silhouette?:number;variant?:string;credit?:string;unique?:boolean};
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const sameCard=(a:DemoCard,b:DemoCard)=>a.id===b.id&&a.name===b.name&&a.clan===b.clan&&a.role===b.role&&a.rarity===b.rarity&&a.known===b.known&&a.finish===b.finish
  &&a.illustration===b.illustration&&a.artLayout===b.artLayout&&a.artOffsetY===b.artOffsetY&&a.provisional===b.provisional&&a.silhouette===b.silhouette&&a.unique===b.unique;

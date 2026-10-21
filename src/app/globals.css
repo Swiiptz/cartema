@@ -785,3 +785,17 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .owned-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .owned-admin{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;max-height:260px;overflow:auto}
 .owned-admin li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 4px 4px 10px;border-radius:8px;background:#140d14;font:400 13px var(--ui)}.owned-admin .icon-button{width:30px;height:30px}
+
+/* Contributions et versions d'illustration */
+.feedback-link{display:inline-flex;align-items:center;gap:6px;margin-top:14px;font-size:12px;color:var(--muted)}
+.feedback-file{position:relative;display:flex;align-items:center;gap:10px;padding:14px;border:1px dashed #c9a45c66;border-radius:12px;color:var(--gold2);font:500 13px var(--ui);cursor:pointer}
+.feedback-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.owned-variant{font-style:normal;color:var(--gold)}
+
+.contribution-body{display:grid;grid-template-columns:120px 120px 1fr;gap:14px;align-items:start}
+.contribution-card{display:flex;flex-direction:column;gap:6px}.contribution-card img{width:100%;border-radius:8px;border:1px solid var(--line)}
+@media(max-width:700px){.contribution-body{grid-template-columns:1fr 1fr}.contribution-text{grid-column:1/-1}}
+.card-arts{display:flex;flex-direction:column;gap:10px}.arts-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.arts-list li{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;font:400 13px var(--ui)}.arts-list li.off{opacity:.55}
+.arts-list img{width:44px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}.arts-list small{display:block;color:var(--muted)}
+.credit-ask{margin:8px 0 0;font:400 13px var(--ui);color:var(--muted)}.credit-ask strong{color:var(--gold2)}
