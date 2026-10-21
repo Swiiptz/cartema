@@ -38,7 +38,7 @@ const defaultLayout=({width,height,transparent})=>transparent?'portrait':(height
 const sql=s=>`'${String(s).replace(/'/g,"''")}'`;
 
 function supabase(args,opts={}){
- return execFileSync('npx',['supabase',...args],{cwd:ROOT,encoding:'utf8',shell:process.platform==='win32',stdio:['ignore','pipe','pipe'],...opts});
+ return execFileSync('npx',['supabase',...args,'--agent','no'],{cwd:ROOT,encoding:'utf8',shell:process.platform==='win32',stdio:['ignore','pipe','pipe'],...opts});
 }
 /** Requête sur la base liée ; une nouvelle tentative si la CLI ne répond pas, puis erreur lisible. */
 function query(text){
@@ -47,9 +47,14 @@ function query(text){
  let last='';
  for(let attempt=1;attempt<=2;attempt++){
   try{
-   const out=supabase(['db','query','--linked','-f',file]);
-   const start=out.indexOf('{');
-   if(start>=0)return JSON.parse(out.slice(start,out.lastIndexOf('}')+1)).rows??[];
+   // Format JSON imposé : dans un terminal, la CLI affiche sinon un tableau.
+   const out=supabase(['db','query','--linked','-f',file,'-o','json']);
+   const start=out.search(/[[{]/);
+   if(start>=0){
+    const data=JSON.parse(out.slice(start,Math.max(out.lastIndexOf(']'),out.lastIndexOf('}'))+1));
+    rmSync(file,{force:true});
+    return Array.isArray(data)?data:data.rows??[];
+   }
    last=out;
   }catch(e){last=`${e.stdout??''}${e.stderr??''}`||e.message;}
  }
