@@ -705,3 +705,6 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .event-effects{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}.event-effects li{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid #c9a45c44;background:#c9a45c0d;font:500 12px var(--ui);color:var(--gold2)}
 .event-banner .primary{margin-top:12px}.event-claimed{margin:10px 0 0;font:500 13px var(--ui);color:var(--gold)}
 .event-admin.live{border-color:#c0345f66}
+
+/* Application installée (iOS) : la barre d’état translucide recouvre le haut de l’écran. */
+@media (display-mode: standalone){.layout{padding-top:env(safe-area-inset-top)}}
