@@ -134,6 +134,8 @@ const messages:Record<string,string>={
  player_not_found:'Aucun joueur avec ce pseudonyme.',
  duplicate_card:'Cette carte est déjà dans la vitrine.',
  invalid_amount:'Indiquez un montant non nul.',
+ confirmation_mismatch:'La confirmation ne correspond pas.',
+ cannot_delete_admin:'Le compte administrateur ne peut pas être supprimé ici.',
  not_discovered:'Découvrez d’abord cette carte.',
  image_required:'Ajoutez une image.',
  credit_required:'Indiquez le nom à créditer (2 à 80 caractères).',

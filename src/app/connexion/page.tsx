@@ -62,6 +62,7 @@ export default function Connexion(){
     <label className="auth-field"><span><Mail size={14}/> E-mail</span><input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" required/></label>
     <label className="auth-field"><span><KeyRound size={14}/> Mot de passe</span><span className="field-with-action"><input type={reveal?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} autoComplete={mode==='signin'?'current-password':'new-password'} minLength={8} required/><button type="button" aria-label={reveal?'Masquer le mot de passe':'Afficher le mot de passe'} aria-pressed={reveal} onClick={()=>setReveal(!reveal)}>{reveal?<EyeOff size={18}/>:<Eye size={18}/>}</button></span></label>
     {mode==='signup'&&<p className="admin-hint">8 caractères minimum. Vous choisirez votre pseudonyme juste après.</p>}
+    {mode==='signup'&&<p className="admin-hint legal-consent">En créant un compte, vous acceptez les <Link className="text-link" href="/mentions-legales/">mentions légales</Link> et la <Link className="text-link" href="/confidentialite/">politique de confidentialité</Link>.</p>}
     <button className="primary" disabled={busy}>{busy?'Un instant…':mode==='signin'?'Se connecter':'Créer mon compte'}</button>
    </form>
    {error&&<p className="auth-error" role="alert">{error}</p>}{notice&&<p className="auth-notice" role="status">{notice}</p>}

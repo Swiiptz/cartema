@@ -34,7 +34,7 @@
 ## 4. Boosters et aléatoire
 - Booster = **5 cartes** ; chaque exemplaire tiré indépendamment, **doublons possibles y compris dans le même paquet**, personnages d'une rareté donnée dans une édition choisis uniformément.
 - **Cinquième emplacement validé** : Rare 55 %, Très rare 37 %, Épique 6 %, Légendaire 1,9 %, Mythique 0,1 %. Garantie de Rare ou mieux sur cet emplacement.
-- **Emplacements 1–4 encore à confirmer formellement** : valeurs de travail issues des propositions antérieures : emplacements 1–3 Commun 70 % / Peu commun 30 % ; emplacement 4 Peu commun 75 % / Rare 20 % / Épique 5 %. Ne pas figer ces valeurs sans confirmation ; stocker les distributions dans la configuration et tester leur somme 100 %.
+- **Emplacements 1–4 validés par l’administrateur le 21/10/2026** : emplacements 1–3 Commun 70 % / Peu commun 30 % ; emplacement 4 Peu commun 75 % / Rare 20 % / Épique 5 %. Distributions stockées en configuration versionnée (Admin › Économie), somme contrôlée à 100 %.
 - **Une édition n'a pas le droit d'activer ses boosters si une des 7 raretés manque** : contrôler toutes les raretés réellement admissibles par les emplacements. Aucun fallback, aucune redistribution, aucun résultat provenant d'une autre édition. Si l'édition devient incomplète, suspendre achats et ouvertures ; un booster possédé reste stocké.
 - Finitions : tirées **après** choix du personnage et de sa rareté, à 98/1,8/0,2 %. Pas de protection anti-doublons ni de compteur de chance augmentée.
 - Révélations : le joueur choisit l'ordre des 5 cartes à retourner ; animation 3D, particules et sons désactivables, bouton passer/révéler tout. Réserver/débiter booster et créer les cinq exemplaires **atomiquement au serveur** avant l'affichage des animations. Historique intégral des ouvertures conservé.
@@ -106,7 +106,7 @@
 13. PWA installable sur navigateurs compatibles ; animations et sons désactivables, navigation clavier/screen reader.
 
 ## 13. Points ouverts / décisions restantes
-- Distributions exactes des **emplacements 1 à 4** (valeurs actuellement de travail, non validées dans une réponse définitive).
+- ~~Distributions exactes des emplacements 1 à 4~~ : validées le 21/10/2026.
 - Montants exacts des missions, succès, bonus quotidien/découvertes et tarifs des cosmétiques.
 - Durée d'expiration des cadeaux ; politique des annulations de ventes ; quotas de marché ; façon de traiter une carte rendue indisponible durant une offre.
 - Catalogue initial réel du Google Sheets : colonnes, valeurs, doublons, illustrations, éditions.

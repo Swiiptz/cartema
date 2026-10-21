@@ -865,3 +865,11 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .event-mission-row input,.event-mission-row select,.podium-inputs input{width:100%;background:#0d090f;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:6px 8px;font:500 13px var(--ui)}
 .podium-inputs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 @media(max-width:800px){.event-mission-row{grid-template-columns:1fr 1fr 1fr}.event-mission-row input:first-child{grid-column:1/-1}}
+
+/* Pages légales et données personnelles */
+.legal-page{max-width:760px;display:flex;flex-direction:column;gap:22px}.legal-page h1{margin:6px 0 4px}
+.legal-page section h2{font-size:20px;margin:0 0 8px}.legal-page p,.legal-page li{font:400 15px/1.7 var(--ui);color:var(--text)}.legal-page ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.site-footer{flex-wrap:wrap;gap:8px 16px}.footer-links{display:flex;gap:16px;font:500 12px var(--ui)}.footer-links a{color:var(--muted);transition:color .2s}.footer-links a:hover{color:var(--gold2)}
+.my-data strong{display:inline-flex;align-items:center;gap:6px}.my-data-actions{display:flex;flex-wrap:wrap;gap:8px}
+.primary.danger-solid{background:linear-gradient(180deg,#d0344f,#7a1530);border-color:#e0405f;color:#fff;box-shadow:0 2px 0 #4a0a18}
+.legal-consent{line-height:1.5}

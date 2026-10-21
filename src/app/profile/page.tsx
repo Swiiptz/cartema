@@ -9,6 +9,7 @@ import {CountUp,Skeleton} from '@/components/ui';
 import {Showcase,ShowcaseEditor} from '@/components/Showcase';
 import {FeaturedAchievements,FeaturedEditor} from '@/components/FeaturedAchievements';
 import {WishlistView} from '@/components/Wishes';
+import {MyData} from '@/components/MyData';
 import {demoCards} from '@/data/demo';
 import {callRpc,type AlbumEntry,type NotificationPrefs,type Notifications,type PublicProfile} from '@/lib/game';
 import {withBase} from '@/lib/paths';
@@ -106,6 +107,7 @@ export default function Profile(){
     <div className="notif-toggles">{([['friends','Amis'],['social','Cadeaux et échanges'],['market','Marché et enchères'],['achievements','Succès']] as const).map(([k,l])=><label key={k} className="admin-check"><input type="checkbox" disabled={busy} checked={prefs[k]} onChange={e=>savePref(k,e.target.checked)}/> {l}</label>)}</div></div>}
    <div className="settings-row"><div><strong>E-mail</strong><span className="muted">{session.user.email??'—'}</span></div></div>
    <div className="settings-row"><div><strong>Discord</strong><span className="muted">{hasDiscord?'Compte lié':'Non lié'}</span></div>{!hasDiscord&&<button className="primary ghost discord-ghost" disabled={busy} onClick={linkDiscord}><DiscordIcon/> <Link2 size={14}/> Lier</button>}</div>
+   <MyData handle={name??null}/>
    <div className="settings-row"><div><strong>Session</strong><span className="muted">Connecté sur cet appareil</span></div><button className="primary ghost" onClick={()=>void signOut()}><LogOut size={16}/> Se déconnecter</button></div>
    {error&&<p className="auth-error" role="alert">{error}</p>}{notice&&<p className="auth-notice" role="status">{notice}</p>}
   </section>

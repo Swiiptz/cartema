@@ -62,11 +62,14 @@ describe('historique immuable',()=>{
     await expectError(db.query(`update public.wallet_ledger set delta=1`),/immutable_history/);
     await expectError(db.query(`delete from public.wallet_ledger`),/immutable_history/);
   });
-  it('autorise l’effacement complet d’un compte',async()=>{
+  it('autorise la suppression d’un compte : profil anonymisé, registre conservé (RGPD)',async()=>{
     const temp=await createUser(db);
     await credit(db,temp,50);
     await db.query('delete from auth.users where id=$1',[temp]);
+    // Le registre des Deniers reste immuable ; plus rien ne le relie à une personne.
     const {rows}=await db.query('select count(*)::int n from public.wallet_ledger where owner_id=$1',[temp]);
-    expect(rows[0]).toEqual({n:0});
+    expect(rows[0]).toEqual({n:1});
+    const {rows:[p]}=await db.query<any>('select handle, deleted_at from public.profiles where id=$1',[temp]);
+    expect(p.handle).toBeNull();expect(p.deleted_at).not.toBeNull();
   });
 });

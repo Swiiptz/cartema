@@ -14,7 +14,14 @@ create table auth.users (
   id uuid primary key,
   email text,
   raw_user_meta_data jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  last_sign_in_at timestamptz
+);
+-- Identités de connexion (e-mail, Discord…), comme dans Supabase.
+create table auth.identities (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  provider text not null
 );
 create function auth.uid() returns uuid language sql stable as $$
   select nullif(nullif(current_setting('request.jwt.claims', true), '')::jsonb->>'sub', '')::uuid
