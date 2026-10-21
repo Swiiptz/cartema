@@ -8,6 +8,7 @@ import {DiscordIcon} from '@/components/DiscordIcon';
 import {CountUp,Skeleton} from '@/components/ui';
 import {Showcase,ShowcaseEditor} from '@/components/Showcase';
 import {FeaturedAchievements,FeaturedEditor} from '@/components/FeaturedAchievements';
+import {WishlistView} from '@/components/Wishes';
 import {demoCards} from '@/data/demo';
 import {callRpc,type AlbumEntry,type NotificationPrefs,type Notifications,type PublicProfile} from '@/lib/game';
 import {withBase} from '@/lib/paths';
@@ -84,6 +85,10 @@ export default function Profile(){
   {name&&<section className="social-section showcase-section rise" style={{'--i':5} as React.CSSProperties}>
    <div className="section-header"><h2>Succès mis en avant</h2><button className="primary ghost compact" disabled={!pub} onClick={()=>setEditingFeatured(true)}><Pencil size={14}/> Choisir</button></div>
    {!pub?<Skeleton style={{height:80}}/>:<FeaturedAchievements list={pub.featured??[]} empty="Choisissez jusqu’à trois succès dont vous êtes fier."/>}
+  </section>}
+  {name&&client&&<section className="social-section showcase-section rise" style={{'--i':5} as React.CSSProperties}>
+   <div className="section-header"><h2>Ma liste de souhaits</h2></div>
+   <WishlistView client={client} handle={null} own/>
   </section>}
   {pub&&client&&<FeaturedEditor client={client} open={editingFeatured} current={pub.featured??[]} onClose={()=>setEditingFeatured(false)} onSaved={p=>{setPub(p);setEditingFeatured(false);setNotice('Succès mis en avant enregistrés.');}}/>}
   {pub&&client&&<ShowcaseEditor client={client} open={editing} current={pub.showcase??[]} onClose={()=>setEditing(false)} onSaved={p=>{setPub(p);setEditing(false);setNotice('Vitrine enregistrée.');}}/>}

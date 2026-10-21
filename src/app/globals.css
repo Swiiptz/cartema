@@ -746,3 +746,16 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .admin-count{margin:8px 0 0}.admin-count .text-link{margin-left:10px}
 .admin-search input{min-width:150px}
 .chart-tip.end{transform:translate(-100%,-100%)}.chart-tip.start{transform:translate(0,-100%)}
+
+/* Liste de souhaits */
+.wish-picker{display:flex;flex-direction:column;gap:6px;margin:12px 0}.wish-picker small{font:400 12px var(--ui);color:var(--muted)}
+.wish-picker .eyebrow{display:inline-flex;align-items:center;gap:6px}.wish-picker svg.wished{fill:#e0405f;color:#e0405f}
+.album-card-cell{position:relative}
+.wish-badge{position:absolute;top:6px;right:6px;z-index:2;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:#0d090fcc;border:1px solid #e0405f88;color:#ff8a9a;pointer-events:none}.wish-badge svg{fill:currentColor}
+.wish-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.wish-item{position:relative;display:flex;gap:12px;align-items:center;padding:10px 40px 10px 10px;border:1px solid var(--line);border-radius:14px;background:#140d14}
+.wish-thumb{flex-shrink:0;width:58px}.wish-info{display:flex;flex-direction:column;gap:3px;min-width:0}
+.wish-info strong{font:600 14px var(--ui)}.wish-meta{font:400 12px var(--ui);color:var(--muted)}
+.wish-status{display:inline-flex;align-items:center;gap:5px;font:500 12px var(--ui);color:var(--muted)}.wish-status.market{color:var(--gold2)}.wish-status.friends{color:#8fd19e}.wish-status.owned{color:var(--gold)}
+.wish-remove{position:absolute;top:4px;right:2px;width:34px;height:34px}
+.wish-empty{font:400 14px var(--ui);margin:0}

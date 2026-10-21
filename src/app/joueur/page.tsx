@@ -5,6 +5,7 @@ import {Award,Check,Clock,Droplet,Lock,Sparkles,Trophy,UserPlus,Users} from 'luc
 import {useAuth} from '@/components/AuthProvider';
 import {Showcase} from '@/components/Showcase';
 import {FeaturedAchievements} from '@/components/FeaturedAchievements';
+import {WishlistView} from '@/components/Wishes';
 import {Skeleton} from '@/components/ui';
 import {callRpc,type PublicProfile} from '@/lib/game';
 
@@ -61,6 +62,7 @@ export default function PlayerPage(){
     <li className="panel"><Sparkles size={18}/><strong>{s.faces}<small> / {s.total_characters}</small></strong><span>Visages découverts</span></li>
     <li className="panel"><Droplet size={18}/><strong>{s.gold}<small> dorées · </small>{s.blood}<small> sang</small></strong><span>Finitions rares</span></li>
    </ul>}
+   {client&&<section className="social-section rise" style={{'--i':3} as React.CSSProperties}><h2>Liste de souhaits</h2><WishlistView client={client} handle={p.relation==='self'?null:p.handle} own={p.relation==='self'}/></section>}
    {p.recent&&p.recent.length>0&&<section className="social-section rise" style={{'--i':3} as React.CSSProperties}><h2>Derniers succès</h2><ul className="recent-achievements">{p.recent.map((r,i)=><li key={i}><Award size={14}/><span>{r.label}</span><small>{new Date(r.unlocked_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</small></li>)}</ul></section>}
   </>}
  </div>;

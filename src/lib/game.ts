@@ -40,6 +40,8 @@ export type MissionBonus={boosters:number;claimed:boolean};
 export type Missions={daily:Mission[];weekly:Mission[];replacement_available:boolean;daily_reset:string;weekly_reset:string;daily_bonus?:MissionBonus;weekly_bonus?:MissionBonus};
 export type Achievement={code:string;secret:boolean;category:'collection'|'general'|'custom';label:string|null;description?:string|null;title?:string|null;edition?:string|null;edition_prefix?:string|null;rarity?:Rarity|null;reward_deniers?:number;reward_boosters?:number;progress?:number;target?:number;unlocked_at:string|null;reason?:string|null;conditional?:boolean;series?:string|null;series_label?:string|null;tier?:number|null};
 export type FeaturedAchievement={code:string;label:string;description:string|null;title:string|null;tier:number|null;series_label:string|null;rarity:Rarity|null;category:string;unlocked_at:string};
+export type WishItem={code:string;number:number;rarity:string;finish:string|null;silhouette_key:string|null;known:boolean;character_id?:string;name?:string;role_title?:string;clan?:string|null;art_path?:string|null;art_meta?:ArtMeta|null;owned?:number;on_market?:number;best_price?:number|null;friends?:string[]};
+export type Wishlist={visible:boolean;items:WishItem[]};
 export type GameEvent={id:string;name:string;description:string;starts_at:string;ends_at:string;active:boolean;finish_multiplier:number;deniers_multiplier:number;bonus_boosters:number;free_interval_hours:number|null;claimed:boolean};
 export type NotificationPrefs={friends:boolean;social:boolean;market:boolean;achievements:boolean};
 export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number}};
@@ -127,6 +129,7 @@ const messages:Record<string,string>={
  player_not_found:'Aucun joueur avec ce pseudonyme.',
  duplicate_card:'Cette carte est déjà dans la vitrine.',
  invalid_amount:'Indiquez un montant non nul.',
+ wishlist_full:'Liste de souhaits pleine (60 cartes au maximum).',
  event_unavailable:'Cet événement n’est pas en cours.',
  event_without_effect:'Choisissez au moins un effet.',
  invalid_period:'La fin doit suivre le début.',

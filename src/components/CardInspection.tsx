@@ -9,13 +9,14 @@ import {Skeleton} from './ui';
 import {SellDialog,type SellChoice} from './SellDialog';
 import {GiftDialog} from './GiftDialog';
 import {callRpc,type InventoryItem,type RecycleResult} from '@/lib/game';
+import {WishPicker} from './Wishes';
 
 const FINISHES=['Standard','Dorée','Sanglante'];
 /**
  * finishesSeen : finitions débloquées par le joueur ; seules celles-ci sont proposées en aperçu.
  * characterId + onChanged : album réel, affiche les exemplaires possédés (verrouiller, recycler).
  */
-export function CardInspection({card,finishesSeen,characterId,onChanged}:{card:DemoCard;finishesSeen?:readonly string[];characterId?:string;onChanged?:()=>void}){
+export function CardInspection({card,finishesSeen,characterId,onChanged,wishes,onWish}:{card:DemoCard;finishesSeen?:readonly string[];characterId?:string;onChanged?:()=>void;wishes?:Set<string>;onWish?:(code:string,finish:string|null,on:boolean)=>Promise<void>}){
  const options=finishesSeen?FINISHES.filter(f=>finishesSeen.includes(f)):FINISHES;
  const dialog=useRef<HTMLDialogElement>(null);
  const title=useId();
@@ -46,6 +47,7 @@ export function CardInspection({card,finishesSeen,characterId,onChanged}:{card:D
    <span className="detail-rarity">{card.provisional?'Rareté à définir':card.unique?'Carte unique':card.rarity}</span>
    {card.known&&!card.unique&&options.length>1&&<div className="finish-preview"><span className="eyebrow">Aperçu des finitions</span><div className="finish-switch" aria-label="Prévisualiser une finition">{options.map(f=><button key={f} className={finish===f?'active':''} aria-pressed={finish===f} onClick={()=>setFinish(f)}>{f}</button>)}</div><small>{finishesSeen?'Finitions que vous avez obtenues.':'Comparaison visuelle de la même carte.'}</small></div>}
    <dl><div><dt>Numéro</dt><dd>{card.id}</dd></div><div><dt>Clan</dt><dd>{card.known?(card.clan!=='?'?card.clan:'À définir'):'À découvrir'}</dd></div><div><dt>Titre / fonction</dt><dd>{card.known?card.role||'À définir':'Identité voilée'}</dd></div>{finishesSeen?card.known&&<div><dt>Finitions obtenues</dt><dd>{options.join(', ')||'—'}</dd></div>:<div><dt>Finition d’origine</dt><dd>{card.finish||'Standard'}</dd></div>}</dl>
+   {wishes&&onWish&&!card.unique&&<WishPicker code={card.id} keys={wishes} onToggle={onWish}/>}
    {open&&card.known&&characterId&&onChanged&&<OwnedCopies characterId={characterId} cardName={card.name} onChanged={onChanged}/>}
    {card.provisional&&<p className="detail-note">Étude graphique de {card.name} · Clan et rareté à définir.</p>}
   </div>
