@@ -10,5 +10,7 @@ export function resolveIllustration(path?:string|null):string|undefined{
  if(!path)return undefined;
  if(path.startsWith('/illustrations/')&&!path.includes('..'))return withBase(path);
  if(storagePrefix&&path.startsWith(storagePrefix)&&!path.includes('..'))return path;
+ // Aperçu admin d'un fichier choisi localement (URL créée par la page elle-même).
+ if(path.startsWith(`blob:${typeof location==='undefined'?'':location.origin}/`))return path;
  return undefined;
 }

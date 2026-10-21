@@ -1,8 +1,8 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
-import {Check,ImagePlus,Layers,Replace,X} from 'lucide-react';
+import {Check,Eye,ImagePlus,Layers,Replace,X} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import {TarotCard} from '@/components/Card';
+import {TarotCard,type DemoCard} from '@/components/Card';
 import {Skeleton} from '@/components/ui';
 import {callRpc,silhouetteIndex,type ArtMeta} from '@/lib/game';
 import {uploadIllustration,type AdminCatalog} from '@/lib/admin';
@@ -93,13 +93,17 @@ function SubmissionItem({s,client,act,reason,catalog,onDone}:{s:Submission;clien
 }
 
 /** Versions d'illustration d'un personnage : anciennes officielles et versions alternatives tirables. */
-export function CardArtsPanel({client,act,reason,characterId,prefix,number,officialCredit}:{client:SupabaseClient;act:Act;reason:Reason;characterId:string;prefix:string;number:number;officialCredit?:string|null}){
+export function CardArtsPanel({client,act,reason,characterId,prefix,number,officialCredit,base}:{client:SupabaseClient;act:Act;reason:Reason;characterId:string;prefix:string;number:number;officialCredit?:string|null;base:DemoCard}){
  const [arts,setArts]=useState<Art[]|null>(null);
  const [file,setFile]=useState<File|null>(null);
  const [label,setLabel]=useState('');
  const [credit,setCredit]=useState('');
  const [official,setOfficial]=useState<string|null>(null);
  const [frame,setFrame]=useState<'auto'|'fullart'|'cover'|'portrait'>('fullart');
+ // Aperçu sur la carte : une version existante (son id) ou le fichier choisi ('new').
+ const [preview,setPreview]=useState<string|null>(null);
+ const [fileUrl,setFileUrl]=useState<string|null>(null);
+ useEffect(()=>{if(!file){setFileUrl(null);return;}const u=URL.createObjectURL(file);setFileUrl(u);setPreview('new');return()=>URL.revokeObjectURL(u);},[file]);
  const load=useCallback(async()=>{setArts(await callRpc<Art[]>(client,'admin_card_arts',{p_character_id:characterId}).catch(()=>[]));},[client,characterId]);
  useEffect(()=>{void load();},[load]);
  async function add(){
@@ -118,15 +122,18 @@ export function CardArtsPanel({client,act,reason,characterId,prefix,number,offic
   const r=await reason(a.active?`Ne plus faire tomber « ${a.label} » (les exemplaires existants la gardent) ?`:`Faire de nouveau tomber « ${a.label} » ?`,a.active?'Désactiver':'Activer');if(r===null)return;
   if(await act(a.active?'Version désactivée.':'Version réactivée.',c=>callRpc(c,'admin_set_card_art_active',{p_id:a.id,p_active:!a.active,p_reason:r})))void load();
  }
+ const shown=preview==='new'?(fileUrl?{...base,illustration:fileUrl,artLayout:frame==='auto'?undefined:frame,artOffsetY:undefined,variant:label||'Version alternative'}:null)
+  :(()=>{const a=arts?.find(x=>x.id===preview);return a?{...base,illustration:a.art_path,artLayout:layout(a.art_meta),artOffsetY:Number(a.art_meta?.offsetY)||undefined,variant:a.kind==='alternate'?a.label:undefined,credit:a.credit??undefined}:null;})();
  return <fieldset className="admin-art card-arts"><legend>Versions d’illustration</legend>
   <div className="admin-row give-row"><label className="auth-field"><span>Crédit de l’illustration officielle</span><input value={official??officialCredit??''} onChange={e=>setOfficial(e.target.value)} placeholder="Nom de l’artiste"/></label>
    <button type="button" className="primary ghost compact" disabled={official===null} onClick={()=>void saveCredit(null,(official??'').trim())}>Enregistrer</button></div>
   <p className="admin-hint">Les versions alternatives tombent avec la chance réglée dans Économie (« 1 sur N » par carte tirée). Les anciennes illustrations officielles restent sur les exemplaires déjà possédés.</p>
   {!arts?<Skeleton style={{height:60}}/>:arts.length===0?<p className="admin-hint">Aucune version pour l’instant.</p>
-   :<ul className="arts-list">{arts.map(a=><li key={a.id} className={a.active||a.kind==='legacy'?'':'off'}><img src={a.art_path.startsWith('/')?`${process.env.NEXT_PUBLIC_BASE_PATH??''}${a.art_path}`:a.art_path} alt=""/>
+   :<ul className="arts-list">{arts.map(a=><li key={a.id} className={`${a.active||a.kind==='legacy'?'':'off'} ${preview===a.id?'previewed':''}`}><button type="button" className="art-thumb" aria-pressed={preview===a.id} title="Aperçu sur la carte" onClick={()=>setPreview(p=>p===a.id?null:a.id)}><img src={a.art_path.startsWith('/')?`${process.env.NEXT_PUBLIC_BASE_PATH??''}${a.art_path}`:a.art_path} alt=""/><Eye size={14}/></button>
     <span><strong>{a.label}</strong><small>{a.kind==='legacy'?'ancienne officielle':a.active?'tirable':'désactivée'} · {a.owned} exemplaire{a.owned>1?'s':''}{a.credit?` · par ${a.credit}`:''}</small></span>
     <span className="art-actions"><select aria-label={`Cadrage de ${a.label}`} value={a.art_meta?.layout??'portrait'} onChange={e=>void setLayout(a,e.target.value)}>{Object.entries(FRAMES).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select>
     {a.kind==='alternate'&&<button type="button" className="text-link" onClick={()=>void toggle(a)}>{a.active?'Désactiver':'Activer'}</button>}</span></li>)}</ul>}
+  {shown&&<div className="art-preview"><TarotCard key={`${preview}-${shown.artLayout}-${shown.illustration}`} card={shown}/><p className="admin-hint">{preview==='new'?'Aperçu du fichier choisi, avec le cadrage sélectionné. Rien n’est enregistré tant que vous n’ajoutez pas.':'Aperçu tel que les joueurs verront cette version.'} <button type="button" className="text-link" onClick={()=>setPreview(null)}>Fermer</button></p></div>}
   <div className="admin-row give-row"><label className="feedback-file"><ImagePlus size={15}/><span>{file?file.name:'Image de la version'}</span><input type="file" accept="image/png,image/webp,image/jpeg" onChange={e=>setFile(e.target.files?.[0]??null)}/></label>
    <label className="auth-field"><span>Nom de la version</span><input value={label} onChange={e=>setLabel(e.target.value)} placeholder="Version Paint"/></label>
    <label className="auth-field"><span>Cadrage</span><select value={frame} onChange={e=>setFrame(e.target.value as typeof frame)}><option value="fullart">Plein cadre (full art)</option><option value="cover">Remplir la fenêtre</option><option value="portrait">Portrait</option><option value="auto">Automatique</option></select></label>

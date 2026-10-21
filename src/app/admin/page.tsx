@@ -191,7 +191,7 @@ function CharacterEditor({draft,setDraft,catalog,act,client,onError}:{draft:Draf
      </>}
      {!draft.art_path&&<p className="admin-hint"><ImagePlus size={13}/> Sans illustration, la silhouette attribuée au personnage est utilisée.</p>}
     </fieldset>
-    {!creating&&draft.id&&!draft.unique&&<CardArtsPanel client={client} act={act} reason={askReason} characterId={draft.id} prefix={catalog.editions.find(e=>e.id===draft.edition_id)?.prefix??'CAM'} number={draft.number} officialCredit={catalog.characters.find(c=>c.id===draft.id)?.art_credit}/>}
+    {!creating&&draft.id&&!draft.unique&&<CardArtsPanel client={client} act={act} reason={askReason} characterId={draft.id} prefix={catalog.editions.find(e=>e.id===draft.edition_id)?.prefix??'CAM'} number={draft.number} officialCredit={catalog.characters.find(c=>c.id===draft.id)?.art_credit} base={previewCard(draft,catalog)}/>}
     <div className="admin-actions">
      <button className="primary" disabled={busy||!draft.name.trim()||!dirty} onClick={()=>void save()}><Save size={16}/> {creating?'Créer le brouillon':'Enregistrer'}</button>
      {!creating&&draft.status!=='published'&&<button className="primary ghost" disabled={busy||dirty} onClick={()=>void changeStatus('published','Publier cette carte : elle apparaîtra dans l’album (si l’album de l’édition est publié).','Carte publiée : elle apparaît dans l’album.')}><Check size={16}/> Publier</button>}

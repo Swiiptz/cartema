@@ -889,3 +889,8 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .monitor-rows li{display:grid;grid-template-columns:minmax(140px,auto) 1fr;gap:10px;padding:6px 10px;border-radius:8px;background:#140d14;font:400 13px var(--ui)}
 .monitor-who{font-weight:600}.monitor-clean{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}.monitor-clean svg{color:#8fd19e;vertical-align:-2px}
 @media(max-width:700px){.monitor-rows li{grid-template-columns:1fr}}
+
+/* Admin : aperçu des versions d'illustration */
+.arts-list .art-thumb{position:relative;padding:0;border:0;background:none;cursor:pointer;border-radius:6px}.arts-list .art-thumb svg{position:absolute;right:3px;bottom:3px;padding:2px;border-radius:4px;background:#0d090fcc;color:var(--text);opacity:.8}
+.arts-list li.previewed img{border-color:var(--gold,#c9a45c);box-shadow:0 0 0 2px #c9a45c55}
+.art-preview{display:flex;flex-wrap:wrap;align-items:center;gap:14px;animation:rise .4s var(--ease-out) both}.art-preview .tarot-card,.art-preview>div:first-child{width:200px;max-width:60vw}.art-preview .admin-hint{flex:1;min-width:180px}
