@@ -25,7 +25,7 @@ export type UnknownAlbumEntry={known:false;edition_id:string;code:string;number:
 export type AlbumEntry=KnownAlbumEntry|UnknownAlbumEntry;
 /** Carte d'album : rendu + informations de possession. */
 export type AlbumCard=DemoCard&{variants?:ArtVariant[];characterId?:string;editionId?:string;finishesSeen?:Finish[];owned?:number};
-export type InventoryItem={variant?:string|null;variant_kind?:string|null;instance_id:string;finish:Finish;locked:boolean;reserved:boolean;reserved_kind?:string|null;listing_id?:string|null;listing_price?:number|null;listing_kind?:'fixed'|'auction'|null;acquired_at:string;unique:boolean;value:number};
+export type InventoryItem={cooldown_until?:string|null;variant?:string|null;variant_kind?:string|null;instance_id:string;finish:Finish;locked:boolean;reserved:boolean;reserved_kind?:string|null;listing_id?:string|null;listing_price?:number|null;listing_kind?:'fixed'|'auction'|null;acquired_at:string;unique:boolean;value:number};
 export type ListingCard={character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
 export type Listing={buyer_tax?:number;min_next_tax?:number;listing_id:string;price:number;net:number;status:'active'|'sold'|'cancelled'|'expired';kind:'fixed'|'auction';ends_at:string|null;current_bid:number|null;bid_count:number;min_next_bid:number;leading:boolean;won:boolean;created_at:string;closed_at:string|null;mine:boolean;seller:string|null;buyer:string|null;finish:Finish;discovered:boolean;card:ListingCard};
 export type SocialCard={instance_id:string|null;finish:Finish;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;art_credit?:string|null};
@@ -165,6 +165,7 @@ const messages:Record<string,string>={
  request_pending:'Demande déjà envoyée.',
  not_friends:'Réservé à vos amis.',
  gift_unavailable:'Ce cadeau n’est plus disponible.',
+ card_cooldown:'Carte reçue récemment : elle ne peut pas être échangée ni offerte avant 24 h.',
  trade_daily_limit:'Limite d’échanges du jour atteinte (pour vous ou votre ami). Elle se renouvelle à 6 h.',
  gift_daily_limit:'Vous avez envoyé tous vos cadeaux du jour. La limite se renouvelle à 6 h.',
  gift_received_limit:'Vous avez reçu tous les cadeaux possibles aujourd’hui. Réessayez après 6 h (le cadeau reste en attente 48 h).',

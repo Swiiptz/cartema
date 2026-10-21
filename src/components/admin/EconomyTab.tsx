@@ -8,7 +8,7 @@ import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc} from '@/lib/game';
 
 type Weighted={value:string;weight:number};
-type Settings={trade_daily_limit:number;gift_daily_limit:number;trade_tax_pct:number;trade_weekly_deniers_cap:number;buyer_tax_pct:number;bid_refund_tax_pct:number;alternate_art_odds:number;booster_offers:Record<string,number>;daily_login_reward:number;discovery_reward:number;welcome_free_boosters:number;free_booster_capacity:number;
+type Settings={trade_cooldown_hours:number;trade_daily_limit:number;gift_daily_limit:number;trade_tax_pct:number;trade_weekly_deniers_cap:number;buyer_tax_pct:number;bid_refund_tax_pct:number;alternate_art_odds:number;booster_offers:Record<string,number>;daily_login_reward:number;discovery_reward:number;welcome_free_boosters:number;free_booster_capacity:number;
  market_commission_pct:number;mission_bonus_daily:number;mission_bonus_weekly:number;recycle_values:Record<Rarity,number>;finish_multipliers:Record<string,number>};
 type Economy={settings:{version:number;settings:Settings;created_at:string};settings_history:{version:number;created_at:string;by:string|null;active:boolean}[];
  ruleset:{version:number;slots:Weighted[][];finishes:Weighted[];unique_odds:number;notes:string;created_at:string};
@@ -34,6 +34,7 @@ const FIELDS:[keyof Settings,string,string][]=[
  ['buyer_tax_pct','Taxe acheteur','% payés en plus du prix (achat, enchère gagnée)'],
  ['bid_refund_tax_pct','Taxe de remboursement','% retenus sur une mise dépassée'],
  ['trade_tax_pct','Taxe des échanges','% retenus sur les Deniers reçus dans un échange'],
+ ['trade_cooldown_hours','Délai après réception','Heures avant de pouvoir échanger ou offrir une carte reçue par échange ou cadeau (0 = aucun)'],
  ['trade_daily_limit','Échanges par jour','Échanges conclus par joueur et par jour, renouvelés à 6 h (0 = sans limite)'],
  ['gift_daily_limit','Cadeaux par jour','Cadeaux envoyés et cadeaux reçus par joueur et par jour (0 = sans limite)'],
  ['trade_weekly_deniers_cap','Plafond des échanges','Deniers qu’un joueur peut recevoir par échange sur 7 jours (0 = sans plafond)'],

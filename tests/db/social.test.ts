@@ -47,6 +47,8 @@ describe('cadeaux',()=>{
     await rpc(db,b.id,'respond_gift',[gift_id,true]);
     expect(await owner(card)).toEqual({owner_id:b.id,reserved_kind:null});
     await expectError(rpc(db,b.id,'respond_gift',[gift_id,true]),/gift_unavailable/);
+    await expectError(rpc(db,b.id,'send_gift',[a.id,card,randomUUID()]),/card_cooldown/); // reçue à l'instant
+    await db.query(`update public.inventory_items set social_received_at=now()-interval '25 hours' where id=$1`,[card]);
     const back=await rpc(db,b.id,'send_gift',[a.id,card,randomUUID()]);
     await rpc(db,a.id,'respond_gift',[back.gift_id,false]);
     expect(await owner(card)).toEqual({owner_id:b.id,reserved_kind:null});
@@ -178,5 +180,25 @@ describe('limites quotidiennes',()=>{
     await send(a,b);
     await expectError(send(a,b),/gift_daily_limit/); // a en a envoyé 2
     await setLimits(5,5);
+  });
+});
+
+describe('délai après réception',()=>{
+  it('empêche de rendre une carte reçue avant 24 h, sauf au marché',async()=>{
+    const a=await player();const b=await player();const c=await player();await befriend(a,b);await befriend(b,c);
+    const card=await give(a.id);const other=await give(b.id);
+    const t=await rpc(db,a.id,'propose_trade',[b.id,[card],[other],0,0,randomUUID(),null]);
+    await rpc(db,b.id,'respond_trade',[t.trade_id,true]);
+    // Retour immédiat : refusé, par échange comme par cadeau, et la carte n'est pas proposée à l'ami.
+    await expectError(rpc(db,b.id,'propose_trade',[a.id,[card],[],0,0,randomUUID(),null]),/card_cooldown/);
+    await expectError(rpc(db,a.id,'propose_trade',[b.id,[],[card],0,0,randomUUID(),null]),/card_cooldown/);
+    await expectError(rpc(db,b.id,'send_gift',[c.id,card,randomUUID()]),/card_cooldown/);
+    expect((await rpc(db,a.id,'get_friend_cards',[b.id])).some((x:any)=>x.instance_id===card)).toBe(false);
+    const {rows:[ch]}=await db.query<{character_id:string}>('select character_id from public.inventory_items where id=$1',[card]);
+    expect((await rpc(db,b.id,'get_inventory',[ch.character_id])).find((x:any)=>x.instance_id===card).cooldown_until).toBeTruthy();
+    await rpc(db,b.id,'create_listing',[card,50,randomUUID()]); // la vente reste possible
+    // Passé le délai, la carte redevient libre.
+    await db.query(`update public.inventory_items set social_received_at=now()-interval '25 hours' where id=$1`,[other]);
+    await rpc(db,a.id,'send_gift',[b.id,other,randomUUID()]);
   });
 });

@@ -120,7 +120,8 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
     {it.reserved&&!it.listing_id?<span className="owned-note">Gérez-la depuis la page <Link className="text-link" href="/amis/">Amis</Link></span>:it.listing_id?<button className="action-btn" disabled={busy} onClick={()=>void unlist(it)}><X size={14}/> Retirer la vente</button>
      :<><button className="action-btn sell" disabled={busy||it.locked||it.reserved} onClick={()=>void sell(it)}><Tag size={14}/> Vendre</button>
       <span className="action-sep" aria-hidden="true"/>
-      <button className="action-btn" disabled={busy||it.locked||it.reserved} onClick={()=>setGifting(it)}><Gift size={14}/> Offrir</button>
+      <button className="action-btn" disabled={busy||it.locked||it.reserved||!!it.cooldown_until} title={it.cooldown_until?`Reçue récemment : vous pourrez l’offrir ou l’échanger ${until(it.cooldown_until)}`:undefined} onClick={()=>setGifting(it)}><Gift size={14}/> Offrir</button>
+      {it.cooldown_until&&<span className="owned-note">Reçue récemment · échangeable {until(it.cooldown_until)}</span>}
       <span className="action-sep" aria-hidden="true"/>
       {it.unique?<span className="owned-note">Indestructible</span>:<button className="action-btn recycle" disabled={busy||it.locked||it.reserved} onClick={()=>void recycle([it])}><Recycle size={14}/> Recycler <b>+{it.value.toLocaleString('fr-FR')}</b></button>}</>}
    </div>
@@ -130,3 +131,6 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
   {message.error&&<p className="auth-error" role="alert">{message.error}</p>}{message.notice&&<p className="auth-notice" role="status">{message.notice}</p>}
  </section>;
 }
+
+/** « à 14 h 05 » aujourd'hui, sinon « demain à 14 h 05 ». */
+function until(iso:string){const d=new Date(iso);const t=d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});return d.toDateString()===new Date().toDateString()?`à ${t}`:`demain à ${t}`;}
