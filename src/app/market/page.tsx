@@ -40,7 +40,7 @@ export default function Market(){
  useEffect(()=>{if(!message.notice)return;const t=setTimeout(()=>setMessage({}),5000);return()=>clearTimeout(t);},[message.notice]);
 
  async function buy(l:Listing){
-  const ok=await ask({title:`Acheter ${l.card.name} ?`,message:`${l.price.toLocaleString('fr-FR')} Deniers${l.finish!=='Standard'?` · finition ${l.finish}`:''}. Il vous restera ${((player?.balance??0)-l.price).toLocaleString('fr-FR')} Deniers.`,confirmLabel:'Acheter'});
+  const ok=await ask({title:`Acheter ${l.card.name} ?`,message:`${l.price.toLocaleString('fr-FR')} Deniers + ${(l.buyer_tax??0).toLocaleString('fr-FR')} de taxe = ${(l.price+(l.buyer_tax??0)).toLocaleString('fr-FR')} Deniers${l.finish!=='Standard'?` · finition ${l.finish}`:''}. Il vous restera ${((player?.balance??0)-l.price-(l.buyer_tax??0)).toLocaleString('fr-FR')} Deniers.`,confirmLabel:'Acheter'});
   if(ok===null)return;
   setBusy(l.listing_id);setMessage({});
   try{const r=await callRpc<{discovered:boolean}>(client!,'buy_listing',{p_listing_id:l.listing_id});setMessage({notice:`${l.card.name} rejoint votre collection${r.discovered?' · nouveau visage, +10 Deniers':''}.`});await load();void refreshPlayer();}
@@ -48,7 +48,7 @@ export default function Market(){
   finally{setBusy(null);}
  }
  async function placeBid(l:Listing){
-  const raw=await ask({title:`Enchérir sur ${l.card.name}`,message:`${l.current_bid?`Mise actuelle : ${l.current_bid.toLocaleString('fr-FR')} Deniers.`:`Mise de départ : ${l.price.toLocaleString('fr-FR')} Deniers.`} Minimum : ${l.min_next_bid.toLocaleString('fr-FR')}. Vous avez ${(player?.balance??0).toLocaleString('fr-FR')} Deniers. Votre mise est bloquée jusqu’à la fin, et rendue si quelqu’un vous dépasse.`,inputLabel:'Votre mise (Deniers)',initialValue:String(l.min_next_bid),confirmLabel:'Enchérir'});
+  const raw=await ask({title:`Enchérir sur ${l.card.name}`,message:`${l.current_bid?`Mise actuelle : ${l.current_bid.toLocaleString('fr-FR')} Deniers.`:`Mise de départ : ${l.price.toLocaleString('fr-FR')} Deniers.`} Minimum : ${l.min_next_bid.toLocaleString('fr-FR')}. Vous avez ${(player?.balance??0).toLocaleString('fr-FR')} Deniers. Votre mise et la taxe acheteur (${(l.min_next_tax??0).toLocaleString('fr-FR')} pour la mise minimale) sont mises de côté jusqu’à la fin. Si quelqu’un vous dépasse, elles vous sont rendues moins une taxe de 5 % de votre mise.`,inputLabel:'Votre mise (Deniers)',initialValue:String(l.min_next_bid),confirmLabel:'Enchérir'});
   if(raw===null)return;
   const amount=Number(raw.replace(/\s/g,''));
   setBusy(l.listing_id);setMessage({});
@@ -91,7 +91,7 @@ export default function Market(){
    </div>
    {!listings?<div className="card-grid">{Array.from({length:8},(_,i)=><Skeleton key={i} className="skeleton-card"/>)}</div>
    :listings.length===0?<div className="album-empty"><Store size={28}/><h2>Aucune annonce pour l’instant.</h2><p>Mettez une carte en vente depuis votre collection : ouvrez-la, puis « Vendre ».</p><Link className="primary ghost" href="/collection/">Ma collection</Link></div>
-   :<div className="card-grid market-grid" key={`${rarity}|${finish}|${query}`}>{listings.map((l,i)=>{const afford=(player?.balance??0)>=l.price;return <article key={l.listing_id} className="listing rise" style={{'--i':Math.min(i,12)} as React.CSSProperties}>
+   :<div className="card-grid market-grid" key={`${rarity}|${finish}|${query}`}>{listings.map((l,i)=>{const afford=(player?.balance??0)>=l.price+(l.buyer_tax??0);return <article key={l.listing_id} className="listing rise" style={{'--i':Math.min(i,12)} as React.CSSProperties}>
      <div className="listing-art">{!l.discovered&&!l.mine&&<span className="listing-new">Nouveau</span>}{l.kind==='auction'&&<span className="listing-auction"><Gavel size={11}/> Enchère</span>}<TarotCard card={listingToCard(l)}/></div>
      {l.kind==='auction'?<div className="listing-info auction-info">
       <strong className="listing-price"><Coins size={14}/> {(l.current_bid??l.price).toLocaleString('fr-FR')}</strong>
@@ -99,7 +99,7 @@ export default function Market(){
       <span className="auction-timer"><Clock size={12}/> <Countdown to={l.ends_at} onDone={()=>void load()}/></span>
      </div>:<div className="listing-info"><strong className="listing-price"><Coins size={14}/> {l.price.toLocaleString('fr-FR')}</strong><span className="muted">{l.mine?'Votre annonce':`par ${l.seller??'—'}`}</span></div>}
      {l.mine?<button className="primary ghost compact" disabled={busy===l.listing_id||(l.kind==='auction'&&l.bid_count>0)} onClick={()=>void cancel(l)}>{l.kind==='auction'&&l.bid_count>0?'Mises en cours':'Retirer'}</button>
-      :l.kind==='auction'?(l.leading?<span className="leading-chip"><Crown size={14}/> Vous menez</span>:<button className="primary compact" disabled={!!busy||!status?.allowed||(player?.balance??0)<l.min_next_bid} onClick={()=>void placeBid(l)}>{busy===l.listing_id?'Mise…':(player?.balance??0)<l.min_next_bid?'Fonds insuffisants':`Enchérir · ${l.min_next_bid.toLocaleString('fr-FR')}`}</button>)
+      :l.kind==='auction'?(l.leading?<span className="leading-chip"><Crown size={14}/> Vous menez</span>:<button className="primary compact" disabled={!!busy||!status?.allowed||(player?.balance??0)<l.min_next_bid+(l.min_next_tax??0)} onClick={()=>void placeBid(l)}>{busy===l.listing_id?'Mise…':(player?.balance??0)<l.min_next_bid+(l.min_next_tax??0)?'Fonds insuffisants':`Enchérir · ${l.min_next_bid.toLocaleString('fr-FR')}`}</button>)
       :<button className="primary compact" disabled={!!busy||!status?.allowed||!afford} onClick={()=>void buy(l)}>{busy===l.listing_id?'Achat…':!afford?'Fonds insuffisants':'Acheter'}</button>}
     </article>;})}</div>}
   </>:<>

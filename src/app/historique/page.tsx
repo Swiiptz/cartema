@@ -35,7 +35,7 @@ function Row({it,i}:{it:Item;i:number}){
   case 'sale':{const c=v.card as Brief;icon=v.auction?Gavel:Tag;
    title=v.status==='sold'?`${c.name} vendue${v.auction?' aux enchères':''}${v.other?` à ${v.other}`:''}`:`${c.name} ${v.status==='cancelled'?'retirée de la vente':'sans offre, rendue'}`;
    if(v.status==='sold'){amount=(v.price as number)-((v.commission as number)??0);detail=<small className="muted">Prix {fmt(v.price)} · commission {fmt(v.commission??0)}</small>;}break;}
-  case 'purchase':{const c=v.card as Brief;icon=v.auction?Gavel:ShoppingBag;title=`${c.name} achetée${v.auction?' aux enchères':''}${v.other?` à ${v.other}`:''}`;amount=-(v.price as number);break;}
+  case 'purchase':{const c=v.card as Brief;icon=v.auction?Gavel:ShoppingBag;title=`${c.name} achetée${v.auction?' aux enchères':''}${v.other?` à ${v.other}`:''}`;amount=-((v.price as number)+((v.buyer_tax as number)??0));if(v.buyer_tax)detail=<small className="muted">Prix {fmt(v.price)} · taxe {fmt(v.buyer_tax)}</small>;break;}
   case 'trade':icon=ArrowLeftRight;title=`Échange ${STATUS[v.status==='cancelled'?'cancelled_trade':v.status==='expired'?'expired_trade':v.status]??v.status} avec ${v.other??'un joueur'}`;
    detail=<div className="history-trade"><div><span className="eyebrow">Donné</span>{(v.given as Brief[]).length?<Cards cards={v.given}/>:<small className="muted">aucune carte</small>}{(v.deniers_given as number)>0&&<small>+ {fmt(v.deniers_given)} Deniers</small>}</div>
     <div><span className="eyebrow">Reçu</span>{(v.received as Brief[]).length?<Cards cards={v.received}/>:<small className="muted">aucune carte</small>}{(v.deniers_received as number)>0&&<small>+ {fmt(v.deniers_received)} Deniers</small>}</div></div>;break;

@@ -8,7 +8,7 @@ import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc} from '@/lib/game';
 
 type Weighted={value:string;weight:number};
-type Settings={alternate_art_odds:number;booster_offers:Record<string,number>;daily_login_reward:number;discovery_reward:number;welcome_free_boosters:number;free_booster_capacity:number;
+type Settings={buyer_tax_pct:number;bid_refund_tax_pct:number;alternate_art_odds:number;booster_offers:Record<string,number>;daily_login_reward:number;discovery_reward:number;welcome_free_boosters:number;free_booster_capacity:number;
  market_commission_pct:number;mission_bonus_daily:number;mission_bonus_weekly:number;recycle_values:Record<Rarity,number>;finish_multipliers:Record<string,number>};
 type Economy={settings:{version:number;settings:Settings;created_at:string};settings_history:{version:number;created_at:string;by:string|null;active:boolean}[];
  ruleset:{version:number;slots:Weighted[][];finishes:Weighted[];unique_odds:number;notes:string;created_at:string};
@@ -31,6 +31,8 @@ const FIELDS:[keyof Settings,string,string][]=[
  ['mission_bonus_daily','Bonus missions du jour','boosters, toutes réclamées'],
  ['mission_bonus_weekly','Bonus missions de la semaine','boosters, toutes réclamées'],
  ['market_commission_pct','Commission du marché','% prélevés sur la vente'],
+ ['buyer_tax_pct','Taxe acheteur','% payés en plus du prix (achat, enchère gagnée)'],
+ ['bid_refund_tax_pct','Taxe de remboursement','% retenus sur une mise dépassée'],
  ['alternate_art_odds','Versions alternatives','chance « 1 sur N » par carte tirée (0 = jamais)'],
 ];
 

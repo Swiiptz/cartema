@@ -31,11 +31,11 @@ describe('enchères',()=>{
     const {listing_id:l}=await rpc(db,s,'create_auction',[await give(s),480,12,randomUUID()]);
     await expectError(bid(a,l,479),/bid_too_low/);
     await bid(a,l,480);
-    expect(await balance(a)).toBe(4520);
+    expect(await balance(a)).toBe(5000-480-24); // mise + taxe acheteur de 5 % mises de côté
     await expectError(bid(b,l,489),/bid_too_low/); // +10 sous 500
     await bid(b,l,490);
-    expect(await balance(a)).toBe(5000); // remboursé
-    expect(await balance(b)).toBe(4510);
+    expect(await balance(a)).toBe(5000-24); // rendu moins la taxe de remboursement de 5 %
+    expect(await balance(b)).toBe(5000-490-24);
     await expectError(bid(b,l,600),/already_leading/);
     await expectError(bid(a,l,499),/bid_too_low/); // 490 + 10 = 500 minimum
     await bid(a,l,510);
@@ -64,8 +64,8 @@ describe('enchères',()=>{
     const {rows:[it]}=await db.query<{owner_id:string;reserved_kind:string|null}>('select owner_id,reserved_kind from public.inventory_items where id=$1',[item]);
     expect(it).toEqual({owner_id:b,reserved_kind:null});
     expect(await balance(s)).toBe(317);
-    expect(await balance(a)).toBe(1000);
-    expect(await balance(b)).toBe(1000-333+10); // +10 : découverte
+    expect(await balance(a)).toBe(1000-5); // dépassé : rendu moins 5 % de sa mise
+    expect(await balance(b)).toBe(1000-333-16+10); // mise + taxe acheteur, +10 découverte
     await expectError(bid(a,l,400),/auction_closed/);
   });
   it('rend la carte au vendeur sans enchère et refuse l’annulation après une mise',async()=>{
@@ -101,5 +101,19 @@ describe('enchère sans les fonds',()=>{
     const {rows:[x]}=await db.query<any>('select current_bid, bid_count from public.listings where id=$1',[l]);
     expect(x).toMatchObject({current_bid:null,bid_count:0});
     expect((await db.query(`select count(*)::int n from public.bids where listing_id=$1`,[l])).rows[0]).toEqual({n:0});
+  });
+});
+
+describe('mises placées avant les taxes',()=>{
+  it('sont remboursées en entier',async()=>{
+    const s=await veteran();const a=await veteran();const b=await veteran();
+    await credit(db,a,1000);await credit(db,b,1000);
+    const {listing_id:l}=await rpc(db,s,'create_auction',[await give(s),100,12,randomUUID()]);
+    // Mise « ancienne » : séquestre = mise seule, pas de taxe.
+    await bid(a,l,100);
+    await db.query(`update public.bids set taxed=false, hold=amount, buyer_tax=0 where listing_id=$1`,[l]);
+    await db.query(`update public.wallets set balance=balance+5 where owner_id=$1`,[a]); // annule la taxe prise par la nouvelle règle
+    await bid(b,l,110);
+    expect(await balance(a)).toBe(1000);
   });
 });

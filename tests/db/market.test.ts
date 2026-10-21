@@ -22,15 +22,15 @@ describe('marché à prix fixe',()=>{
     const l=await rpc(db,seller,'create_listing',[instance,333,randomUUID()]);
     expect(l).toMatchObject({price:333,net:317}); // floor(333 × 5 %) = 16
     const r=await rpc(db,buyer,'buy_listing',[l.listing_id]);
-    expect(r).toMatchObject({price:333,discovered:true,replayed:false});
-    expect(await balance(buyer)).toBe(1000-333+10); // +10 : récompense de découverte
+    expect(r).toMatchObject({price:333,buyer_tax:16,discovered:true,replayed:false});
+    expect(await balance(buyer)).toBe(1000-333-16+10); // prix + taxe acheteur de 5 %, +10 découverte
     expect(await balance(seller)).toBe(317);
     const {rows:[item]}=await db.query<{owner_id:string;reserved_kind:string|null}>('select owner_id,reserved_kind from public.inventory_items where id=$1',[instance]);
     expect(item).toEqual({owner_id:buyer,reserved_kind:null});
     const {rows:[d]}=await db.query('select count(*)::int n from public.discoveries where owner_id=$1 and character_id=$2',[buyer,character]);
     expect(d).toEqual({n:1});
     expect(await rpc(db,buyer,'buy_listing',[l.listing_id])).toMatchObject({replayed:true});
-    expect(await balance(buyer)).toBe(677);
+    expect(await balance(buyer)).toBe(661);
   });
   it('n’accepte qu’un seul acheteur',async()=>{
     const seller=await veteran();const a=await veteran();const b=await veteran();
