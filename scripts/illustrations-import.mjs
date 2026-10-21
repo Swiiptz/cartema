@@ -121,8 +121,12 @@ if(DRY||!plan.length){console.log(DRY?'\nEssai : rien n’a été envoyé.':'\nR
 
 const base=supabaseUrl();
 const [admin]=query(`select id from public.profiles where role = 'admin' limit 1;`);
-const updates=[];
-mkdirSync(DONE,{recursive:true});
+// Préparation locale (originaux et versions d'affichage aux chemins définitifs), puis un seul
+// envoi parallèle par édition et une seule transaction pour relier les cartes : rapide, et rien
+// n'est relié ni rangé si l'envoi échoue. Noms préparés sans espace (la CLI les coupe).
+const STAGE=join(DIR,'.tmp','envoi');
+rmSync(STAGE,{recursive:true,force:true});
+const ready=[];
 for(const p of plan){
  const ext=extname(p.name).toLowerCase();
  if(statSync(p.path).size>MAX_BYTES){console.log(`✗ ${p.name} : plus de 15 Mo, ignoré.`);continue;}
@@ -135,19 +139,32 @@ for(const p of plan){
  const token=randomUUID().slice(0,8);
  const original=`${p.prefix}/originals/${code}-${token}${ext==='.jpeg'?'.jpg':ext}`;
  const display=`${p.prefix}/display/${code}-${token}.webp`;
- mkdirSync(join(DIR,'.tmp'),{recursive:true});
- const tmp=join(DIR,'.tmp',`${code}-${token}.webp`);
- await sharp(buffer).resize({width:DISPLAY_WIDTH,withoutEnlargement:true}).webp({quality:90}).toFile(tmp);
- supabase(['storage','cp',local(p.path),`ss:///illustrations/${original}`,'--linked','--experimental','--content-type',TYPES[ext]]);
- supabase(['storage','cp',local(tmp),`ss:///illustrations/${display}`,'--linked','--experimental','--content-type','image/webp','--cache-control','max-age=31536000']);
+ mkdirSync(join(STAGE,p.prefix,'originals'),{recursive:true});
+ mkdirSync(join(STAGE,p.prefix,'display'),{recursive:true});
+ writeFileSync(join(STAGE,original),buffer);
+ await sharp(buffer).resize({width:DISPLAY_WIDTH,withoutEnlargement:true}).webp({quality:90}).toFile(join(STAGE,display));
  const artMeta={layout:defaultLayout({width:meta.width,height:meta.height,transparent}),offsetY:0,width:meta.width,height:meta.height,transparent,original};
- updates.push(`with before as (select to_jsonb(c) as s from public.characters c where c.id = ${sql(p.character.id)}),
+ ready.push({...p,code,sql:`with before as (select to_jsonb(c) as s from public.characters c where c.id = ${sql(p.character.id)}),
  upd as (update public.characters set art_path = ${sql(`${base}/storage/v1/object/public/illustrations/${display}`)}, art_meta = ${sql(JSON.stringify(artMeta))}::jsonb
    where id = ${sql(p.character.id)} returning to_jsonb(characters) as s)
  insert into public.admin_audit_logs (actor_id, target_id, action, reason, before_state, after_state)
-   select ${admin?sql(admin.id):'null'}, ${sql(p.character.id)}, 'character_update', 'Import d’illustration depuis le dossier local (${sql(p.name).slice(1,-1)})', before.s, upd.s from before, upd;`);
- rmSync(tmp,{force:true});
- renameSync(p.path,join(DONE,`${code} ${p.name}`));
- console.log(`↑ ${p.character.name} envoyé.`);
+   select ${admin?sql(admin.id):'null'}, ${sql(p.character.id)}, 'character_update', 'Import d’illustration depuis le dossier local (${sql(p.name).slice(1,-1)})', before.s, upd.s from before, upd;`});
+ console.log(`· ${p.character.name} préparé.`);
 }
-if(updates.length){query(`begin;\n${updates.join('\n')}\ncommit;`);console.log(`\n${updates.length} illustration(s) reliée(s). Fichiers rangés dans illustrations/importees/.`);}
+if(!ready.length){rmSync(STAGE,{recursive:true,force:true});console.log('\nRien à envoyer.');process.exit(0);}
+console.log(`\nEnvoi de ${ready.length*2} fichier(s)…`);
+try{
+ // Copie vers la racine du bucket : le dossier d'édition y arrive à son chemin exact
+ // (vers « …/CAM », la CLI créerait « CAM/CAM » quand le dossier existe déjà).
+ for(const prefix of new Set(ready.map(r=>r.prefix)))
+  supabase(['storage','cp','-r',local(join(STAGE,prefix)),'ss:///illustrations','-j','8','--linked','--experimental','--cache-control','max-age=31536000']);
+}catch(e){
+ rmSync(STAGE,{recursive:true,force:true});
+ console.error(`\nL’envoi a échoué : aucune carte n’a été modifiée, les images restent dans illustrations/.\n${`${e.stdout??''}${e.stderr??''}`.split('\n').filter(l=>/error|erreur|unexpected/i.test(l)).join('\n')||e.message}`);
+ process.exit(1);
+}
+query(`begin;\n${ready.map(r=>r.sql).join('\n')}\ncommit;`);
+mkdirSync(DONE,{recursive:true});
+for(const r of ready)renameSync(r.path,join(DONE,`${r.code} ${r.name}`));
+rmSync(STAGE,{recursive:true,force:true});
+console.log(`${ready.length} illustration(s) envoyée(s) et reliée(s). Fichiers rangés dans illustrations/importees/.`);
