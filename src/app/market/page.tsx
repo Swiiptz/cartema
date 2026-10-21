@@ -1,21 +1,36 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
-import {Clock,Coins,Crown,Gavel,Search,Store,Tag,X} from 'lucide-react';
+import {Clock,Coins,Crown,Gavel,Layers,Search,Store,Tag,X} from 'lucide-react';
 import {TarotCard} from '@/components/Card';
 import {useAuth} from '@/components/AuthProvider';
 import {useAsk} from '@/components/AskDialog';
-import {CountUp,Countdown,Skeleton} from '@/components/ui';
+import {CountUp,Countdown,Sheet,Skeleton} from '@/components/ui';
 import {ALL_RARITIES,type Finish,type Rarity} from '@/lib/draw';
-import {callRpc,listingToCard,type Listing,type TradeStatus} from '@/lib/game';
+import {callRpc,listingToCard,marketCard,type Listing,type MarketBoard,type MarketGroup,type MarketOffer,type TradeStatus} from '@/lib/game';
 
+const PAGE=48;
+const SORTS={fixed:[['recent','Plus récentes'],['price_asc','Prix croissant'],['price_desc','Prix décroissant'],['rarity','Rareté'],['offers','Plus d’offres']],
+ auction:[['ending','Fin la plus proche'],['price_asc','Mise croissante'],['price_desc','Mise décroissante'],['rarity','Rareté'],['recent','Plus récentes']]} as const;
+type Kind=keyof typeof SORTS;
+/** Ce qu'il faut pour acheter une offre à prix fixe. */
+type Purchase={listing_id:string;price:number;buyer_tax?:number;name:string;finish:Finish};
 const dateFr=(iso:string)=>new Date(iso).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 
 export default function Market(){
  const {configured,ready,session,client,player,refreshPlayer}=useAuth();
  const [ask,askNode]=useAsk();
  const [tab,setTab]=useState<'buy'|'mine'>('buy');
- const [listings,setListings]=useState<Listing[]|null>(null);
+ const [kind,setKind]=useState<Kind>('fixed');
+ const [groups,setGroups]=useState<MarketGroup[]|null>(null);
+ const [auctions,setAuctions]=useState<Listing[]|null>(null);
+ const [total,setTotal]=useState(0);
+ const [clans,setClans]=useState<{id:string;name:string}[]>([]);
+ const [clan,setClan]=useState('');
+ const [sort,setSort]=useState('');
+ const [undiscovered,setUndiscovered]=useState(false);
+ const [more,setMore]=useState(false);
+ const [offersOf,setOffersOf]=useState<MarketGroup|null>(null);
  const [mine,setMine]=useState<Listing[]|null>(null);
  const [bids,setBids]=useState<Listing[]|null>(null);
  const [status,setStatus]=useState<TradeStatus|null>(null);
@@ -25,25 +40,36 @@ export default function Market(){
  const [busy,setBusy]=useState<string|null>(null);
  const [message,setMessage]=useState<{error?:string;notice?:string}>({});
 
+ const boardArgs=useCallback((offset:number)=>({p_kind:kind,p_rarity:rarity||null,p_finish:finish||null,p_query:query.trim()||null,p_clan_id:clan||null,p_undiscovered:undiscovered,p_sort:sort||null,p_limit:PAGE,p_offset:offset}),[kind,rarity,finish,query,clan,undiscovered,sort]);
  const load=useCallback(async()=>{
   if(!client)return;
   try{
    const [m,own,st,b]=await Promise.all([
-    callRpc<Listing[]>(client,'get_market',{p_rarity:rarity||null,p_finish:finish||null,p_query:query.trim()||null}),
+    callRpc<MarketBoard<MarketGroup|Listing>>(client,'get_market_board',boardArgs(0)),
     callRpc<Listing[]>(client,'get_my_listings'),
     callRpc<TradeStatus>(client,'get_trade_status'),
     callRpc<Listing[]>(client,'get_my_bids')]);
-   setListings(m);setMine(own);setStatus(st);setBids(b);
+   if(kind==='fixed')setGroups(m.items as MarketGroup[]);else setAuctions(m.items as Listing[]);
+   setTotal(m.total);setClans(m.clans);setMine(own);setStatus(st);setBids(b);
+   // L'offre ouverte suit les achats des autres joueurs.
+   setOffersOf(o=>o&&((m.items as MarketGroup[]).find(g=>g.key===o.key)??null));
   }catch(e){setMessage({error:(e as Error).message});}
- },[client,rarity,finish,query]);
+ },[client,kind,boardArgs]);
+ async function loadMore(){
+  if(!client)return;setMore(true);
+  try{const m=await callRpc<MarketBoard<MarketGroup|Listing>>(client,'get_market_board',boardArgs(kind==='fixed'?groups?.length??0:auctions?.length??0));
+   if(kind==='fixed')setGroups(g=>[...(g??[]),...(m.items as MarketGroup[])]);else setAuctions(a=>[...(a??[]),...(m.items as Listing[])]);setTotal(m.total);}
+  catch(e){setMessage({error:(e as Error).message});}finally{setMore(false);}
+ }
+ const switchKind=(k:Kind)=>{if(k===kind)return;setKind(k);setSort('');setClan('');};
  useEffect(()=>{if(!session)return;const t=setTimeout(()=>void load(),query?300:0);return()=>clearTimeout(t);},[session,load,query]);
  useEffect(()=>{if(!message.notice)return;const t=setTimeout(()=>setMessage({}),5000);return()=>clearTimeout(t);},[message.notice]);
 
- async function buy(l:Listing){
-  const ok=await ask({title:`Acheter ${l.card.name} ?`,message:`${l.price.toLocaleString('fr-FR')} Deniers + ${(l.buyer_tax??0).toLocaleString('fr-FR')} de taxe = ${(l.price+(l.buyer_tax??0)).toLocaleString('fr-FR')} Deniers${l.finish!=='Standard'?` · finition ${l.finish}`:''}. Il vous restera ${((player?.balance??0)-l.price-(l.buyer_tax??0)).toLocaleString('fr-FR')} Deniers.`,confirmLabel:'Acheter'});
+ async function buy(l:Purchase){
+  const ok=await ask({title:`Acheter ${l.name} ?`,message:`${l.price.toLocaleString('fr-FR')} Deniers + ${(l.buyer_tax??0).toLocaleString('fr-FR')} de taxe = ${(l.price+(l.buyer_tax??0)).toLocaleString('fr-FR')} Deniers${l.finish!=='Standard'?` · finition ${l.finish}`:''}. Il vous restera ${((player?.balance??0)-l.price-(l.buyer_tax??0)).toLocaleString('fr-FR')} Deniers.`,confirmLabel:'Acheter'});
   if(ok===null)return;
   setBusy(l.listing_id);setMessage({});
-  try{const r=await callRpc<{discovered:boolean}>(client!,'buy_listing',{p_listing_id:l.listing_id});setMessage({notice:`${l.card.name} rejoint votre collection${r.discovered?' · nouveau visage, +10 Deniers':''}.`});await load();void refreshPlayer();}
+  try{const r=await callRpc<{discovered:boolean}>(client!,'buy_listing',{p_listing_id:l.listing_id});setMessage({notice:`${l.name} rejoint votre collection${r.discovered?' · nouveau visage, +10 Deniers':''}.`});await load();void refreshPlayer();}
   catch(e){setMessage({error:(e as Error).message});await load();}
   finally{setBusy(null);}
  }
@@ -69,6 +95,7 @@ export default function Market(){
   finally{setBusy(null);}
  }
 
+ const boardKey=`${kind}|${rarity}|${finish}|${query}|${clan}|${sort}|${undiscovered}`;
  const activeMine=useMemo(()=>mine?.filter(l=>l.status==='active'&&l.mine)??[],[mine]);
  const history=useMemo(()=>mine?.filter(l=>l.status!=='active')??[],[mine]);
 
@@ -84,24 +111,42 @@ export default function Market(){
   <div className="admin-toast" aria-live="polite">{message.error&&<p className="auth-error" role="alert">{message.error}<button className="icon-button" aria-label="Fermer" onClick={()=>setMessage({})}><X size={16}/></button></p>}{message.notice&&<p className="auth-notice">{message.notice}</p>}</div>
 
   {tab==='buy'?<>
+   <div className="segmented market-kind" role="tablist" aria-label="Type de vente"><button role="tab" aria-selected={kind==='fixed'} onClick={()=>switchKind('fixed')}><Tag size={14}/> Prix fixe</button><button role="tab" aria-selected={kind==='auction'} onClick={()=>switchKind('auction')}><Gavel size={14}/> Enchères</button></div>
    <div className="market-filters">
     <label className="search-field"><Search size={18}/><input aria-label="Rechercher un personnage" placeholder="Rechercher…" value={query} onChange={e=>setQuery(e.target.value)}/></label>
     <select aria-label="Rareté" value={rarity} onChange={e=>setRarity(e.target.value as Rarity|'')}><option value="">Toutes raretés</option>{ALL_RARITIES.map(r=><option key={r}>{r}</option>)}</select>
     <select aria-label="Finition" value={finish} onChange={e=>setFinish(e.target.value as Finish|'')}><option value="">Toutes finitions</option>{['Standard','Dorée','Sanglante'].map(f=><option key={f}>{f}</option>)}</select>
+    <select aria-label="Clan" value={clan} onChange={e=>setClan(e.target.value)}><option value="">Tous les clans</option>{clans.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select>
+    <select aria-label="Trier" value={sort||SORTS[kind][0][0]} onChange={e=>setSort(e.target.value)}>{SORTS[kind].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>
+    <label className="check-field"><input type="checkbox" checked={undiscovered} onChange={e=>setUndiscovered(e.target.checked)}/> Non découvertes</label>
    </div>
-   {!listings?<div className="card-grid">{Array.from({length:8},(_,i)=><Skeleton key={i} className="skeleton-card"/>)}</div>
-   :listings.length===0?<div className="album-empty"><Store size={28}/><h2>Aucune annonce pour l’instant.</h2><p>Mettez une carte en vente depuis votre collection : ouvrez-la, puis « Vendre ».</p><Link className="primary ghost" href="/collection/">Ma collection</Link></div>
-   :<div className="card-grid market-grid" key={`${rarity}|${finish}|${query}`}>{listings.map((l,i)=>{const afford=(player?.balance??0)>=l.price+(l.buyer_tax??0);return <article key={l.listing_id} className="listing rise" style={{'--i':Math.min(i,12)} as React.CSSProperties}>
-     <div className="listing-art">{!l.discovered&&!l.mine&&<span className="listing-new">Nouveau</span>}{l.kind==='auction'&&<span className="listing-auction"><Gavel size={11}/> Enchère</span>}<TarotCard card={listingToCard(l)}/></div>
-     {l.kind==='auction'?<div className="listing-info auction-info">
+   {(kind==='fixed'?groups:auctions)&&<p className="market-count muted">{total===0?'Aucun résultat':`${total.toLocaleString('fr-FR')} ${kind==='fixed'?`carte${total>1?'s':''} en vente`:`enchère${total>1?'s':''} en cours`}`}</p>}
+   {kind==='fixed'?(!groups?<div className="card-grid">{Array.from({length:8},(_,i)=><Skeleton key={i} className="skeleton-card"/>)}</div>
+   :groups.length===0?<Empty/>
+   :<div className="card-grid market-grid" key={boardKey}>{groups.map((g,i)=>{const best=g.listings.find(o=>!o.mine);const afford=!!best&&(player?.balance??0)>=best.price+best.buyer_tax;return <article key={g.key} className="listing rise" style={{'--i':Math.min(i,12)} as React.CSSProperties}>
+     <div className="listing-art">{!g.discovered&&<span className="listing-new">Nouveau</span>}{g.offers>1&&<span className="listing-offers"><Layers size={11}/> {g.offers} offres</span>}<TarotCard card={marketCard(g.card,g.finish)}/></div>
+     <div className="listing-info"><strong className="listing-price"><Coins size={14}/> {g.offers>1&&<small>dès</small>}{g.min_price.toLocaleString('fr-FR')}</strong>{g.offers>1?<button type="button" className="text-link" onClick={()=>setOffersOf(g)}>Voir les {g.offers} prix</button>:<span className="muted">{g.listings[0]?.mine?'Votre annonce':`par ${g.listings[0]?.seller??'—'}`}</span>}</div>
+     {best?<button className="primary compact" disabled={!!busy||!status?.allowed||!afford} onClick={()=>void buy({...best,name:g.card.name,finish:g.finish})}>{busy===best.listing_id?'Achat…':!afford?'Fonds insuffisants':`Acheter · ${best.price.toLocaleString('fr-FR')}`}</button>
+      :<button className="primary ghost compact" onClick={()=>setTab('mine')}>Votre annonce</button>}
+    </article>;})}</div>)
+   :(!auctions?<div className="card-grid">{Array.from({length:8},(_,i)=><Skeleton key={i} className="skeleton-card"/>)}</div>
+   :auctions.length===0?<Empty/>
+   :<div className="card-grid market-grid" key={boardKey}>{auctions.map((l,i)=><article key={l.listing_id} className="listing rise" style={{'--i':Math.min(i,12)} as React.CSSProperties}>
+     <div className="listing-art">{!l.discovered&&!l.mine&&<span className="listing-new">Nouveau</span>}<span className="listing-auction"><Gavel size={11}/> Enchère</span><TarotCard card={listingToCard(l)}/></div>
+     <div className="listing-info auction-info">
       <strong className="listing-price"><Coins size={14}/> {(l.current_bid??l.price).toLocaleString('fr-FR')}</strong>
       <span className="muted">{l.bid_count?`${l.bid_count} mise${l.bid_count>1?'s':''}`:'départ'} · {l.mine?'votre enchère':l.seller??'—'}</span>
       <span className="auction-timer"><Clock size={12}/> <Countdown to={l.ends_at} onDone={()=>void load()}/></span>
-     </div>:<div className="listing-info"><strong className="listing-price"><Coins size={14}/> {l.price.toLocaleString('fr-FR')}</strong><span className="muted">{l.mine?'Votre annonce':`par ${l.seller??'—'}`}</span></div>}
-     {l.mine?<button className="primary ghost compact" disabled={busy===l.listing_id||(l.kind==='auction'&&l.bid_count>0)} onClick={()=>void cancel(l)}>{l.kind==='auction'&&l.bid_count>0?'Mises en cours':'Retirer'}</button>
-      :l.kind==='auction'?(l.leading?<span className="leading-chip"><Crown size={14}/> Vous menez</span>:<button className="primary compact" disabled={!!busy||!status?.allowed||(player?.balance??0)<l.min_next_bid+(l.min_next_tax??0)} onClick={()=>void placeBid(l)}>{busy===l.listing_id?'Mise…':(player?.balance??0)<l.min_next_bid+(l.min_next_tax??0)?'Fonds insuffisants':`Enchérir · ${l.min_next_bid.toLocaleString('fr-FR')}`}</button>)
-      :<button className="primary compact" disabled={!!busy||!status?.allowed||!afford} onClick={()=>void buy(l)}>{busy===l.listing_id?'Achat…':!afford?'Fonds insuffisants':'Acheter'}</button>}
-    </article>;})}</div>}
+     </div>
+     {l.mine?<button className="primary ghost compact" disabled={busy===l.listing_id||l.bid_count>0} onClick={()=>void cancel(l)}>{l.bid_count>0?'Mises en cours':'Retirer'}</button>
+      :l.leading?<span className="leading-chip"><Crown size={14}/> Vous menez</span>:<button className="primary compact" disabled={!!busy||!status?.allowed||(player?.balance??0)<l.min_next_bid+(l.min_next_tax??0)} onClick={()=>void placeBid(l)}>{busy===l.listing_id?'Mise…':(player?.balance??0)<l.min_next_bid+(l.min_next_tax??0)?'Fonds insuffisants':`Enchérir · ${l.min_next_bid.toLocaleString('fr-FR')}`}</button>}
+    </article>)}</div>)}
+   {(kind==='fixed'?groups?.length??0:auctions?.length??0)<total&&<button className="primary ghost market-more" disabled={more} onClick={()=>void loadMore()}>{more?'Chargement…':'Voir plus'}</button>}
+   <Sheet open={!!offersOf} onClose={()=>setOffersOf(null)} title={offersOf?`${offersOf.card.name}${offersOf.finish!=='Standard'?` · ${offersOf.finish}`:''}${offersOf.card.variant?` · ${offersOf.card.variant}`:''}`:''}>
+    {offersOf&&<div className="offers-sheet"><div className="offers-card"><TarotCard card={marketCard(offersOf.card,offersOf.finish)}/></div>
+     <ul className="offers-list">{offersOf.listings.map(o=><Offer key={o.listing_id} o={o} disabled={!!busy||!status?.allowed} busy={busy===o.listing_id} balance={player?.balance??0} onBuy={()=>void buy({...o,name:offersOf.card.name,finish:offersOf.finish})}/>)}</ul>
+     {offersOf.offers>offersOf.listings.length&&<p className="muted">Les {offersOf.listings.length} meilleurs prix sur {offersOf.offers} offres.</p>}</div>}
+   </Sheet>
   </>:<>
    <section className="market-section"><h2>En vente</h2>{!mine?<Skeleton style={{height:120}}/>:activeMine.length===0?<p className="muted">Aucune carte en vente. Ouvrez une carte de votre <Link className="text-link" href="/collection/">collection</Link> puis choisissez « Vendre ».</p>
     :<div className="card-grid market-grid">{activeMine.map((l,i)=><article key={l.listing_id} className="listing rise" style={{'--i':i} as React.CSSProperties}><div className="listing-art"><TarotCard card={listingToCard(l)}/></div><div className="listing-info"><strong className="listing-price"><Coins size={14}/> {l.price.toLocaleString('fr-FR')}</strong><span className="muted">{l.kind==='auction'?<><Countdown to={l.ends_at} onDone={()=>void load()}/> · {l.bid_count} mise{l.bid_count>1?'s':''}</>:<>vous recevrez {l.net.toLocaleString('fr-FR')}</>}</span></div><button className="primary ghost compact" disabled={busy===l.listing_id} onClick={()=>void cancel(l)}>Retirer</button></article>)}</div>}</section>
@@ -111,4 +156,12 @@ export default function Market(){
     :<ul className="market-history">{history.map(l=><li key={l.listing_id}><span className="history-name">{l.card.name}<small>{l.finish!=='Standard'?`${l.finish} · `:''}{l.closed_at?dateFr(l.closed_at):''}</small></span><span className={`history-kind ${l.status}`}>{l.status==='cancelled'?'Retirée':l.status==='expired'?'Sans enchère':l.mine?`Vendue à ${l.buyer??'—'}`:`Achetée à ${l.seller??'—'}`}</span><strong className={l.status==='sold'?(l.mine?'gain':'loss'):''}>{l.status==='sold'?(l.mine?`+${((l.current_bid??l.price)-Math.floor((l.current_bid??l.price)*5/100)).toLocaleString('fr-FR')}`:`−${(l.current_bid??l.price).toLocaleString('fr-FR')}`):'—'}</strong></li>)}</ul>}</section>
   </>}
  </div>;
+}
+
+function Empty(){return <div className="album-empty"><Store size={28}/><h2>Aucune annonce ne correspond.</h2><p>Changez les filtres, ou mettez une carte en vente depuis votre collection : ouvrez-la, puis « Vendre ».</p><Link className="primary ghost" href="/collection/">Ma collection</Link></div>;}
+
+function Offer({o,disabled,busy,balance,onBuy}:{o:MarketOffer;disabled:boolean;busy:boolean;balance:number;onBuy:()=>void}){
+ const afford=balance>=o.price+o.buyer_tax;
+ return <li><span className="offer-seller">{o.mine?'Votre annonce':o.seller??'—'}<small>{dateFr(o.created_at)}</small></span><strong className="listing-price"><Coins size={13}/> {o.price.toLocaleString('fr-FR')}</strong>
+  {o.mine?<span className="muted">—</span>:<button className="primary compact" disabled={disabled||!afford} onClick={onBuy}>{busy?'Achat…':afford?'Acheter':'Fonds insuffisants'}</button>}</li>;
 }

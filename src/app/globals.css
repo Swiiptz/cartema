@@ -468,7 +468,7 @@ a,button,.panel,.tarot-card,.inspect-card,input,select{transition:color var(--t-
 .trade-lock{display:flex;align-items:center;gap:8px;margin:0;padding:10px 14px;border-radius:12px;border:1px solid #c9a45c44;background:#c9a45c0d;font:400 13px/1.5 var(--ui);color:var(--gold2)}
 .market-tabs{max-width:420px}.market-tabs button{display:inline-flex;align-items:center;justify-content:center;gap:7px}
 .tab-count{display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--gold);color:#170e13;font:700 10px var(--ui)}
-.market-filters{display:grid;grid-template-columns:1fr auto auto;gap:8px}
+.market-filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.market-filters .search-field{flex:1 1 220px}
 .market-filters select{min-height:48px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#171017;color:var(--text);font:400 14px var(--ui)}
 .market-grid{align-items:start}
 .listing{display:flex;flex-direction:column;gap:8px}
@@ -482,7 +482,7 @@ a,button,.panel,.tarot-card,.inspect-card,input,select{transition:color var(--t-
 .market-history li{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #c9a45c18;font:400 13px var(--ui)}
 .history-name{display:flex;flex-direction:column;font-weight:600}.history-name small{font:400 11px var(--ui);color:var(--muted)}
 .history-kind{color:var(--muted);font-size:12px}.market-history strong{font-variant-numeric:tabular-nums}.market-history .gain{color:#9fd8b0}.market-history .loss{color:#e8a3b0}
-@media(max-width:700px){.market-filters{grid-template-columns:1fr 1fr}.market-filters .search-field{grid-column:1/-1}.market-history li{grid-template-columns:1fr auto}.history-kind{grid-column:1;grid-row:2;font-size:11px}}
+@media(max-width:700px){.market-filters select{flex:1 1 40%}.market-history li{grid-template-columns:1fr auto}.history-kind{grid-column:1;grid-row:2;font-size:11px}}
 /* Exemplaires : informations en haut, actions séparées en bas. */
 .owned-list li{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:12px}
 .owned-list li.listed{border-color:#c9a45c66;background:linear-gradient(170deg,#c9a45c10,#160f16)}
@@ -896,3 +896,17 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .art-preview{display:flex;flex-wrap:wrap;align-items:center;gap:14px;animation:rise .4s var(--ease-out) both}.art-preview .tarot-card,.art-preview>div:first-child{width:200px;max-width:60vw}.art-preview .admin-hint{flex:1;min-width:180px}
 
 .trade-tax{font:400 13px var(--ui);margin:0}
+
+/* Marché : prix fixe regroupé, enchères à part */
+.market-kind{max-width:340px}.market-count{margin:0;font:400 13px var(--ui)}
+.check-field{display:inline-flex;align-items:center;gap:7px;min-height:48px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:#171017;font:400 14px var(--ui);cursor:pointer}
+.check-field input{accent-color:var(--gold)}
+.listing-offers{position:absolute;right:8px;bottom:8px;z-index:2;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:#0d090fdd;border:1px solid var(--line);color:var(--gold2);font:600 11px var(--ui)}
+.listing-price small{font:400 11px var(--ui);color:var(--muted);margin-right:2px}
+.market-more{align-self:center;min-width:200px}
+.offers-sheet{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:start}.offers-card{width:150px}
+.offers-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.offers-list li{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:#140d14;border:1px solid var(--line);animation:rise .4s var(--ease-out) both}
+.offer-seller{display:flex;flex-direction:column;font:600 13px var(--ui)}.offer-seller small{font:400 11px var(--ui);color:var(--muted)}
+.offers-list .primary{min-width:110px}
+@media(max-width:560px){.offers-sheet{grid-template-columns:1fr}.offers-card{width:130px;margin:0 auto}}

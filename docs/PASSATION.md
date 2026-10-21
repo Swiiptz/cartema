@@ -266,3 +266,9 @@ Critère de fin global : toutes les exigences du CDC et ses 13 scénarios d’ac
   - `get_achievements` calcule la progression en une seule passe (`private.sync_achievement_states`) ;
   - `get_market` ne clôture plus les enchères échues : il les masque, et la tâche planifiée les clôture chaque minute ;
   - `pg_stat_statements` a été remis à zéro le 22/10 pour mesurer l'effet en conditions réelles.
+- **Marché amélioré** (migration `20261022130000_market_board`, fonction `get_market_board`) :
+  - **Prix fixe** : les annonces d'une même carte (même personnage, finition et version) sont regroupées en une tuile, avec le prix le plus bas, le nombre d'offres et la liste des 12 meilleurs prix.
+  - **Enchères** : onglet séparé, trié par défaut sur la fin la plus proche.
+  - **Filtres** : rareté, finition, clan, recherche, « non découvertes ». Tris au choix, et bouton « Voir plus » pour la suite.
+  - **Correctif** : les versions alternatives s'affichent enfin avec leur illustration au marché (`listing_json` passe par `card_json`).
+  - `get_market` reste en place pour les pages déjà ouvertes.
