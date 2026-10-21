@@ -894,3 +894,5 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .arts-list .art-thumb{position:relative;padding:0;border:0;background:none;cursor:pointer;border-radius:6px}.arts-list .art-thumb svg{position:absolute;right:3px;bottom:3px;padding:2px;border-radius:4px;background:#0d090fcc;color:var(--text);opacity:.8}
 .arts-list li.previewed img{border-color:var(--gold,#c9a45c);box-shadow:0 0 0 2px #c9a45c55}
 .art-preview{display:flex;flex-wrap:wrap;align-items:center;gap:14px;animation:rise .4s var(--ease-out) both}.art-preview .tarot-card,.art-preview>div:first-child{width:200px;max-width:60vw}.art-preview .admin-hint{flex:1;min-width:180px}
+
+.trade-tax{font:400 13px var(--ui);margin:0}

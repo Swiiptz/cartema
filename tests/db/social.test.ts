@@ -63,7 +63,7 @@ describe('cadeaux',()=>{
 });
 
 describe('échanges',()=>{
-  it('échange cartes et Deniers atomiquement, sans commission',async()=>{
+  it('échange cartes et Deniers atomiquement, sans commission (taxe de 5 % sur les Deniers reçus)',async()=>{
     const a=await player();const b=await player();await befriend(a,b);
     await credit(db,a.id,1000);await credit(db,b.id,1000);
     const a1=await give(a.id,'Rare');const a2=await give(a.id,'Commun');const b1=await give(b.id,'Épique');
@@ -73,8 +73,8 @@ describe('échanges',()=>{
     await rpc(db,b.id,'respond_trade',[trade_id,true]);
     expect((await owner(a1)).owner_id).toBe(b.id);expect((await owner(a2)).owner_id).toBe(b.id);
     expect((await owner(b1)).owner_id).toBe(a.id);
-    expect(await balance(a.id)).toBe(800+50+10); // +50 reçus, +10 découverte de l'Épique
-    expect(await balance(b.id)).toBe(1000-50+200+20); // +20 : deux découvertes
+    expect(await balance(a.id)).toBe(800+48+10); // +50 reçus moins 2 de taxe, +10 découverte de l'Épique
+    expect(await balance(b.id)).toBe(1000-50+190+20); // 200 moins 10 de taxe, +20 : deux découvertes
   });
   it('refus, annulation et expiration rendent cartes et Deniers',async()=>{
     const a=await player();const b=await player();await befriend(a,b);await credit(db,a.id,300);
@@ -118,5 +118,34 @@ describe('échanges',()=>{
     await rpc(db,fresh,'send_friend_request',[a.handle]);
     const f=await rpc(db,a.id,'get_friends');await rpc(db,a.id,'respond_friend_request',[f.incoming[0].request_id,true]);
     await expectError(rpc(db,fresh,'propose_trade',[a.id,[await give(fresh)],[],0,0,randomUUID(),null]),/account_too_new/);
+  });
+});
+
+describe('Deniers dans les échanges',()=>{
+  it('taxe de 5 % sur les Deniers reçus, chaque côté',async()=>{
+    const a=await player();const b=await player();await befriend(a,b);
+    await credit(db,a.id,1000);await credit(db,b.id,1000);
+    const t=await rpc(db,a.id,'propose_trade',[b.id,[await give(a.id)],[await give(b.id)],300,100,randomUUID(),null]);
+    await rpc(db,b.id,'respond_trade',[t.trade_id,true]);
+    expect(await balance(a.id)).toBe(1000-300+95+10); // +10 : découverte
+    expect(await balance(b.id)).toBe(1000-100+285+10);
+    const {rows:[r]}=await db.query<{p:string;r:string}>('select proposer_tax p, recipient_tax r from public.trades where id=$1',[t.trade_id]);
+    expect([Number(r.p),Number(r.r)]).toEqual([5,15]);
+  });
+  it('plafonne les Deniers reçus par semaine, à la proposition et à l’acceptation',async()=>{
+    const a=await player();const b=await player();const c=await player();await befriend(a,b);await befriend(c,b);
+    await credit(db,a.id,5000);await credit(db,c.id,5000);
+    await expectError(rpc(db,a.id,'propose_trade',[b.id,[await give(a.id)],[],2500,0,randomUUID(),null]),/trade_deniers_cap/);
+    expect(await balance(a.id)).toBe(5000);
+    // Deux propositions qui passent seules, mais pas ensemble : la seconde est refusée à l'acceptation.
+    const t1=await rpc(db,a.id,'propose_trade',[b.id,[await give(a.id)],[],1500,0,randomUUID(),null]);
+    const t2=await rpc(db,c.id,'propose_trade',[b.id,[await give(c.id)],[],1000,0,randomUUID(),null]);
+    await rpc(db,b.id,'respond_trade',[t1.trade_id,true]);
+    await expectError(rpc(db,b.id,'respond_trade',[t2.trade_id,true]),/trade_deniers_cap/);
+    const status=await rpc(db,b.id,'get_trade_status');
+    expect([status.trade_cap,status.trade_received_week,status.trade_tax_pct]).toEqual([2000,1500,5]);
+    // Les échanges de cartes seules restent libres.
+    const t3=await rpc(db,c.id,'propose_trade',[b.id,[await give(c.id)],[],0,0,randomUUID(),null]);
+    await rpc(db,b.id,'respond_trade',[t3.trade_id,true]);
   });
 });

@@ -53,7 +53,7 @@ export type AppNotification={id:string;kind:string;created_at:string;read:boolea
 export type Notifications={items:AppNotification[];unread:number;prefs:NotificationPrefs};
 export type PublicProfile={verified?:boolean;featured:FeaturedAchievement[];profile_id:string;handle:string;title:string|null;created_at:string;relation:'self'|'friends'|'pending_out'|'pending_in'|'none';visible:boolean;settings:{visibility:'public'|'friends'|'private';show_stats:boolean}|null;showcase:SocialCard[]|null;stats:{faces:number;total_characters:number;achievements:number;gold:number;blood:number;position:number}|null;recent:{label:string;unlocked_at:string;tier:number|null}[]|null};
 export type Leaderboard={top:{position:number;handle:string;title:string|null;score:number;achievements:number;faces:number;me:boolean}[];me:{position:number;score:number;achievements:number;faces:number}|null;total_characters:number;total_achievements:number};
-export type TradeStatus={verified?:boolean;allowed:boolean;blocked:boolean;available_at:string|null;commission_pct:number};
+export type TradeStatus={verified?:boolean;allowed:boolean;blocked:boolean;available_at:string|null;commission_pct:number;trade_tax_pct?:number;trade_cap?:number;trade_received_week?:number};
 export function listingToCard(l:Listing):DemoCard{const c=l.card;return {id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish:l.finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
 export type RecycleResult={operation_id?:string;total:number;count:number;balance:number;replayed:boolean};
 export type DuplicatePreview={count:number;total:number;by_rarity:Partial<Record<Rarity,number>>};
@@ -168,6 +168,7 @@ const messages:Record<string,string>={
  trade_unavailable:'Cet échange n’est plus disponible.',
  card_unavailable:'Une des cartes n’est plus disponible (vendue, verrouillée ou engagée).',
  empty_trade:'Ajoutez au moins une carte à l’échange.',
+ trade_deniers_cap:'Plafond hebdomadaire de Deniers reçus par échange dépassé (pour vous ou votre ami). Réduisez le montant ou attendez quelques jours.',
  too_many_cards:'10 cartes maximum de chaque côté.',
  mission_incomplete:'Mission pas encore accomplie.',
  already_claimed:'Récompense déjà réclamée.',
