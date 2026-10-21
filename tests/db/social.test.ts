@@ -149,3 +149,34 @@ describe('Deniers dans les échanges',()=>{
     await rpc(db,b.id,'respond_trade',[t3.trade_id,true]);
   });
 });
+
+describe('limites quotidiennes',()=>{
+  // Les réglages sont versionnés : on active une nouvelle version.
+  const setLimits=(t:number,g:number)=>db.exec(`update public.economy_settings set active=false where active;
+    insert into public.economy_settings (version,active,settings) select max(version)+1,true,(select settings from public.economy_settings order by version desc limit 1)||'{"trade_daily_limit":${t},"gift_daily_limit":${g}}'::jsonb from public.economy_settings;`);
+  it('plafonne les échanges conclus par jour, pour les deux parties',async()=>{
+    await setLimits(2,0);
+    const a=await player();const b=await player();const c=await player();await befriend(a,b);await befriend(a,c);
+    const swap=async(x:{id:string},y:{id:string})=>{const t=await rpc(db,x.id,'propose_trade',[y.id,[await give(x.id)],[],0,0,randomUUID(),null]);return t.trade_id;};
+    const t1=await swap(a,b);const t2=await swap(a,c);const t3=await swap(c,a);
+    await rpc(db,b.id,'respond_trade',[t1,true]);await rpc(db,c.id,'respond_trade',[t2,true]);
+    await expectError(rpc(db,a.id,'respond_trade',[t3,true]),/trade_daily_limit/); // a en est à 2
+    await expectError(swap(b,a),/trade_daily_limit/); // prévenu dès la proposition
+    const st=await rpc(db,a.id,'get_trade_status');
+    expect([st.trade_daily_limit,st.trades_today]).toEqual([2,2]);
+    await setLimits(5,5);
+  });
+  it('plafonne les cadeaux envoyés et reçus par jour',async()=>{
+    await setLimits(0,2);
+    const a=await player();const b=await player();const c=await player();const d=await player();
+    await befriend(a,d);await befriend(b,d);await befriend(c,d);await befriend(a,b);
+    const send=async(x:{id:string},y:{id:string})=>(await rpc(db,x.id,'send_gift',[y.id,await give(x.id),randomUUID()])).gift_id;
+    const accept=(y:{id:string},g:string)=>rpc(db,y.id,'respond_gift',[g,true]);
+    await accept(d,await send(a,d));await accept(d,await send(b,d));
+    const g3=await send(c,d);
+    await expectError(accept(d,g3),/gift_received_limit/); // d a déjà reçu 2 cadeaux
+    await send(a,b);
+    await expectError(send(a,b),/gift_daily_limit/); // a en a envoyé 2
+    await setLimits(5,5);
+  });
+});
