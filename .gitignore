@@ -7,3 +7,5 @@ coverage/
 .DS_Store
 out/
 *.tsbuildinfo
+# Images à importer (npm run illustrations), jamais versionnées.
+/illustrations/

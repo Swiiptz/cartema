@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "npx --yes serve@14.2.4 out -l 3101",
-    "test": "vitest run"
+    "test": "vitest run",
+    "illustrations": "node scripts/illustrations-import.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.117.2",
@@ -20,6 +21,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "sharp": "^0.34.4",
     "supabase": "2.119.0",
     "typescript": "^5.9.0",
     "vitest": "^3.2.0"
