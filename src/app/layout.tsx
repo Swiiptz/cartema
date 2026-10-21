@@ -12,7 +12,7 @@ import './globals.css';
 const cinzel=Cinzel({subsets:['latin'],weight:['400','600','700'],variable:'--font-cinzel',display:'swap'});
 const cormorant=Cormorant_Garamond({subsets:['latin'],weight:['500','600'],style:['normal','italic'],variable:'--font-cormorant',display:'swap'});
 const manrope=Manrope({subsets:['latin'],weight:['400','500','600','700'],variable:'--font-manrope',display:'swap'});
-export const metadata:Metadata={title:'Cartema — Vampiric Boosters',description:'Un rituel, cinq cartes. Découvrez le tarot gothique de la chronique Camarilla.',manifest:withBase('/manifest.webmanifest'),applicationName:'Cartema',
+export const metadata:Metadata={title:'Cartema',description:'Un rituel, cinq cartes. Découvrez le tarot gothique de la chronique Camarilla.',manifest:withBase('/manifest.webmanifest'),applicationName:'Cartema',
  icons:{icon:[{url:withBase('/icon.svg'),type:'image/svg+xml'},{url:withBase('/favicon-48.png'),sizes:'48x48',type:'image/png'}],apple:[{url:withBase('/apple-touch-icon.png'),sizes:'180x180'}]},
  // Écran d'accueil iOS : plein écran, barre d'état fondue dans le fond sombre.
  appleWebApp:{capable:true,title:'Cartema',statusBarStyle:'black-translucent'},
