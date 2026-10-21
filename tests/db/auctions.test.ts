@@ -89,3 +89,17 @@ describe('enchères',()=>{
     expect((await rpc<any[]>(db,v,'get_market',[])).find(x=>x.listing_id===l)).toBeUndefined();
   });
 });
+
+describe('enchère sans les fonds',()=>{
+  it('refuse la mise, ne crée aucune offre et ne touche à rien',async()=>{
+    const s=await veteran();const pauvre=await veteran();
+    await db.query('update public.wallets set balance=0 where owner_id=$1',[pauvre]);
+    await credit(db,pauvre,100);
+    const {listing_id:l}=await rpc(db,s,'create_auction',[await give(s),480,12,randomUUID()]);
+    await expectError(bid(pauvre,l,480),/insufficient_funds/);
+    expect(await balance(pauvre)).toBe(100);
+    const {rows:[x]}=await db.query<any>('select current_bid, bid_count from public.listings where id=$1',[l]);
+    expect(x).toMatchObject({current_bid:null,bid_count:0});
+    expect((await db.query(`select count(*)::int n from public.bids where listing_id=$1`,[l])).rows[0]).toEqual({n:0});
+  });
+});

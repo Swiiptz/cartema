@@ -48,11 +48,15 @@ export default function Market(){
   finally{setBusy(null);}
  }
  async function placeBid(l:Listing){
-  const raw=await ask({title:`Enchérir sur ${l.card.name}`,message:`${l.current_bid?`Mise actuelle : ${l.current_bid.toLocaleString('fr-FR')} Deniers.`:`Mise de départ : ${l.price.toLocaleString('fr-FR')} Deniers.`} Minimum : ${l.min_next_bid.toLocaleString('fr-FR')}. Votre mise est bloquée jusqu’à la fin, et rendue si quelqu’un vous dépasse.`,inputLabel:'Votre mise (Deniers)',initialValue:String(l.min_next_bid),confirmLabel:'Enchérir'});
+  const raw=await ask({title:`Enchérir sur ${l.card.name}`,message:`${l.current_bid?`Mise actuelle : ${l.current_bid.toLocaleString('fr-FR')} Deniers.`:`Mise de départ : ${l.price.toLocaleString('fr-FR')} Deniers.`} Minimum : ${l.min_next_bid.toLocaleString('fr-FR')}. Vous avez ${(player?.balance??0).toLocaleString('fr-FR')} Deniers. Votre mise est bloquée jusqu’à la fin, et rendue si quelqu’un vous dépasse.`,inputLabel:'Votre mise (Deniers)',initialValue:String(l.min_next_bid),confirmLabel:'Enchérir'});
   if(raw===null)return;
   const amount=Number(raw.replace(/\s/g,''));
   setBusy(l.listing_id);setMessage({});
-  try{if(!Number.isInteger(amount))throw new Error('Mise invalide.');await callRpc(client!,'place_bid',{p_listing_id:l.listing_id,p_amount:amount,p_request_id:crypto.randomUUID()});setMessage({notice:`Vous menez l’enchère avec ${amount.toLocaleString('fr-FR')} Deniers.`});await load();void refreshPlayer();}
+  try{if(!Number.isInteger(amount))throw new Error('Mise invalide.');
+   // Contrôle immédiat (le serveur refuse de toute façon une mise sans les fonds).
+   if(amount>(player?.balance??0))throw new Error(`Fonds insuffisants : vous avez ${(player?.balance??0).toLocaleString('fr-FR')} Deniers.`);
+   if(amount<l.min_next_bid)throw new Error(`Mise minimale : ${l.min_next_bid.toLocaleString('fr-FR')} Deniers.`);
+  await callRpc(client!,'place_bid',{p_listing_id:l.listing_id,p_amount:amount,p_request_id:crypto.randomUUID()});setMessage({notice:`Vous menez l’enchère avec ${amount.toLocaleString('fr-FR')} Deniers.`});await load();void refreshPlayer();}
   catch(e){setMessage({error:(e as Error).message});await load();}
   finally{setBusy(null);}
  }
