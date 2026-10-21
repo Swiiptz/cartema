@@ -14,11 +14,15 @@ import {CountUp,Sheet,Skeleton} from '@/components/ui';
 import {albumToCard,callRpc,type AlbumCard,type AlbumEntry,type DuplicatePreview,type RecycleResult} from '@/lib/game';
 
 type Edition={id:string;name:string;prefix:string};
+// Dernier album chargé (par compte) : la page s'affiche aussitôt quand on y revient, puis se met à
+// jour en arrière-plan. Le premier appel après une période calme peut prendre quelques secondes.
+let albumCache:{userId:string;album:AlbumCard[];editions:Edition[]}|null=null;
 
 export default function Collection(){
  const [filters,setFilters]=useState<AlbumFilters>(defaultFilters);
  const [expanded,setExpanded]=useState(false);
  const {configured,ready,session,client,refreshPlayer}=useAuth();
+ const userId=session?.user.id;
  const [reloadKey,setReloadKey]=useState(0);
  const reload=()=>setReloadKey(k=>k+1);
  const [dupOpen,setDupOpen]=useState(false);
@@ -26,8 +30,9 @@ export default function Collection(){
  const [dupBusy,setDupBusy]=useState(false);
  const [dupMessage,setDupMessage]=useState<{error?:string;notice?:string}>({});
  const live=Boolean(configured&&session&&client);
- const [album,setAlbum]=useState<AlbumCard[]|null>(null);
- const [editions,setEditions]=useState<Edition[]>([]);
+ const cached=albumCache&&albumCache.userId===userId?albumCache:null;
+ const [album,setAlbum]=useState<AlbumCard[]|null>(cached?.album??null);
+ const [editions,setEditions]=useState<Edition[]>(cached?.editions??[]);
  const [editionId,setEditionId]=useState<string>('all');
  const [loadError,setLoadError]=useState<string|null>(null);
  useEffect(()=>{
@@ -35,10 +40,13 @@ export default function Collection(){
   let alive=true;
   // Les cartes non découvertes arrivent déjà anonymisées par le serveur.
   Promise.all([callRpc<AlbumEntry[]>(client,'get_album'),client.from('editions').select('id,name,prefix').order('created_at')])
-   .then(([entries,eds])=>{if(!alive)return;setAlbum(entries.map(albumToCard));setEditions((eds.data??[]) as Edition[]);setLoadError(null);})
-   .catch(e=>{if(alive)setLoadError((e as Error).message);});
+   .then(([entries,eds])=>{
+    const next=entries.map(albumToCard),nextEditions=(eds.data??[]) as Edition[];
+    if(userId)albumCache={userId,album:next,editions:nextEditions};
+    if(!alive)return;setAlbum(next);setEditions(nextEditions);setLoadError(null);})
+   .catch(e=>{if(alive&&!albumCache)setLoadError((e as Error).message);});
   return()=>{alive=false;};
- },[live,client,reloadKey]);
+ },[live,client,reloadKey,userId]);
  async function openDuplicates(){
   setDupOpen(true);setDup(null);setDupMessage({});
   try{setDup(await callRpc<DuplicatePreview>(client!,'preview_duplicates',{p_keep:1}));}catch(e){setDupMessage({error:(e as Error).message});}

@@ -165,9 +165,12 @@ export function toGameError(error:{message?:string;code?:string}|null|undefined)
  return new GameError('unknown',network?'Connexion interrompue. Réessayez : l’opération ne sera pas comptée deux fois.':'Une erreur est survenue.',!network);
 }
 
+/** Au-delà, la requête est abandonnée : un message s'affiche au lieu d'un chargement sans fin. */
+const RPC_TIMEOUT_MS=20000;
 export async function callRpc<T>(client:SupabaseClient,fn:string,args?:Record<string,unknown>):Promise<T>{
  let result;
- try{result=await client.rpc(fn,args);}catch(e){throw toGameError({message:(e as Error).message});}
+ try{result=await client.rpc(fn,args).abortSignal(AbortSignal.timeout(RPC_TIMEOUT_MS));}
+ catch(e){throw toGameError({message:(e as Error).message});}
  if(result.error)throw toGameError(result.error);
  return result.data as T;
 }

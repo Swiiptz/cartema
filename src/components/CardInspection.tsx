@@ -63,7 +63,7 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
 
  async function run(action:()=>Promise<string|null>){
   setBusy(true);setMessage({});
-  try{const notice=await action();await load();if(notice){setMessage({notice});onChanged();void refreshPlayer();}}
+  try{const notice=await action();if(notice){setMessage({notice});onChanged();void refreshPlayer();}await load();}
   catch(e){setMessage({error:(e as Error).message});}
   finally{setBusy(false);}
  }
