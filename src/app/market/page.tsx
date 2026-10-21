@@ -125,9 +125,12 @@ export default function Market(){
    :groups.length===0?<Empty/>
    :<div className="card-grid market-grid" key={boardKey}>{groups.map((g,i)=>{const best=g.listings.find(o=>!o.mine);const afford=!!best&&(player?.balance??0)>=best.price+best.buyer_tax;return <article key={g.key} className="listing rise" style={{'--i':Math.min(i,12)} as React.CSSProperties}>
      <div className="listing-art">{!g.discovered&&<span className="listing-new">Nouveau</span>}{g.offers>1&&<span className="listing-offers"><Layers size={11}/> {g.offers} offres</span>}<TarotCard card={marketCard(g.card,g.finish)}/></div>
-     <div className="listing-info"><strong className="listing-price"><Coins size={14}/> {g.offers>1&&<small>dès</small>}{g.min_price.toLocaleString('fr-FR')}</strong>{g.offers>1?<button type="button" className="text-link" onClick={()=>setOffersOf(g)}>Voir les {g.offers} prix</button>:<span className="muted">{g.listings[0]?.mine?'Votre annonce':`par ${g.listings[0]?.seller??'—'}`}</span>}</div>
-     {best?<button className="primary compact" disabled={!!busy||!status?.allowed||!afford} onClick={()=>void buy({...best,name:g.card.name,finish:g.finish})}>{busy===best.listing_id?'Achat…':!afford?'Fonds insuffisants':`Acheter · ${best.price.toLocaleString('fr-FR')}`}</button>
-      :<button className="primary ghost compact" onClick={()=>setTab('mine')}>Votre annonce</button>}
+     <div className="listing-info"><strong className="listing-price"><Coins size={14}/> {g.offers>1&&<small>dès</small>}{g.min_price.toLocaleString('fr-FR')}</strong><span className="muted">{g.offers>1?(top(g)>g.min_price?`jusqu’à ${top(g).toLocaleString('fr-FR')}`:'même prix'):g.listings[0]?.mine?'Votre annonce':`par ${g.listings[0]?.seller??'—'}`}</span></div>
+     <div className="listing-actions">
+      {best?<button className="primary compact" disabled={!!busy||!status?.allowed||!afford} onClick={()=>void buy({...best,name:g.card.name,finish:g.finish})}>{busy===best.listing_id?'Achat…':!afford?'Fonds insuffisants':`Acheter · ${best.price.toLocaleString('fr-FR')}`}</button>
+       :<button className="primary ghost compact" onClick={()=>setTab('mine')}>Votre annonce</button>}
+      {g.offers>1&&<button type="button" className="offers-btn" aria-label={`Voir les ${g.offers} offres`} title={`Voir les ${g.offers} offres`} onClick={()=>setOffersOf(g)}><Layers size={15}/><b>{g.offers}</b></button>}
+     </div>
     </article>;})}</div>)
    :(!auctions?<div className="card-grid">{Array.from({length:8},(_,i)=><Skeleton key={i} className="skeleton-card"/>)}</div>
    :auctions.length===0?<Empty/>
@@ -165,3 +168,6 @@ function Offer({o,disabled,busy,balance,onBuy}:{o:MarketOffer;disabled:boolean;b
  return <li><span className="offer-seller">{o.mine?'Votre annonce':o.seller??'—'}<small>{dateFr(o.created_at)}</small></span><strong className="listing-price"><Coins size={13}/> {o.price.toLocaleString('fr-FR')}</strong>
   {o.mine?<span className="muted">—</span>:<button className="primary compact" disabled={disabled||!afford} onClick={onBuy}>{busy?'Achat…':afford?'Acheter':'Fonds insuffisants'}</button>}</li>;
 }
+
+/** Prix le plus haut parmi les offres affichées. */
+function top(g:MarketGroup){return g.listings.reduce((m,o)=>Math.max(m,o.price),g.min_price);}

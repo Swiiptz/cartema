@@ -910,3 +910,7 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .offer-seller{display:flex;flex-direction:column;font:600 13px var(--ui)}.offer-seller small{font:400 11px var(--ui);color:var(--muted)}
 .offers-list .primary{min-width:110px}
 @media(max-width:560px){.offers-sheet{grid-template-columns:1fr}.offers-card{width:130px;margin:0 auto}}
+
+.listing-actions{display:flex;gap:6px}.listing-actions .primary{flex:1;width:auto;min-width:0}
+.offers-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:52px;padding:0 10px;border-radius:999px;border:1px solid #c9a45c66;background:#1d131bcc;color:var(--gold2);font:600 13px var(--ui);cursor:pointer;transition:background .2s,border-color .2s,transform .2s var(--ease-out)}
+.offers-btn:hover{background:#2a1b26;border-color:var(--gold)}.offers-btn:active{transform:scale(.96)}.offers-btn svg{color:var(--gold)}
