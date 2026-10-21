@@ -719,3 +719,30 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .install-close{position:absolute;top:4px;right:2px;width:34px;height:34px}
 .install-steps{grid-column:1/-1;margin:4px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font:400 13px/1.5 var(--ui);color:var(--text)}.install-steps svg{vertical-align:-2px;color:var(--gold)}
 @media(max-width:420px){.install-card{grid-template-columns:auto 1fr}.install-card .primary{grid-column:1/-1}}
+
+/* Admin : statistiques */
+.admin-stats{display:flex;flex-direction:column;gap:16px}
+.stats-filter{display:inline-flex;align-self:flex-start;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:#140d14}
+.stats-filter button{padding:6px 14px;border:0;border-radius:999px;background:none;color:var(--muted);font:600 12px var(--ui)}.stats-filter button.on{background:#c9a45c22;color:var(--gold2)}
+.stats-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.stat-tile{display:flex;flex-direction:column;gap:4px;padding:14px 16px}.stat-tile:before{display:none}
+.stat-label{font:500 12px var(--ui);color:var(--muted)}.stat-tile strong{font:600 26px/1.2 var(--ui);color:var(--text)}.stat-tile small{font:400 12px/1.4 var(--ui);color:var(--muted)}
+.stats-charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.stats-card{padding:16px}.stats-card:before{display:none}.stats-card h3{margin:0 0 10px;font:600 14px var(--ui);color:var(--text)}
+.chart-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.chart-total{font:500 12px var(--ui);color:var(--muted)}
+.chart-wrap{position:relative}.chart-wrap svg{display:block;width:100%;height:auto;overflow:visible}
+.chart-grid{stroke:#ffffff14;stroke-width:1}.chart-tick{fill:var(--muted);font:500 17px var(--ui)}
+.chart-bar{fill:var(--gold);transition:opacity .2s,fill .2s}.chart-bar.dim{opacity:.45}.chart-bar.on{fill:var(--gold2)}
+.chart-tip{position:absolute;top:-6px;transform:translate(-50%,-100%);pointer-events:none;display:flex;flex-direction:column;gap:1px;padding:6px 10px;border-radius:8px;background:#0d090f;border:1px solid var(--line);box-shadow:0 6px 20px #000a;white-space:nowrap;font:400 11px var(--ui);color:var(--muted)}.chart-tip strong{font:600 13px var(--ui);color:var(--text)}
+.chart-table{margin-top:8px;font:400 12px var(--ui)}.chart-table summary{cursor:pointer;color:var(--muted)}.chart-table table{width:100%;margin-top:6px;border-collapse:collapse;font-variant-numeric:tabular-nums}.chart-table td,.chart-table th{padding:3px 6px;border-bottom:1px solid #ffffff0d;text-align:left}.chart-table td:last-child,.chart-table th:last-child{text-align:right}
+.stats-split{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;align-items:start}
+.bar-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.bar-list li{display:grid;grid-template-columns:120px 1fr auto;align-items:center;gap:10px;font:500 13px var(--ui)}
+.bar-label{display:flex;align-items:center;gap:7px;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar-label i{flex-shrink:0;width:8px;height:8px;border-radius:2px}
+.bar-track{height:10px;border-radius:0 4px 4px 0;background:#ffffff08}.bar-track b{display:block;height:100%;min-width:2px;border-radius:0 4px 4px 0}
+.bar-value{color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}.bar-value small{color:var(--muted)}
+.stats-dl{margin:0 0 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}.stats-dl div{display:flex;flex-direction:column}.stats-dl dt{font:400 12px var(--ui);color:var(--muted)}.stats-dl dd{margin:0;font:600 18px var(--ui)}
+.stats-recent{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}.stats-recent li{display:flex;justify-content:space-between;font:500 13px var(--ui)}.stats-recent small{color:var(--muted)}
+.admin-count{margin:8px 0 0}.admin-count .text-link{margin-left:10px}
+.admin-search input{min-width:150px}
+.chart-tip.end{transform:translate(-100%,-100%)}.chart-tip.start{transform:translate(0,-100%)}
