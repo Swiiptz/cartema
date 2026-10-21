@@ -3,8 +3,8 @@
 //
 //   1. Déposer les images dans illustrations/ (ou illustrations/<PRÉFIXE>/ pour une autre édition
 //      que CAM), nommées comme le personnage : « Violette.webp », « Isabeau de Marnay.png ».
-//   2. npm run illustrations            → envoie, relie aux cartes, range les fichiers dans importees/
-//      npm run illustrations -- --essai → montre seulement les correspondances
+//   2. npm run illustrations:essai      → montre seulement les correspondances, n’envoie rien
+//      npm run illustrations            → envoie, relie aux cartes, range les fichiers dans importees/
 //
 // Même traitement que le back-office : original conservé intact, version d'affichage WebP de
 // 900 px de large, cadrage par défaut, chemins par édition (CAM/originals, CAM/display) et
@@ -13,18 +13,22 @@
 import {execFileSync} from 'node:child_process';
 import {mkdirSync,readFileSync,readdirSync,renameSync,rmSync,statSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {join,extname,basename,relative} from 'node:path';
+import {join,extname,basename,relative,dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
 import sharp from 'sharp';
 
 sharp.cache(false);
 
-const ROOT=process.cwd();
+// Racine du projet d'après l'emplacement du script : la commande marche depuis n'importe quel dossier.
+const ROOT=join(dirname(fileURLToPath(import.meta.url)),'..');
 const DIR=join(ROOT,'illustrations');
 const DONE=join(DIR,'importees');
 const DISPLAY_WIDTH=900;
 const MAX_BYTES=15*1024*1024;
-const DRY=process.argv.includes('--essai')||process.argv.includes('--dry-run');
+// PowerShell avale « -- » : « npm run illustrations -- --essai » arrive comme option npm
+// (npm_config_essai). On la reconnaît aussi, pour ne jamais envoyer par erreur.
+const DRY=['--essai','--dry-run','essai'].some(a=>process.argv.includes(a))||!!process.env.npm_config_essai||!!process.env.npm_config_dry_run;
 const TYPES={'.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg'};
 
 // La CLI confond un chemin Windows absolu (« D:\… ») avec une adresse : chemins relatifs uniquement.
@@ -36,11 +40,26 @@ const sql=s=>`'${String(s).replace(/'/g,"''")}'`;
 function supabase(args,opts={}){
  return execFileSync('npx',['supabase',...args],{cwd:ROOT,encoding:'utf8',shell:process.platform==='win32',stdio:['ignore','pipe','pipe'],...opts});
 }
+/** Requête sur la base liée ; une nouvelle tentative si la CLI ne répond pas, puis erreur lisible. */
 function query(text){
  const file=join(tmpdir(),`cartema-${randomUUID()}.sql`);
  writeFileSync(file,text);
- const out=supabase(['db','query','--linked','-f',file]);
- return JSON.parse(out.slice(out.indexOf('{'),out.lastIndexOf('}')+1)).rows??[];
+ let last='';
+ for(let attempt=1;attempt<=2;attempt++){
+  try{
+   const out=supabase(['db','query','--linked','-f',file]);
+   const start=out.indexOf('{');
+   if(start>=0)return JSON.parse(out.slice(start,out.lastIndexOf('}')+1)).rows??[];
+   last=out;
+  }catch(e){last=`${e.stdout??''}${e.stderr??''}`||e.message;}
+ }
+ rmSync(file,{force:true});
+ console.error(`
+La base Supabase n’a pas répondu. Message de la CLI :
+${last.trim()||'(aucun)'}
+`);
+ console.error('Vérifiez la connexion internet, puis « npx supabase login » et « npx supabase link » si le message parle d’accès.');
+ process.exit(1);
 }
 function supabaseUrl(){
  const env=readFileSync(join(ROOT,'.env.local'),'utf8');

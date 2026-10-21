@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "npx --yes serve@14.2.4 out -l 3101",
     "test": "vitest run",
-    "illustrations": "node scripts/illustrations-import.mjs"
+    "illustrations": "node scripts/illustrations-import.mjs",
+    "illustrations:essai": "node scripts/illustrations-import.mjs --essai"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.117.2",
