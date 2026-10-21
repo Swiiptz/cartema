@@ -80,7 +80,7 @@ function ColumnChart({title,unit,series,pick}:{title:string;unit:string;series:D
     {[0,top/2,top].map(t=><g key={t}><line x1={PAD_L} x2={W} y1={y(t)} y2={y(t)} className="chart-grid"/><text x={PAD_L-6} y={y(t)+6} textAnchor="end" className="chart-tick">{compact(t)}</text></g>)}
     {values.map((v,i)=>{const x=PAD_L+i*band+(band-bar)/2,yy=y(v),hh=H-PAD_B-yy,r=Math.min(4,hh,bar/2);
      return <g key={i}>
-      {v>0&&<path d={`M${x},${H-PAD_B} V${yy+r} Q${x},${yy} ${x+r},${yy} H${x+bar-r} Q${x+bar},${yy} ${x+bar},${yy+r} V${H-PAD_B} Z`} className={`chart-bar ${hover===i?'on':''} ${hover!==null&&hover!==i?'dim':''}`}/>}
+      {v>0&&<path d={`M${x},${H-PAD_B} V${yy+r} Q${x},${yy} ${x+r},${yy} H${x+bar-r} Q${x+bar},${yy} ${x+bar},${yy+r} V${H-PAD_B} Z`} className={`chart-bar ${hover===i?'on':''} ${hover!==null&&hover!==i?'dim':''}`} style={{'--i':i} as React.CSSProperties}/>}
       <rect x={PAD_L+i*band} y={PAD_T} width={band} height={H-PAD_T-PAD_B} fill="transparent" onMouseEnter={()=>setHover(i)} onFocus={()=>setHover(i)} onClick={()=>setHover(i)}/>
      </g>;})}
     <text x={PAD_L} y={H-4} className="chart-tick">{dayLabel(series[0].day)}</text>

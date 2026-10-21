@@ -49,6 +49,7 @@ export default function Progression(){
   <div className="segmented social-tabs" role="tablist">{([['missions','Missions',ScrollText],['achievements','Succès',Award],['ranking','Classement',Trophy]] as const).map(([k,l,I])=><button key={k} role="tab" aria-selected={tab===k} onClick={()=>setTab(k)}><I size={15}/> {l}</button>)}</div>
   <div className="admin-toast" aria-live="polite">{message.error&&<p className="auth-error" role="alert">{message.error}<button className="icon-button" aria-label="Fermer" onClick={()=>setMessage({})}><X size={16}/></button></p>}{message.notice&&<p className="auth-notice">{message.notice}</p>}</div>
 
+  <div key={tab} className="tab-panel">
   {tab==='missions'&&(!missions?<Skeleton style={{height:300}}/>:<div className="social-col">
    <section className="social-section"><div className="section-header"><h2>Quotidiennes</h2><span className="muted reset-in"><Clock size={12}/> renouvelées dans <Countdown to={missions.daily_reset} onDone={()=>void load()}/></span></div>
     <MissionBonusBar bonus={missions.daily_bonus} missions={missions.daily} period="du jour"/>
@@ -70,6 +71,7 @@ export default function Progression(){
    </li>)}</ol>
    {board.me&&!board.top.some(r=>r.me)&&<p className="muted">Vous êtes {board.me.position}e avec {board.me.achievements} succès et {board.me.faces} visages.</p>}
   </section>)}
+  </div>
  </div>;
 }
 

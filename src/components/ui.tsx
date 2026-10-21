@@ -49,7 +49,17 @@ export function Countdown({to,onDone}:{to:string|null;onDone?:()=>void}){
 /** Panneau qui glisse depuis le bas (mobile) ou s'ouvre au centre (grand écran). */
 export function Sheet({open,onClose,title,children}:{open:boolean;onClose:()=>void;title:string;children:React.ReactNode}){
  const ref=useRef<HTMLDialogElement>(null);
- useEffect(()=>{const d=ref.current;if(!d)return;if(open&&!d.open)d.showModal();if(!open&&d.open)d.close();},[open]);
+ useEffect(()=>{
+  const d=ref.current;if(!d)return;
+  if(open&&!d.open){d.classList.remove('closing');d.showModal();return;}
+  if(!open&&d.open){
+   // Sortie animée : le panneau glisse vers le bas avant la fermeture réelle.
+   if(reducedMotion()){d.close();return;}
+   d.classList.add('closing');
+   const t=setTimeout(()=>{d.classList.remove('closing');d.close();},240);
+   return()=>clearTimeout(t);
+  }
+ },[open]);
  return <dialog ref={ref} className="sheet" aria-label={title} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
   <div className="sheet-body">
    <div className="sheet-handle" aria-hidden="true"/>

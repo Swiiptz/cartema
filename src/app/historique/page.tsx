@@ -25,7 +25,7 @@ function Cards({cards}:{cards:Brief[]}){
  return <ul className="history-cards">{cards.map((c,i)=><li key={i} style={{'--rc':palette[c.rarity]} as React.CSSProperties}><i aria-hidden="true"/>{c.name}<small>{c.code} · {c.rarity}{c.finish!=='Standard'?` · ${c.finish}`:''}{c.variant?` · ${c.variant}`:''}</small></li>)}</ul>;
 }
 
-function Row({it}:{it:Item}){
+function Row({it,i}:{it:Item;i:number}){
  // Champs propres à chaque type d’opération, lus tels que renvoyés par get_history.
  const v=it as unknown as Record<string,never>;
  let icon=Package,title='',detail:React.ReactNode=null,amount:number|null=null;
@@ -44,7 +44,7 @@ function Row({it}:{it:Item}){
   case 'ledger':icon=Coins;title=LEDGER[v.kind]??v.kind;amount=v.delta as number;detail=<small className="muted">Solde : {fmt(v.balance)}</small>;break;
  }
  const Icon=icon;
- return <li className={`history-row ${it.type}`}>
+ return <li className={`history-row rise ${it.type}`} style={{'--i':Math.min(i%30,10)} as React.CSSProperties}>
   <span className="history-icon"><Icon size={15}/></span>
   <div className="history-main"><div className="history-head"><strong>{title}</strong>{amount!==null&&amount!==0&&<span className={`history-amount ${amount>0?'pos':'neg'}`}>{amount>0?'+':''}{fmt(amount)}</span>}</div>
    <time dateTime={it.at}>{when(it.at)}</time>{detail}</div>
@@ -74,7 +74,7 @@ export default function History(){
   {error&&<p className="auth-error" role="alert">{error}</p>}
   {!items?<div className="history-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:64}}/>)}</div>
    :items.length===0?<p className="muted">Rien pour l’instant dans cette catégorie.</p>
-   :<ul className="history-list">{items.map((it,i)=><Row key={`${it.at}-${i}`} it={it}/>)}</ul>}
+   :<ul className="history-list" key={cat}>{items.map((it,i)=><Row key={`${it.at}-${i}`} it={it} i={i}/>)}</ul>}
   {next&&<button className="primary ghost compact history-more" disabled={busy} onClick={()=>void load(next)}>{busy?'Chargement…':'Voir plus'}</button>}
  </div>;
 }
