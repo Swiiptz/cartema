@@ -106,7 +106,7 @@ export default function Profile(){
    {prefs&&<div className="settings-row notif-prefs"><div><strong>Notifications</strong><span className="muted">Ce qui apparaît sous la cloche</span></div>
     <div className="notif-toggles">{([['friends','Amis'],['social','Cadeaux et échanges'],['market','Marché et enchères'],['achievements','Succès']] as const).map(([k,l])=><label key={k} className="admin-check"><input type="checkbox" disabled={busy} checked={prefs[k]} onChange={e=>savePref(k,e.target.checked)}/> {l}</label>)}</div></div>}
    <div className="settings-row"><div><strong>E-mail</strong><span className="muted">{session.user.email??'—'}</span></div></div>
-   <div className="settings-row"><div><strong>Discord</strong><span className="muted">{hasDiscord?'Compte lié':'Non lié'}</span></div>{!hasDiscord&&<button className="primary ghost discord-ghost" disabled={busy} onClick={linkDiscord}><DiscordIcon/> <Link2 size={14}/> Lier</button>}</div>
+   <div className="settings-row"><div><strong>Discord</strong><span className="muted">{hasDiscord?'Compte lié · vérifié : marché et échanges ouverts sans délai':'Liez-le pour vérifier votre compte et ouvrir le marché et les échanges sans attendre 24 h'}</span></div>{!hasDiscord&&<button className="primary ghost discord-ghost" disabled={busy} onClick={linkDiscord}><DiscordIcon/> <Link2 size={14}/> Lier</button>}</div>
    <MyData handle={name??null}/>
    <div className="settings-row"><div><strong>Session</strong><span className="muted">Connecté sur cet appareil</span></div><button className="primary ghost" onClick={()=>void signOut()}><LogOut size={16}/> Se déconnecter</button></div>
    {error&&<p className="auth-error" role="alert">{error}</p>}{notice&&<p className="auth-notice" role="status">{notice}</p>}

@@ -81,3 +81,14 @@ describe('marché à prix fixe',()=>{
     expect((await rpc<any[]>(db,seller,'get_my_listings',[])).find(m=>m.listing_id===l.listing_id)).toMatchObject({status:'cancelled'});
   });
 });
+
+describe('compte vérifié par Discord',()=>{
+  it('lève le délai de 24 h pour un compte lié à Discord',async()=>{
+    const fresh=await createUser(db);
+    let st=await rpc(db,fresh,'get_trade_status');
+    expect(st).toMatchObject({allowed:false,verified:false});
+    await db.query(`insert into auth.identities (user_id,provider) values ($1,'discord')`,[fresh]);
+    st=await rpc(db,fresh,'get_trade_status');
+    expect(st).toMatchObject({allowed:true,verified:true,available_at:null});
+  });
+});

@@ -75,7 +75,7 @@ export default function Market(){
  return <div className="page market-page">
   {askNode}
   <header className="market-head rise"><div><span className="eyebrow">Marché</span><h1>L’hôtel des ventes</h1></div>{player&&<span className="chip gold"><Coins size={15}/><CountUp value={player.balance}/><small>Deniers</small></span>}</header>
-  {status&&!status.allowed&&<p className="trade-lock rise"><Clock size={15}/> {status.blocked?'Les échanges sont suspendus sur ce compte.':`Les achats et ventes entre joueurs s’ouvrent le ${status.available_at?dateFr(status.available_at):'…'} (24 h après la création du compte).`}</p>}
+  {status&&!status.allowed&&<p className="trade-lock rise"><Clock size={15}/> {status.blocked?'Les échanges sont suspendus sur ce compte.':<>Les achats et ventes entre joueurs s’ouvrent le {status.available_at?dateFr(status.available_at):'…'} (24 h après la création du compte). <Link className="text-link" href="/profile/">Liez votre compte Discord</Link> pour les débloquer tout de suite.</>}</p>}
   <div className="segmented market-tabs" role="tablist"><button role="tab" aria-selected={tab==='buy'} onClick={()=>setTab('buy')}><Store size={15}/> Acheter</button><button role="tab" aria-selected={tab==='mine'} onClick={()=>setTab('mine')}><Tag size={15}/> Mes ventes{activeMine.length>0&&<b className="tab-count">{activeMine.length}</b>}</button></div>
   <div className="admin-toast" aria-live="polite">{message.error&&<p className="auth-error" role="alert">{message.error}<button className="icon-button" aria-label="Fermer" onClick={()=>setMessage({})}><X size={16}/></button></p>}{message.notice&&<p className="auth-notice">{message.notice}</p>}</div>
 

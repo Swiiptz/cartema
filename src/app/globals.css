@@ -873,3 +873,4 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .my-data strong{display:inline-flex;align-items:center;gap:6px}.my-data-actions{display:flex;flex-wrap:wrap;gap:8px}
 .primary.danger-solid{background:linear-gradient(180deg,#d0344f,#7a1530);border-color:#e0405f;color:#fff;box-shadow:0 2px 0 #4a0a18}
 .legal-consent{line-height:1.5}
+.verified-badge{display:inline-flex;align-items:center;gap:4px;margin-left:10px;padding:3px 9px;border-radius:999px;border:1px solid #5865f288;background:#5865f21f;color:#c9cdfb;font:600 11px var(--ui);vertical-align:middle;letter-spacing:0}

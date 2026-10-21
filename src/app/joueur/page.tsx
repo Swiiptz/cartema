@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
 import Link from 'next/link';
-import {Award,Check,Clock,Droplet,Lock,Sparkles,Trophy,UserPlus,Users} from 'lucide-react';
+import {Award,Check,Clock,Droplet,Lock,ShieldCheck,Sparkles,Trophy,UserPlus,Users} from 'lucide-react';
 import {useAuth} from '@/components/AuthProvider';
 import {Showcase} from '@/components/Showcase';
 import {FeaturedAchievements} from '@/components/FeaturedAchievements';
@@ -43,7 +43,7 @@ export default function PlayerPage(){
  return <div className="page profile-page player-page">
   <header className="profile-hero rise">
    <div className="profile-sigil" aria-hidden="true">{p.handle.slice(0,1).toUpperCase()}</div>
-   <div><span className="eyebrow">{p.title??'Collectionneur'}</span><h1>{p.handle}</h1><p className="muted"><Clock size={12}/> Membre depuis {since(p.created_at)}</p></div>
+   <div><span className="eyebrow">{p.title??'Collectionneur'}</span><h1>{p.handle}{p.verified&&<span className="verified-badge" title="Compte vérifié (Discord lié)"><ShieldCheck size={15}/> Vérifié</span>}</h1><p className="muted"><Clock size={12}/> Membre depuis {since(p.created_at)}</p></div>
    <div className="player-actions">
     {p.relation==='self'?<Link className="primary ghost compact" href="/profile/">Modifier mon profil</Link>
      :p.relation==='friends'?<span className="chip"><Users size={14}/> Ami</span>
