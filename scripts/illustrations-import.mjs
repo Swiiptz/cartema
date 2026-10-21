@@ -3,6 +3,7 @@
 //
 //   1. Déposer les images dans illustrations/ (ou illustrations/<PRÉFIXE>/ pour une autre édition
 //      que CAM), nommées comme le personnage : « Violette.webp », « Isabeau de Marnay.png ».
+//      Deux personnages du même nom : ajouter le numéro de la carte (« Lily 150.png », « CAM-151.png »).
 //   2. npm run illustrations:essai      → montre seulement les correspondances, n’envoie rien
 //      npm run illustrations            → envoie, relie aux cartes, range les fichiers dans importees/
 //
@@ -93,13 +94,27 @@ if(!files.length){console.log(`Aucune image dans ${DIR}. Déposez-y des fichiers
 const characters=query(`select c.id, c.number, c.name, e.prefix from public.characters c join public.editions e on e.id = c.edition_id
   where c.status <> 'archived' and e.archived_at is null;`);
 const plan=[];
-for(const f of files){
+// Un sous-dossier qui ne porte pas le préfixe d'une édition (brouillons, à trier…) est ignoré.
+const prefixes=new Set(characters.map(c=>c.prefix));
+for(const p of new Set(files.map(f=>f.prefix)))if(!prefixes.has(p))console.log(`· dossier « ${p} » ignoré : ce n’est pas le préfixe d’une édition (${[...prefixes].join(', ')}).`);
+for(const f of files.filter(f=>prefixes.has(f.prefix))){
  const pool=characters.filter(c=>c.prefix===f.prefix);
- const key=nameKey(f.name);
- let found=pool.filter(c=>nameKey(c.name)===key);
- if(!found.length)found=pool.filter(c=>nameKey(c.name.split(' ')[0])===key);
+ // Un numéro seul dans le nom (« Lily 150.png », « CAM-150.png ») désigne la carte : utile quand
+ // deux personnages portent le même nom. Le nom éventuel doit alors correspondre à cette carte.
+ const tokens=nameKey(f.name).split(' ').filter(Boolean);
+ const number=tokens.find(t=>/^\d{1,4}$/.test(t));
+ const key=tokens.filter(t=>t!==number&&t!==f.prefix.toLowerCase()).join(' ');
+ const matches=c=>!key||nameKey(c.name)===key||nameKey(c.name.split(' ')[0])===key;
+ let found;
+ if(number){
+  found=pool.filter(c=>c.number===Number(number));
+  if(found.length&&!matches(found[0])){console.log(`✗ ${f.name} : la carte ${f.prefix}-${number.padStart(3,'0')} est ${found[0].name}, pas « ${key} »`);continue;}
+ }else{
+  found=pool.filter(c=>nameKey(c.name)===key);
+  if(!found.length)found=pool.filter(c=>nameKey(c.name.split(' ')[0])===key);
+ }
  if(found.length===1)plan.push({...f,character:found[0]});
- else console.log(`✗ ${f.name} : ${found.length?`ambigu (${found.map(c=>c.name).join(', ')}) — renommez avec le nom complet`:`aucun personnage « ${basename(f.name,extname(f.name))} » dans ${f.prefix}`}`);
+ else console.log(`✗ ${f.name} : ${found.length?`ambigu — ajoutez le numéro de la carte au nom du fichier : ${found.map(c=>`« ${c.name} ${c.number}${extname(f.name)} »`).join(' ou ')}`:number?`aucune carte n° ${number} dans ${f.prefix}`:`aucun personnage « ${basename(f.name,extname(f.name))} » dans ${f.prefix}`}`);
 }
 for(const p of plan)console.log(`✓ ${p.name} → ${p.character.name} (${p.prefix}-${String(p.character.number).padStart(3,'0')})`);
 if(DRY||!plan.length){console.log(DRY?'\nEssai : rien n’a été envoyé.':'\nRien à importer.');process.exit(0);}
