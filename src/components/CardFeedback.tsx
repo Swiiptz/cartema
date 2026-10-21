@@ -39,7 +39,7 @@ export function CardFeedback({code,name,hasArt}:{code:string;name:string;hasArt:
   }catch(err){setError((err as Error).message);}finally{setBusy(false);}
  }
  return <>
-  <button className="text-link feedback-link" onClick={()=>{reset();setOpen(true);}}><MessageSquareWarning size={13}/> Signaler une erreur ou proposer une illustration</button>
+  <div className="feedback-row"><button className="feedback-link" onClick={()=>{reset();setOpen(true);}} title="Signaler une erreur, proposer une illustration ou demander un crédit"><MessageSquareWarning size={13}/><span>Une erreur ? Une illustration à proposer ?</span></button></div>
   <Sheet open={open} onClose={()=>setOpen(false)} title={name}>
    {sent?<p className="auth-notice">Merci ! L’administrateur va examiner votre proposition. Vous serez prévenu de sa décision{kind==='illustration'&&!hasArt?' ; une illustration acceptée rapporte 1 booster':kind==='credit'?' ; une fois validé, votre nom apparaîtra dans les détails de la carte':''}.</p>
     :<form className="report-form" onSubmit={e=>void send(e)}>

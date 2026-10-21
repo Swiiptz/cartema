@@ -787,7 +787,11 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .owned-admin li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 4px 4px 10px;border-radius:8px;background:#140d14;font:400 13px var(--ui)}.owned-admin .icon-button{width:30px;height:30px}
 
 /* Contributions et versions d'illustration */
-.feedback-link{display:inline-flex;align-items:center;gap:6px;margin-top:14px;font-size:12px;color:var(--muted)}
+/* Lien de contribution : discret, aligné en bas de la fiche, s'éclaire au survol. */
+.feedback-row{display:flex;justify-content:center;margin-top:18px;padding-top:12px;border-top:1px solid #c9a45c14}
+.feedback-link{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border:1px solid transparent;border-radius:999px;background:none;color:var(--muted);font:500 12px var(--ui);opacity:.8;transition:color .2s,border-color .2s,background .2s,opacity .2s}
+.feedback-link:hover,.feedback-link:focus-visible{opacity:1;color:var(--gold2);border-color:#c9a45c44;background:#c9a45c0d}
+.feedback-link svg{color:var(--gold)}
 .feedback-file{position:relative;display:flex;align-items:center;gap:10px;padding:14px;border:1px dashed #c9a45c66;border-radius:12px;color:var(--gold2);font:500 13px var(--ui);cursor:pointer}
 .feedback-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .owned-variant{font-style:normal;color:var(--gold)}
