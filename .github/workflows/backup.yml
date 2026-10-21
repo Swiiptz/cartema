@@ -1,0 +1,96 @@
+# Sauvegarde quotidienne de la base Supabase, hors de Supabase (CDC : sauvegardes, 30 jours).
+# Chaque nuit, la base est exportée, chiffrée (AES-256, phrase secrète) puis gardée 30 jours comme
+# artefact GitHub. Le dépôt est public : sans chiffrement, n'importe qui pourrait lire les e-mails
+# des joueurs. Restauration : docs/SAUVEGARDES.md.
+#
+# Secrets du dépôt à créer (Settings › Secrets and variables › Actions) :
+#   SUPABASE_DB_URL     chaîne « Session pooler » du projet (port 5432), mot de passe compris
+#   BACKUP_PASSPHRASE   longue phrase secrète, à conserver hors de GitHub (indispensable pour restaurer)
+name: Sauvegarde de la base
+
+on:
+  schedule:
+    - cron: '17 2 * * *' # 03 h 17 ou 04 h 17 à Paris selon l'heure d'été
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sauvegarde
+  cancel-in-progress: false
+
+jobs:
+  sauvegarde:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Vérifier les secrets
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Secrets SUPABASE_DB_URL et BACKUP_PASSPHRASE requis (voir docs/SAUVEGARDES.md)."
+            exit 1
+          fi
+          if [ ${#BACKUP_PASSPHRASE} -lt 20 ]; then
+            echo "::error::BACKUP_PASSPHRASE trop courte (20 caractères minimum)."
+            exit 1
+          fi
+
+      - name: Installer pg_dump 17 (version du serveur)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common >/dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y -qq postgresql-client-17 >/dev/null
+          /usr/lib/postgresql/17/bin/pg_dump --version
+
+      - name: Exporter la base
+        env:
+          PGURL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          mkdir -p sauvegarde
+          PGDUMP=/usr/lib/postgresql/17/bin/pg_dump
+          # Données du jeu (public, private), comptes (auth) et métadonnées des fichiers (storage).
+          # Les jetons de session et journaux d'authentification, éphémères, sont exclus.
+          "$PGDUMP" "$PGURL" --format=custom --no-owner --no-privileges \
+            --schema=public --schema=private --schema=auth --schema=storage \
+            --exclude-table-data='auth.sessions' --exclude-table-data='auth.refresh_tokens' \
+            --exclude-table-data='auth.audit_log_entries' --exclude-table-data='auth.flow_state' \
+            --exclude-table-data='auth.one_time_tokens' \
+            --file=sauvegarde/cartema.dump
+          # Structure lisible, pour comparer avec supabase/migrations en cas de doute.
+          "$PGDUMP" "$PGURL" --schema-only --no-owner --no-privileges --schema=public --schema=private \
+            --file=sauvegarde/structure.sql
+          # Contrôle : la sauvegarde doit contenir les tables principales.
+          /usr/lib/postgresql/17/bin/pg_restore --list sauvegarde/cartema.dump > sauvegarde/contenu.txt
+          for t in profiles wallets wallet_ledger inventory_items characters achievement_unlocks; do
+            grep -Eq "TABLE DATA public $t( |$)" sauvegarde/contenu.txt || { echo "::error::Table $t absente de la sauvegarde."; exit 1; }
+          done
+          date -u +%FT%TZ > sauvegarde/date.txt
+          ls -la sauvegarde
+
+      - name: Chiffrer
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          NAME="cartema-$(date -u +%F)"
+          echo "NAME=$NAME" >> "$GITHUB_ENV"
+          tar -czf "$NAME.tar.gz" sauvegarde
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+            --output "$NAME.tar.gz.gpg" "$NAME.tar.gz" <<< "$BACKUP_PASSPHRASE"
+          rm -rf sauvegarde "$NAME.tar.gz"
+          ls -la "$NAME.tar.gz.gpg"
+
+      - name: Conserver 30 jours
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.NAME }}
+          path: ${{ env.NAME }}.tar.gz.gpg
+          retention-days: 30
+          if-no-files-found: error
+          compression-level: 0
