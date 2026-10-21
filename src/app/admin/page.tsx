@@ -8,12 +8,13 @@ import {useAsk,type AskOptions} from '@/components/AskDialog';
 import {Skeleton} from '@/components/ui';
 import {eventEffects} from '@/components/EventBanner';
 import {StatsTab} from '@/components/admin/StatsTab';
+import {EconomyTab} from '@/components/admin/EconomyTab';
 import {TarotCard,palette,type DemoCard} from '@/components/Card';
 import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,silhouetteIndex} from '@/lib/game';
 import {ACCEPTED_TYPES,ENGRAVED_CLANS,matchIllustrations,nextNumber,uploadIllustration,type AdminCatalog,type AdminCharacter,type AdminEdition,type CharacterStatus,type IllustrationMeta} from '@/lib/admin';
 
-type Tab='characters'|'editions'|'clans'|'achievements'|'players'|'events'|'stats';
+type Tab='characters'|'editions'|'clans'|'achievements'|'players'|'events'|'stats'|'economy';
 const STATUS_LABEL:Record<CharacterStatus,string>={draft:'Brouillon',published:'Publiée',archived:'Archivée'};
 // jsonb ne conserve pas l'ordre des clés : comparaison indépendante de l'ordre.
 const canonical=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
@@ -57,9 +58,9 @@ export default function Admin(){
 
  return <AskContext.Provider value={ask}><div className="page admin-page">{askNode}
   <header className="admin-heading"><div><span className="eyebrow">Back-office</span><h1>Le cabinet de l’archiviste</h1></div><p className="muted">Chaque modification est enregistrée dans le journal d’administration.</p></header>
-  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['players','Joueurs'],['stats','Statistiques']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
+  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['economy','Économie'],['players','Joueurs'],['stats','Statistiques']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
   <div className="admin-toast" aria-live="polite">{error&&<p className="auth-error" role="alert">{error}<button className="icon-button" aria-label="Fermer" onClick={()=>setError(null)}><X size={16}/></button></p>}{notice&&<p className="auth-notice">{notice}<button className="icon-button" aria-label="Fermer" onClick={()=>setNotice(null)}><X size={16}/></button></p>}</div>
-  {!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!}/>:tab==='stats'?<StatsTab client={client!}/>:<PlayersTab act={act} client={client!}/>}
+  {!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!}/>:tab==='stats'?<StatsTab client={client!}/>:tab==='economy'?<EconomyHost act={act} client={client!}/>:<PlayersTab act={act} client={client!}/>}
  </div></AskContext.Provider>;
 }
 
@@ -491,4 +492,10 @@ function EventsTab({act,client}:{act:Act;client:SupabaseClient}){
    <p className="admin-hint">{e.openings} ouverture{e.openings>1?'s':''} sous l’effet des finitions{e.bonus_boosters?` · ${e.claims} cadeau${e.claims>1?'x':''} récupéré${e.claims>1?'s':''}`:''}</p>
   </section>;})}
  </div>;
+}
+
+// Économie : le motif passe par la boîte de dialogue intégrée du back-office.
+function EconomyHost({act,client}:{act:Act;client:SupabaseClient}){
+ const reason=useReason();
+ return <EconomyTab act={act} client={client} reason={reason}/>;
 }

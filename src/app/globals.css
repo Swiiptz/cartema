@@ -759,3 +759,17 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .wish-status{display:inline-flex;align-items:center;gap:5px;font:500 12px var(--ui);color:var(--muted)}.wish-status.market{color:var(--gold2)}.wish-status.friends{color:#8fd19e}.wish-status.owned{color:var(--gold)}
 .wish-remove{position:absolute;top:4px;right:2px;width:34px;height:34px}
 .wish-empty{font:400 14px var(--ui);margin:0}
+
+/* Admin : économie */
+.admin-economy{display:flex;flex-direction:column;gap:16px}
+.eco-section{display:flex;flex-direction:column;gap:12px}
+.eco-sub{display:flex;justify-content:space-between;margin:6px 0 0;font:600 13px var(--ui);color:var(--gold2)}.eco-sub span{color:var(--muted);font-weight:500}
+.eco-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}.eco-grid small{font:400 11px var(--ui);color:var(--muted)}
+.eco-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+.eco-diff{margin:0;padding:10px 14px 10px 28px;border:1px dashed #c9a45c55;border-radius:10px;font:500 13px/1.6 var(--ui);color:var(--gold2)}
+.eco-slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.eco-slot{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#140d14}.eco-slot.bad{border-color:#d0344f99}.eco-slot.bad .eco-sub span{color:#ff8a9a}
+.eco-row{display:grid;grid-template-columns:1fr 84px auto auto;align-items:center;gap:6px;font:500 13px var(--ui)}
+.eco-row input{width:100%;background:#0d090f;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:5px 8px;font:500 13px var(--ui);text-align:right}
+.eco-row .icon-button{width:28px;height:28px}.eco-unit{font:400 11px var(--ui);color:var(--muted);white-space:nowrap}
+.eco-add{display:flex;align-items:center;gap:6px;color:var(--muted)}.eco-add select{background:none;border:0;color:var(--gold);font:500 12px var(--ui)}
