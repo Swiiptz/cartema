@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useState} from 'react';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
-import {ArrowLeftRight,Award,Bell,CheckCheck,Coins,Gavel,Gift,Heart,UserPlus,Users} from 'lucide-react';
+import {ArrowLeftRight,Award,Bell,CheckCheck,Coins,Gavel,Flag,Gift,Heart,UserPlus,Users} from 'lucide-react';
 import {useAuth} from './AuthProvider';
 import {Sheet,Skeleton} from './ui';
 import {callRpc,type AppNotification,type Notifications} from '@/lib/game';
@@ -23,6 +23,7 @@ export function describe(n:AppNotification):{text:string;icon:typeof Bell;href:s
   case 'listing_sold':return {text:`${card} vendue ${p.auction?'aux enchères ':''}pour ${d(p.price)}${p.buyer?` à ${p.buyer}`:''}.`,icon:Coins,href:'/market/'};
   case 'outbid':return {text:`Enchère dépassée sur ${card} : ${d(p.amount)}.`,icon:Gavel,href:'/market/'};
   case 'auction_won':return {text:`Vous remportez ${card} pour ${d(p.price)}.`,icon:Gavel,href:'/collection/'};
+  case 'report_received':return {text:`Nouveau signalement : ${p.target} (par ${p.from}).`,icon:Flag,href:'/admin/'};
   case 'wish_listed':return {text:`Carte souhaitée en vente : ${card}, ${p.auction?'enchères à partir de ':''}${d(p.price)}.`,icon:Heart,href:'/market/'};
   case 'auction_unsold':return {text:`Enchère close sans offre : ${card} vous revient.`,icon:Gavel,href:'/market/'};
   case 'achievement':{

@@ -6,6 +6,7 @@ import {useAuth} from '@/components/AuthProvider';
 import {Showcase} from '@/components/Showcase';
 import {FeaturedAchievements} from '@/components/FeaturedAchievements';
 import {WishlistView} from '@/components/Wishes';
+import {ReportButton} from '@/components/ReportDialog';
 import {Skeleton} from '@/components/ui';
 import {callRpc,type PublicProfile} from '@/lib/game';
 
@@ -49,6 +50,7 @@ export default function PlayerPage(){
      :p.relation==='pending_out'?<span className="chip">Invitation envoyée</span>
      :p.relation==='pending_in'?<Link className="primary compact" href="/amis/"><Check size={14}/> Répondre</Link>
      :player?.profile.handle&&<button className="primary compact" disabled={busy} onClick={()=>void addFriend()}><UserPlus size={14}/> Ajouter en ami</button>}
+    {p.relation!=='self'&&client&&<ReportButton client={client} handle={p.handle}/>}
    </div>
   </header>
   {notice&&<p className="auth-notice" role="status">{notice}</p>}

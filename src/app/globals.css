@@ -773,3 +773,15 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .eco-row input{width:100%;background:#0d090f;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:5px 8px;font:500 13px var(--ui);text-align:right}
 .eco-row .icon-button{width:28px;height:28px}.eco-unit{font:400 11px var(--ui);color:var(--muted);white-space:nowrap}
 .eco-add{display:flex;align-items:center;gap:6px;color:var(--muted)}.eco-add select{background:none;border:0;color:var(--gold);font:500 12px var(--ui)}
+
+/* Signalements et cartes en admin */
+.report-link{display:inline-flex;align-items:center;gap:5px;margin-left:12px;font-size:12px;color:var(--muted)}
+.report-form{display:flex;flex-direction:column;gap:12px}.report-form textarea{width:100%;background:#140d14;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;font:400 14px/1.5 var(--ui);resize:vertical}
+.admin-reports{display:flex;flex-direction:column;gap:12px}.report-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.report-item{padding:14px 16px;display:flex;flex-direction:column;gap:8px}.report-item:before{display:none}.report-item.resolved,.report-item.dismissed{opacity:.7}
+.report-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.report-head small{margin-left:auto;font:400 12px var(--ui);color:var(--muted)}
+.report-message{margin:0;font:400 14px/1.5 var(--ui);color:var(--text);white-space:pre-wrap}
+.player-cards{gap:10px}.give-card{display:flex;flex-direction:column;gap:8px}.give-pick{display:flex;align-items:center;gap:10px}.give-row{align-items:end;grid-template-columns:1fr 90px auto}
+.owned-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.owned-admin{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;max-height:260px;overflow:auto}
+.owned-admin li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 4px 4px 10px;border-radius:8px;background:#140d14;font:400 13px var(--ui)}.owned-admin .icon-button{width:30px;height:30px}

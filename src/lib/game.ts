@@ -44,7 +44,7 @@ export type WishItem={code:string;number:number;rarity:string;finish:string|null
 export type Wishlist={visible:boolean;items:WishItem[]};
 export type GameEvent={id:string;name:string;description:string;starts_at:string;ends_at:string;active:boolean;finish_multiplier:number;deniers_multiplier:number;bonus_boosters:number;free_interval_hours:number|null;claimed:boolean};
 export type NotificationPrefs={friends:boolean;social:boolean;market:boolean;achievements:boolean};
-export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number}};
+export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{target?:string;category?:string;from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number}};
 export type Notifications={items:AppNotification[];unread:number;prefs:NotificationPrefs};
 export type PublicProfile={featured:FeaturedAchievement[];profile_id:string;handle:string;title:string|null;created_at:string;relation:'self'|'friends'|'pending_out'|'pending_in'|'none';visible:boolean;settings:{visibility:'public'|'friends'|'private';show_stats:boolean}|null;showcase:SocialCard[]|null;stats:{faces:number;total_characters:number;achievements:number;gold:number;blood:number;position:number}|null;recent:{label:string;unlocked_at:string;tier:number|null}[]|null};
 export type Leaderboard={top:{position:number;handle:string;title:string|null;score:number;achievements:number;faces:number;me:boolean}[];me:{position:number;score:number;achievements:number;faces:number}|null;total_characters:number;total_achievements:number};
@@ -129,6 +129,12 @@ const messages:Record<string,string>={
  player_not_found:'Aucun joueur avec ce pseudonyme.',
  duplicate_card:'Cette carte est déjà dans la vitrine.',
  invalid_amount:'Indiquez un montant non nul.',
+ self_report:'Vous ne pouvez pas vous signaler vous-même.',
+ message_required:'Décrivez les faits (5 caractères minimum).',
+ too_many_reports:'Trop de signalements aujourd’hui, réessayez demain.',
+ already_reported:'Vous avez déjà signalé ce joueur ; l’administrateur va l’examiner.',
+ already_closed:'Ce signalement est déjà traité.',
+ unique_card:'La carte unique ne peut pas être donnée ni retirée.',
  invalid_setting:'Valeur hors des limites autorisées.',
  unknown_setting:'Réglage inconnu.',
  no_change:'Aucun changement à enregistrer.',
