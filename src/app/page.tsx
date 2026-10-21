@@ -8,6 +8,7 @@ import {useAuth} from '@/components/AuthProvider';
 import {CountUp,Countdown,Skeleton} from '@/components/ui';
 import {MissionList} from '@/components/MissionList';
 import {EventBanner} from '@/components/EventBanner';
+import {InstallCard} from '@/components/InstallCard';
 import {showcase} from '@/data/demo';
 import {ALL_RARITIES} from '@/lib/draw';
 import {callRpc,openedToCard,revealOrder,type AlbumEntry,type Mission,type Missions,type Opening} from '@/lib/game';
@@ -30,6 +31,7 @@ function Visitor({configured}:{configured:boolean}){
     <div className="visitor-actions">{configured?<><Link className="primary" href="/connexion/?mode=inscription">Créer un compte <ArrowRight size={16}/></Link><Link className="primary ghost" href="/connexion/">Se connecter</Link></>:<><Link className="primary" href="/boosters/">Voir l’ouverture <ArrowRight size={16}/></Link><Link className="primary ghost" href="/collection/">Voir l’album</Link></>}</div>
    </div>
   </section>
+  <InstallCard/>
   <ul className="visitor-facts">
    <li className="rise" style={{'--i':3} as React.CSSProperties}><Moon size={20}/><strong>Deux boosters offerts</strong><span>Chaque jour à 6 h et 18 h, même si vous n’êtes pas là.</span></li>
    <li className="rise" style={{'--i':4} as React.CSSProperties}><Sparkles size={20}/><strong>Sept raretés, trois finitions</strong><span>Standard, Dorée et la très rare Sanglante.</span></li>
@@ -77,6 +79,7 @@ function Dashboard(){
    <span className="chip gold"><Coins size={15}/><CountUp value={player.balance}/> <small>Deniers</small></span>
   </header>
 
+  <InstallCard/>
   {(player.social_pending??0)>0&&<Link href="/amis/" className="social-alert rise"><Users size={16}/> <span><strong>{player.social_pending}</strong> invitation{player.social_pending!>1?'s':''}, cadeau{player.social_pending!>1?'x':''} ou échange{player.social_pending!>1?'s':''} en attente</span><ArrowRight size={14}/></Link>}
   <EventBanner/>
   <section className="panel reserve-card rise" style={{'--i':1} as React.CSSProperties}>

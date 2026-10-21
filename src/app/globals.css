@@ -711,3 +711,11 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 
 /* Collection : les cartes hors de l'écran ne sont ni dessinées ni peintes. */
 .album-card-cell{content-visibility:auto;contain-intrinsic-size:auto 320px}
+
+/* Encart d'installation de l'application (téléphone) */
+.install-card{position:relative;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:12px 40px 12px 12px;border-radius:16px;border:1px solid #c9a45c44;background:linear-gradient(160deg,#241520,#150d14)}
+.install-icon{width:44px;height:44px;border-radius:11px;box-shadow:0 4px 14px #0008}
+.install-copy{display:flex;flex-direction:column;gap:2px;min-width:0}.install-copy strong{font:600 14px var(--ui);color:var(--gold2)}.install-copy span{font:400 12px/1.4 var(--ui);color:var(--muted)}
+.install-close{position:absolute;top:4px;right:2px;width:34px;height:34px}
+.install-steps{grid-column:1/-1;margin:4px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font:400 13px/1.5 var(--ui);color:var(--text)}.install-steps svg{vertical-align:-2px;color:var(--gold)}
+@media(max-width:420px){.install-card{grid-template-columns:auto 1fr}.install-card .primary{grid-column:1/-1}}
