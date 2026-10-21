@@ -875,3 +875,17 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .legal-consent{line-height:1.5}
 .verified-badge{display:inline-flex;align-items:center;gap:4px;margin-left:10px;padding:3px 9px;border-radius:999px;border:1px solid #5865f288;background:#5865f21f;color:#c9cdfb;font:600 11px var(--ui);vertical-align:middle;letter-spacing:0}
 .arts-list .art-actions{display:flex;align-items:center;gap:8px}.arts-list select{background:#0d090f;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:4px 6px;font:500 12px var(--ui)}
+
+/* Admin : surveillance */
+.admin-monitor{display:flex;flex-direction:column;gap:12px}.monitor-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.monitor-summary{display:flex;gap:14px;align-items:flex-start;padding:16px}.monitor-summary:before{display:none}.monitor-summary div{display:flex;flex-direction:column;gap:4px}
+.monitor-summary.ok{border-color:#5f9c7a88}.monitor-summary.ok svg{color:#8fd19e}.monitor-summary.warning svg{color:#f0c27a}.monitor-summary.critical{border-color:#d0344f99}.monitor-summary.critical svg{color:#ff8a9a}
+.monitor-check{padding:0}.monitor-check:before{display:none}.monitor-check.critical{border-color:#d0344f99}.monitor-check.warning{border-color:#c9a45c55}
+.monitor-head{width:100%;display:flex;align-items:center;gap:10px;padding:14px 16px;border:0;background:none;text-align:left;font:600 14px var(--ui)}
+.monitor-check.critical .monitor-head>svg:first-child{color:#ff8a9a}.monitor-check.warning .monitor-head>svg:first-child{color:#f0c27a}
+.monitor-head .ach-count{margin-left:auto}.monitor-head .chevron{transition:transform .3s var(--ease-out)}.monitor-head[aria-expanded=true] .chevron{transform:rotate(180deg)}
+.monitor-check .collapsible-inner{padding:0 16px}.monitor-check .admin-hint{margin-bottom:8px}
+.monitor-rows{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:4px}
+.monitor-rows li{display:grid;grid-template-columns:minmax(140px,auto) 1fr;gap:10px;padding:6px 10px;border-radius:8px;background:#140d14;font:400 13px var(--ui)}
+.monitor-who{font-weight:600}.monitor-clean{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}.monitor-clean svg{color:#8fd19e;vertical-align:-2px}
+@media(max-width:700px){.monitor-rows li{grid-template-columns:1fr}}

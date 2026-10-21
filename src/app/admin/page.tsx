@@ -12,12 +12,13 @@ import {EconomyTab} from '@/components/admin/EconomyTab';
 import {PlayerCards,ReportsTab} from '@/components/admin/ModerationTabs';
 import {CardArtsPanel,ContributionsTab} from '@/components/admin/ContributionsTab';
 import {EventContent} from '@/components/admin/EventContent';
+import {MonitorTab} from '@/components/admin/MonitorTab';
 import {TarotCard,palette,type DemoCard} from '@/components/Card';
 import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,silhouetteIndex} from '@/lib/game';
 import {ACCEPTED_TYPES,ENGRAVED_CLANS,matchIllustrations,nextNumber,uploadIllustration,type AdminCatalog,type AdminCharacter,type AdminEdition,type CharacterStatus,type IllustrationMeta} from '@/lib/admin';
 
-type Tab='characters'|'editions'|'clans'|'achievements'|'players'|'events'|'stats'|'economy'|'reports'|'contributions';
+type Tab='characters'|'editions'|'clans'|'achievements'|'players'|'events'|'stats'|'economy'|'reports'|'contributions'|'monitor';
 const STATUS_LABEL:Record<CharacterStatus,string>={draft:'Brouillon',published:'Publiée',archived:'Archivée'};
 // jsonb ne conserve pas l'ordre des clés : comparaison indépendante de l'ordre.
 const canonical=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
@@ -34,6 +35,8 @@ export default function Admin(){
  const [error,setError]=useState<string|null>(null);
  const [notice,setNotice]=useState<string|null>(null);
  const [tab,setTab]=useState<Tab>('characters');
+ // Joueur à ouvrir directement dans l'onglet Joueurs (depuis la surveillance).
+ const [focusPlayer,setFocusPlayer]=useState<string|null>(null);
  const isAdmin=player?.profile.role==='admin';
  const [ask,askNode]=useAsk();
 
@@ -61,9 +64,9 @@ export default function Admin(){
 
  return <AskContext.Provider value={ask}><div className="page admin-page">{askNode}
   <header className="admin-heading"><div><span className="eyebrow">Back-office</span><h1>Le cabinet de l’archiviste</h1></div><p className="muted">Chaque modification est enregistrée dans le journal d’administration.</p></header>
-  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['economy','Économie'],['players','Joueurs'],['contributions','Contributions'],['reports','Signalements'],['stats','Statistiques']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
+  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['economy','Économie'],['players','Joueurs'],['contributions','Contributions'],['reports','Signalements'],['monitor','Surveillance'],['stats','Statistiques']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
   <div className="admin-toast" aria-live="polite">{error&&<p className="auth-error" role="alert">{error}<button className="icon-button" aria-label="Fermer" onClick={()=>setError(null)}><X size={16}/></button></p>}{notice&&<p className="auth-notice">{notice}<button className="icon-button" aria-label="Fermer" onClick={()=>setNotice(null)}><X size={16}/></button></p>}</div>
-  <div key={tab} className="tab-panel">{!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!} characters={catalog.characters}/>:tab==='stats'?<StatsTab client={client!}/>:tab==='economy'?<EconomyHost act={act} client={client!}/>:tab==='reports'?<ReportsHost act={act} client={client!}/>:tab==='contributions'?<ContributionsHost act={act} client={client!} catalog={catalog}/>:<PlayersTab act={act} client={client!} characters={catalog.characters}/>}</div>
+  <div key={tab} className="tab-panel">{!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!} characters={catalog.characters}/>:tab==='stats'?<StatsTab client={client!}/>:tab==='economy'?<EconomyHost act={act} client={client!}/>:tab==='reports'?<ReportsHost act={act} client={client!}/>:tab==='monitor'?<MonitorTab client={client!} onOpenPlayer={id=>{setFocusPlayer(id);setTab('players');}}/>:tab==='contributions'?<ContributionsHost act={act} client={client!} catalog={catalog}/>:<PlayersTab act={act} client={client!} characters={catalog.characters} focus={focusPlayer}/>}</div>
  </div></AskContext.Provider>;
 }
 
@@ -364,11 +367,12 @@ const GRANT_LABEL:Record<string,string>={free_slot:'Créneau gratuit',welcome:'B
 const AUDIT_LABEL:Record<string,string>={deniers_adjust:'Deniers ajustés',boosters_adjust:'Boosters ajustés',player_suspend:'Compte suspendu',player_unsuspend:'Compte réactivé',trade_block:'Échanges bloqués',trade_unblock:'Échanges débloqués',handle_reset:'Pseudonyme réinitialisé',achievement_grant:'Succès décerné',art_credit:'Crédit d’illustration',art_alternate_add:'Version alternative ajoutée',submission_accept:'Contribution acceptée',submission_reject:'Contribution refusée',card_grant:'Carte donnée',card_remove:'Carte retirée',report_resolved:'Signalement traité',report_dismissed:'Signalement classé',grant_test_boosters:'Boosters de test',grant_test_resources:'Ressources de test',admin_provision:'Nomination administrateur'};
 const when=(d:string)=>new Date(d).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 
-function PlayersTab({act,client,characters}:{act:Act;client:SupabaseClient;characters:AdminCharacter[]}){
+function PlayersTab({act,client,characters,focus}:{act:Act;client:SupabaseClient;characters:AdminCharacter[];focus?:string|null}){
  const reason=useReason();
  const [query,setQuery]=useState('');
  const [rows,setRows]=useState<PlayerRow[]|null>(null);
- const [selected,setSelected]=useState<string|null>(null);
+ const [selected,setSelected]=useState<string|null>(focus??null);
+ useEffect(()=>{if(focus)setSelected(focus);},[focus]);
  const [detail,setDetail]=useState<PlayerDetail|null>(null);
  const [adjust,setAdjust]=useState({deniers:'',boosters:'',reason:''});
  useEffect(()=>{const t=setTimeout(()=>{void callRpc<PlayerRow[]>(client,'admin_search_players',{p_query:query}).then(setRows).catch(()=>setRows([]));},250);return()=>clearTimeout(t);},[client,query]);
