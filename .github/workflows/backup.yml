@@ -22,7 +22,8 @@ concurrency:
 
 jobs:
   sauvegarde:
-    runs-on: ubuntu-latest
+    # Version figée : le passage d’ubuntu-latest à Ubuntu 26 pourrait casser l’installation de pg_dump.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Vérifier les secrets
