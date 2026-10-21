@@ -19,7 +19,7 @@ export type PlayerState={
 };
 export type OpenedCard={position:number;instance_id:string;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique?:boolean;finish:Finish;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;variant?:string|null;variant_kind?:string|null};
 export type Opening={opening_id:string;edition_id:string;ruleset_version:number;pool:'free'|'purchased';created_at:string;cards:OpenedCard[];replayed:boolean};
-export type KnownAlbumEntry={known:true;character_id:string;edition_id:string;code:string;number:number;rarity:Rarity;unique?:boolean;name:string;role_title:string;clan:string|null;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;discovered_at:string;finishes_seen:Finish[];owned:Partial<Record<Finish,number>>;variants?:ArtVariant[];art_credit?:string|null};
+export type KnownAlbumEntry={known:true;character_id:string;edition_id:string;code:string;number:number;rarity:Rarity;unique?:boolean;name:string;role_title:string;clan:string|null;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;discovered_at:string;finishes_seen:Finish[];owned:Partial<Record<Finish,number>>;variants?:ArtVariant[];art_credit?:string|null;event?:string|null};
 export type ArtVariant={label:string;kind:string;art_path:string;art_meta:ArtMeta;credit?:string|null;count:number};
 export type UnknownAlbumEntry={known:false;edition_id:string;code:string;number:number;rarity:Rarity;unique?:boolean;silhouette_key:string|null};
 export type AlbumEntry=KnownAlbumEntry|UnknownAlbumEntry;
@@ -43,9 +43,13 @@ export type Achievement={code:string;secret:boolean;category:'collection'|'gener
 export type FeaturedAchievement={code:string;label:string;description:string|null;title:string|null;tier:number|null;series_label:string|null;rarity:Rarity|null;category:string;unlocked_at:string};
 export type WishItem={code:string;number:number;rarity:string;finish:string|null;silhouette_key:string|null;known:boolean;character_id?:string;name?:string;role_title?:string;clan?:string|null;art_path?:string|null;art_meta?:ArtMeta|null;owned?:number;on_market?:number;best_price?:number|null;friends?:string[]};
 export type Wishlist={visible:boolean;items:WishItem[]};
+/** Mesures utilisables par les missions, défis et classements d'événement. */
+export const EVENT_METRICS:Record<string,string>={open_boosters:'Boosters ouverts',open_days:'Jours avec un booster ouvert',discover:'Visages découverts',discover_days:'Jours avec une découverte',
+ rare_pull:'Cartes Rare ou mieux',very_rare_pull:'Cartes Très rare ou mieux',epic_pull:'Cartes Épique ou mieux',recycle:'Cartes recyclées',market_sell:'Ventes au marché',market_buy:'Achats au marché',
+ market_list:'Mises en vente',auction_bid:'Enchères placées',trade_done:'Échanges conclus',gift_send:'Cartes offertes',daily_login:'Jours de connexion'};
 export type GameEvent={id:string;name:string;description:string;starts_at:string;ends_at:string;active:boolean;finish_multiplier:number;deniers_multiplier:number;bonus_boosters:number;free_interval_hours:number|null;claimed:boolean};
 export type NotificationPrefs={friends:boolean;social:boolean;market:boolean;achievements:boolean};
-export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{accepted?:boolean;kind?:string;note?:string|null;target?:string;category?:string;from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number}};
+export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{event?:string;rank?:number;accepted?:boolean;kind?:string;note?:string|null;target?:string;category?:string;from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number}};
 export type Notifications={items:AppNotification[];unread:number;prefs:NotificationPrefs};
 export type PublicProfile={featured:FeaturedAchievement[];profile_id:string;handle:string;title:string|null;created_at:string;relation:'self'|'friends'|'pending_out'|'pending_in'|'none';visible:boolean;settings:{visibility:'public'|'friends'|'private';show_stats:boolean}|null;showcase:SocialCard[]|null;stats:{faces:number;total_characters:number;achievements:number;gold:number;blood:number;position:number}|null;recent:{label:string;unlocked_at:string;tier:number|null}[]|null};
 export type Leaderboard={top:{position:number;handle:string;title:string|null;score:number;achievements:number;faces:number;me:boolean}[];me:{position:number;score:number;achievements:number;faces:number}|null;total_characters:number;total_achievements:number};
@@ -82,7 +86,7 @@ export function albumToCard(e:AlbumEntry):AlbumCard{
  const shown=best&&best!=='Standard'?best:undefined;
  return {id:e.code,name:e.name,clan:e.clan??'?',role:e.role_title,rarity:e.rarity,unique:!!e.unique,known:true,finish:shown,
   illustration:e.art_path??undefined,silhouette:silhouetteIndex(e.silhouette_key),...art(e.art_meta),
-  characterId:e.character_id,editionId:e.edition_id,finishesSeen:e.finishes_seen,owned,variants:e.variants,credit:e.art_credit??undefined};
+  characterId:e.character_id,editionId:e.edition_id,finishesSeen:e.finishes_seen,owned,variants:e.variants,credit:e.art_credit??undefined,event:e.event??undefined};
 }
 
 const messages:Record<string,string>={

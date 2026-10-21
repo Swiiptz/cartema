@@ -11,6 +11,7 @@ import {StatsTab} from '@/components/admin/StatsTab';
 import {EconomyTab} from '@/components/admin/EconomyTab';
 import {PlayerCards,ReportsTab} from '@/components/admin/ModerationTabs';
 import {CardArtsPanel,ContributionsTab} from '@/components/admin/ContributionsTab';
+import {EventContent} from '@/components/admin/EventContent';
 import {TarotCard,palette,type DemoCard} from '@/components/Card';
 import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,silhouetteIndex} from '@/lib/game';
@@ -62,7 +63,7 @@ export default function Admin(){
   <header className="admin-heading"><div><span className="eyebrow">Back-office</span><h1>Le cabinet de l’archiviste</h1></div><p className="muted">Chaque modification est enregistrée dans le journal d’administration.</p></header>
   <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['economy','Économie'],['players','Joueurs'],['contributions','Contributions'],['reports','Signalements'],['stats','Statistiques']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
   <div className="admin-toast" aria-live="polite">{error&&<p className="auth-error" role="alert">{error}<button className="icon-button" aria-label="Fermer" onClick={()=>setError(null)}><X size={16}/></button></p>}{notice&&<p className="auth-notice">{notice}<button className="icon-button" aria-label="Fermer" onClick={()=>setNotice(null)}><X size={16}/></button></p>}</div>
-  <div key={tab} className="tab-panel">{!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!}/>:tab==='stats'?<StatsTab client={client!}/>:tab==='economy'?<EconomyHost act={act} client={client!}/>:tab==='reports'?<ReportsHost act={act} client={client!}/>:tab==='contributions'?<ContributionsHost act={act} client={client!} catalog={catalog}/>:<PlayersTab act={act} client={client!} characters={catalog.characters}/>}</div>
+  <div key={tab} className="tab-panel">{!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!} characters={catalog.characters}/>:tab==='stats'?<StatsTab client={client!}/>:tab==='economy'?<EconomyHost act={act} client={client!}/>:tab==='reports'?<ReportsHost act={act} client={client!}/>:tab==='contributions'?<ContributionsHost act={act} client={client!} catalog={catalog}/>:<PlayersTab act={act} client={client!} characters={catalog.characters}/>}</div>
  </div></AskContext.Provider>;
 }
 
@@ -450,7 +451,8 @@ const localInput=(d:Date)=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toI
 const emptyEvent=():EventForm=>{const s=new Date();s.setMinutes(0,0,0);s.setHours(s.getHours()+1);const e=new Date(s.getTime()+24*3600e3);return {id:null,name:'',description:'',start:localInput(s),end:localInput(e),finish:'1',deniers:'1',boosters:'0',interval:''};};
 const INTERVALS=[1,2,3,4,6,8,12];
 
-function EventsTab({act,client}:{act:Act;client:SupabaseClient}){
+function EventsTab({act,client,characters}:{act:Act;client:SupabaseClient;characters:AdminCharacter[]}){
+ const [contentOf,setContentOf]=useState<string|null>(null);
  const reason=useReason();
  const [list,setList]=useState<AdminEvent[]|null>(null);
  const [form,setForm]=useState<EventForm>(emptyEvent);
@@ -495,6 +497,8 @@ function EventsTab({act,client}:{act:Act;client:SupabaseClient}){
    <p className="admin-hint">{fmt(e.starts_at)} → {fmt(e.ends_at)}</p>
    <ul className="event-effects">{eventEffects(e).map(({icon:I,text})=><li key={text}><I size={13}/> {text}</li>)}</ul>
    <p className="admin-hint">{e.openings} ouverture{e.openings>1?'s':''} sous l’effet des finitions{e.bonus_boosters?` · ${e.claims} cadeau${e.claims>1?'x':''} récupéré${e.claims>1?'s':''}`:''}</p>
+   {!e.cancelled_at&&<button type="button" className="text-link" onClick={()=>setContentOf(contentOf===e.id?null:e.id)}>{contentOf===e.id?'Fermer le contenu':'Missions, cartes, défi et classement'}</button>}
+   {contentOf===e.id&&<EventContent client={client} act={act} reason={reason} eventId={e.id} characters={characters}/>}
   </section>;})}
  </div>;
 }

@@ -1,6 +1,7 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
-import {Clock,Coins,Gift,Hourglass,Sparkles} from 'lucide-react';
+import Link from 'next/link';
+import {ArrowRight,Clock,Coins,Gift,Hourglass,Sparkles} from 'lucide-react';
 import {useAuth} from './AuthProvider';
 import {Countdown} from './ui';
 import {callRpc,type GameEvent} from '@/lib/game';
@@ -39,6 +40,7 @@ export function EventBanner({compact=false}:{compact?:boolean}){
   <ul className="event-effects">{eventEffects(e).map(({icon:I,text})=><li key={text}><I size={13}/> {text}</li>)}</ul>
   {e.active&&e.bonus_boosters>0&&(e.claimed?<p className="event-claimed">Cadeau récupéré.</p>
    :<button className="primary compact" disabled={busy} onClick={()=>void claim(e)}><Gift size={14}/> Récupérer {e.bonus_boosters} booster{e.bonus_boosters>1?'s':''}</button>)}
+  <Link className="text-link event-more" href={`/evenement/?id=${e.id}`}>Missions, défi et classement <ArrowRight size={13}/></Link>
   {notice&&i===0&&<p className="event-claimed" role="status">{notice}</p>}
  </section>)}</div>;
 }

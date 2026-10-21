@@ -28,6 +28,9 @@ export function describe(n:AppNotification):{text:string;icon:typeof Bell;href:s
   case 'submission_decided':{
    const r=[(p.reward_deniers??0)>0&&`+${d(p.reward_deniers)}`,(p.reward_boosters??0)>0&&`+${p.reward_boosters} booster${(p.reward_boosters??0)>1?'s':''}`].filter(Boolean).join(' · ');
    return {text:p.accepted?`Votre ${p.kind==='illustration'?'illustration':'correction'} pour ${p.card} est acceptée${r?` (${r})`:''}. Merci !`:`Votre proposition pour ${p.card} n’a pas été retenue${p.note?` : ${p.note}`:''}.`,icon:Award,href:'/collection/'};}
+  case 'event_reward':{
+   const r=[(p.reward_deniers??0)>0&&`+${d(p.reward_deniers)}`,(p.reward_boosters??0)>0&&`+${p.reward_boosters} booster${(p.reward_boosters??0)>1?'s':''}`].filter(Boolean).join(' · ');
+   return {text:p.kind==='podium'?`${p.rank}${p.rank===1?'re':'e'} place de l’événement « ${p.event} » : ${r}.`:`Défi communautaire « ${p.event} » réussi : ${r}.`,icon:Gift,href:'/'};}
   case 'wish_listed':return {text:`Carte souhaitée en vente : ${card}, ${p.auction?'enchères à partir de ':''}${d(p.price)}.`,icon:Heart,href:'/market/'};
   case 'auction_unsold':return {text:`Enchère close sans offre : ${card} vous revient.`,icon:Gavel,href:'/market/'};
   case 'achievement':{

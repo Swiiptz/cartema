@@ -853,3 +853,15 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 :is(.report-list,.admin-editions,.stats-grid,.stats-charts,.stats-split,.eco-slots,.social-list,.bar-list)>:nth-child(n+8){animation-delay:.35s}
 /* Contenu qui se met à jour (fiche joueur, détails dépliés) : fondu doux. */
 .admin-player,details[open]>:not(summary),.wish-picker small,.event-claimed,.auth-notice,.auth-error{animation:page-enter .3s var(--ease-out) both}
+
+/* Contenu des événements */
+.event-more{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:13px}
+.event-page{display:flex;flex-direction:column;gap:16px}.event-page .event-banner h1{margin:8px 0 4px;font-size:clamp(28px,6vw,40px)}
+.event-rewards{display:flex;gap:12px;align-items:flex-start}.event-rewards p{margin:2px 0 0;font:400 13px var(--ui)}
+.event-community{display:flex;flex-direction:column;gap:10px}.event-community h2{margin:6px 0 0;font-size:20px}.community-meter{height:10px}
+.event-cards{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+.event-content{display:flex;flex-direction:column;gap:10px;margin-top:10px;padding-top:12px;border-top:1px solid #c9a45c18}
+.event-mission-row{display:grid;grid-template-columns:2fr 1.6fr 70px 80px 70px auto;gap:6px;align-items:center}
+.event-mission-row input,.event-mission-row select,.podium-inputs input{width:100%;background:#0d090f;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:6px 8px;font:500 13px var(--ui)}
+.podium-inputs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+@media(max-width:800px){.event-mission-row{grid-template-columns:1fr 1fr 1fr}.event-mission-row input:first-child{grid-column:1/-1}}
