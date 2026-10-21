@@ -803,3 +803,17 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .arts-list li{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;font:400 13px var(--ui)}.arts-list li.off{opacity:.55}
 .arts-list img{width:44px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}.arts-list small{display:block;color:var(--muted)}
 .credit-ask{margin:8px 0 0;font:400 13px var(--ui);color:var(--muted)}.credit-ask strong{color:var(--gold2)}
+
+/* Historique du joueur */
+.history-page{display:flex;flex-direction:column;gap:14px}.history-tabs{overflow-x:auto}
+.history-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.history-row{display:flex;gap:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#140d14}
+.history-icon{flex-shrink:0;width:32px;height:32px;display:grid;place-items:center;border-radius:50%;border:1px solid #c9a45c44;color:var(--gold)}
+.history-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.history-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.history-head strong{font:600 14px var(--ui)}
+.history-amount{font:600 14px var(--ui);white-space:nowrap;font-variant-numeric:tabular-nums}.history-amount.pos{color:#8fd19e}.history-amount.neg{color:#ff8a9a}
+.history-main time{font:400 12px var(--ui);color:var(--muted)}
+.history-cards{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:4px 12px}
+.history-cards li{display:flex;align-items:center;gap:6px;font:500 13px var(--ui)}.history-cards i{width:8px;height:8px;border-radius:2px;background:var(--rc)}.history-cards small{color:var(--muted);font-weight:400}
+.history-trade{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}.history-trade>div{display:flex;flex-direction:column;gap:2px}
+.history-more{align-self:center}
