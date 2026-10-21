@@ -13,8 +13,9 @@ type Reason=(message:string,confirmLabel?:string)=>Promise<string|null>;
 type Submission={credit_name:string|null;art_credit:string|null;id:string;kind:'info'|'illustration'|'credit';status:'pending'|'accepted'|'rejected';message:string;image_path:string|null;created_at:string;decided_at:string|null;admin_note:string|null;
  reward_deniers:number;reward_boosters:number;author:string|null;character_id:string;name:string;number:number;prefix:string;rarity:Rarity;role_title:string;clan:string|null;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
 type Art={credit:string|null;id:string;kind:'legacy'|'alternate';label:string;art_path:string;art_meta:ArtMeta;active:boolean;owned:number};
+const FRAMES:Record<string,string>={fullart:'Plein cadre (full art)',cover:'Remplir la fenêtre',portrait:'Portrait',full:'Image entière, centrée'};
 const when=(d:string)=>new Date(d).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-const layout=(m:ArtMeta|null|undefined)=>m?.layout==='full'||m?.layout==='cover'?m.layout:undefined;
+const layout=(m:ArtMeta|null|undefined)=>m?.layout==='full'||m?.layout==='cover'||m?.layout==='fullart'?m.layout:undefined;
 
 /** Image d'un bucket privé, servie par une adresse signée temporaire. */
 function useSigned(client:SupabaseClient,path:string|null){
@@ -98,15 +99,20 @@ export function CardArtsPanel({client,act,reason,characterId,prefix,number,offic
  const [label,setLabel]=useState('');
  const [credit,setCredit]=useState('');
  const [official,setOfficial]=useState<string|null>(null);
+ const [frame,setFrame]=useState<'auto'|'fullart'|'cover'|'portrait'>('fullart');
  const load=useCallback(async()=>{setArts(await callRpc<Art[]>(client,'admin_card_arts',{p_character_id:characterId}).catch(()=>[]));},[client,characterId]);
  useEffect(()=>{void load();},[load]);
  async function add(){
   if(!file)return;const r=await reason(`Ajouter « ${label||'Version alternative'} » : elle pourra tomber rarement à la place de l’illustration officielle.`,'Ajouter');if(r===null)return;
-  if(await act('Version alternative ajoutée.',async c=>{const {path,meta}=await uploadIllustration(c,file,{prefix,number});await callRpc(c,'admin_add_card_art',{p_character_id:characterId,p_art_path:path,p_art_meta:meta,p_label:label,p_reason:r,p_credit:credit||null});})){setFile(null);setLabel('');setCredit('');void load();}
+  if(await act('Version alternative ajoutée.',async c=>{const {path,meta}=await uploadIllustration(c,file,{prefix,number});await callRpc(c,'admin_add_card_art',{p_character_id:characterId,p_art_path:path,p_art_meta:frame==='auto'?meta:{...meta,layout:frame},p_label:label,p_reason:r,p_credit:credit||null});})){setFile(null);setLabel('');setCredit('');void load();}
  }
  async function saveCredit(artId:string|null,value:string){
   const r=await reason(value?`Créditer « ${value} » ?`:'Retirer le crédit ?','Enregistrer');if(r===null)return;
   if(await act('Crédit enregistré.',c=>callRpc(c,'admin_set_art_credit',{p_character_id:characterId,p_art_id:artId,p_credit:value,p_reason:r}))){setOfficial(null);void load();}
+ }
+ async function setLayout(a:Art,layout:string){
+  const r=await reason(`Cadrage de « ${a.label} » : ${FRAMES[layout]}.`,'Appliquer');if(r===null)return;
+  if(await act('Cadrage mis à jour.',c=>callRpc(c,'admin_set_card_art_meta',{p_id:a.id,p_meta:{layout},p_reason:r})))void load();
  }
  async function toggle(a:Art){
   const r=await reason(a.active?`Ne plus faire tomber « ${a.label} » (les exemplaires existants la gardent) ?`:`Faire de nouveau tomber « ${a.label} » ?`,a.active?'Désactiver':'Activer');if(r===null)return;
@@ -119,9 +125,11 @@ export function CardArtsPanel({client,act,reason,characterId,prefix,number,offic
   {!arts?<Skeleton style={{height:60}}/>:arts.length===0?<p className="admin-hint">Aucune version pour l’instant.</p>
    :<ul className="arts-list">{arts.map(a=><li key={a.id} className={a.active||a.kind==='legacy'?'':'off'}><img src={a.art_path.startsWith('/')?`${process.env.NEXT_PUBLIC_BASE_PATH??''}${a.art_path}`:a.art_path} alt=""/>
     <span><strong>{a.label}</strong><small>{a.kind==='legacy'?'ancienne officielle':a.active?'tirable':'désactivée'} · {a.owned} exemplaire{a.owned>1?'s':''}{a.credit?` · par ${a.credit}`:''}</small></span>
-    {a.kind==='alternate'&&<button type="button" className="text-link" onClick={()=>void toggle(a)}>{a.active?'Désactiver':'Activer'}</button>}</li>)}</ul>}
+    <span className="art-actions"><select aria-label={`Cadrage de ${a.label}`} value={a.art_meta?.layout??'portrait'} onChange={e=>void setLayout(a,e.target.value)}>{Object.entries(FRAMES).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select>
+    {a.kind==='alternate'&&<button type="button" className="text-link" onClick={()=>void toggle(a)}>{a.active?'Désactiver':'Activer'}</button>}</span></li>)}</ul>}
   <div className="admin-row give-row"><label className="feedback-file"><ImagePlus size={15}/><span>{file?file.name:'Image de la version'}</span><input type="file" accept="image/png,image/webp,image/jpeg" onChange={e=>setFile(e.target.files?.[0]??null)}/></label>
    <label className="auth-field"><span>Nom de la version</span><input value={label} onChange={e=>setLabel(e.target.value)} placeholder="Version Paint"/></label>
+   <label className="auth-field"><span>Cadrage</span><select value={frame} onChange={e=>setFrame(e.target.value as typeof frame)}><option value="fullart">Plein cadre (full art)</option><option value="cover">Remplir la fenêtre</option><option value="portrait">Portrait</option><option value="auto">Automatique</option></select></label>
    <label className="auth-field"><span>Crédit (facultatif)</span><input value={credit} onChange={e=>setCredit(e.target.value)} maxLength={80}/></label>
    <button type="button" className="primary compact" disabled={!file} onClick={()=>void add()}>Ajouter</button></div>
  </fieldset>;

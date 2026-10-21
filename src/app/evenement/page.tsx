@@ -67,6 +67,6 @@ export default function EventPage(){
 
   {ev.cards.length>0&&<section className="social-section rise"><h2>Cartes de l’événement</h2>
    <p className="muted">{ev.starts_at>new Date().toISOString()?`${ev.cards.length} carte${ev.cards.length>1?'s':''} inédite${ev.cards.length>1?'s':''} dévoilée${ev.cards.length>1?'s':''} au début de l’événement.`:'Elles rejoignent l’édition : on peut les tirer dans les boosters.'}</p>
-   <div className="card-grid event-cards">{ev.cards.map((c,i)=><TarotCard key={`${c.code}-${i}`} card={{id:c.code,name:c.name??'Inconnu',clan:c.known?c.clan??'?':'Inconnu',role:c.role_title??'',rarity:c.rarity,known:c.known,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),artLayout:c.art_meta?.layout==='full'||c.art_meta?.layout==='cover'?c.art_meta.layout:undefined,artOffsetY:Number(c.art_meta?.offsetY)||undefined}}/>)}</div></section>}
+   <div className="card-grid event-cards">{ev.cards.map((c,i)=><TarotCard key={`${c.code}-${i}`} card={{id:c.code,name:c.name??'Inconnu',clan:c.known?c.clan??'?':'Inconnu',role:c.role_title??'',rarity:c.rarity,known:c.known,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),artLayout:c.art_meta?.layout==='full'||c.art_meta?.layout==='cover'||c.art_meta?.layout==='fullart'?c.art_meta.layout:undefined,artOffsetY:Number(c.art_meta?.offsetY)||undefined}}/>)}</div></section>}
  </div>;
 }

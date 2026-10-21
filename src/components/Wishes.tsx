@@ -15,7 +15,7 @@ const WISH_FINISHES:[string|null,string][]=[[null,'Toutes'],['Dorée','Dorée'],
 export function wishToCard(w:WishItem){
  return {id:w.code,name:w.name??'Inconnu',clan:w.known?w.clan??'?':'Inconnu',role:w.role_title??'',rarity:w.rarity as Rarity,known:w.known,
   finish:w.finish??undefined,illustration:w.art_path??undefined,silhouette:silhouetteIndex(w.silhouette_key),
-  artLayout:w.art_meta?.layout==='full'||w.art_meta?.layout==='cover'?w.art_meta.layout:undefined,artOffsetY:Number(w.art_meta?.offsetY)||undefined};
+  artLayout:w.art_meta?.layout==='full'||w.art_meta?.layout==='cover'||w.art_meta?.layout==='fullart'?w.art_meta.layout:undefined,artOffsetY:Number(w.art_meta?.offsetY)||undefined};
 }
 
 /** Liste de souhaits du joueur connecté, chargée une fois et partagée par la page. */

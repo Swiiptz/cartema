@@ -3,7 +3,7 @@ import type {DemoCard} from '@/components/Card';
 import {ALL_RARITIES,type Finish,type Rarity} from './draw';
 
 // Formes renvoyées par les RPC (voir supabase/migrations, docs/BACKEND.md).
-export type ArtMeta={layout?:'portrait'|'full'|'cover';offsetY?:number};
+export type ArtMeta={layout?:'portrait'|'full'|'cover'|'fullart';offsetY?:number};
 export type PlayerState={
  profile:{id:string;handle:string|null;role:'player'|'admin';created_at:string;title?:string|null};
  balance:number;
@@ -65,7 +65,7 @@ export function silhouetteIndex(key:string|null|undefined):number|undefined{
 }
 
 function art(meta:ArtMeta|null|undefined){
- const layout=meta?.layout==='full'||meta?.layout==='cover'?meta.layout:undefined;
+ const layout=meta?.layout==='full'||meta?.layout==='cover'||meta?.layout==='fullart'?meta.layout:undefined;
  const offset=Number(meta?.offsetY);
  return {artLayout:layout,artOffsetY:Number.isFinite(offset)?offset:undefined};
 }

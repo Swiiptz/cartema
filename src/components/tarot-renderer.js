@@ -47,8 +47,9 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  const artBottom=artLayout==='cover'?Math.min(205,205+artOffsetY):artLayout==='full'?185:214;
  const artTop=artLayout==='cover'?Math.max(11,11+artOffsetY):11;
  const image=(y,height,fit,extra='')=>`<image href="${illustration}" x="11" y="${y}" width="178" height="${height}" preserveAspectRatio="${fit}" ${extra}/>`;
+ const fullArt=artLayout==='fullart';
  const foreground=artLayout==='cover'?image(11+artOffsetY,194,'xMidYMax slice'):artLayout==='full'?image(11,174,'xMidYMid meet'):`<image href="${illustration}" x="4" y="7" width="192" height="310" preserveAspectRatio="xMidYMin meet"/>`;
- const art=kn&&illustration?`<g mask="url(#art-sides${u})">${artLayout==='cover'?`<g mask="url(#art-ambience${u})">${image(11,194,'xMidYMax slice','opacity=".3" style="filter:blur(5px)"')}</g>`:''}<g mask="url(#art-fade${u})">${foreground}</g></g>`:silhouette(Number.isInteger(silhouetteIndex)?silhouetteIndex:H(id)%6,u);
+ const art=kn&&illustration&&fullArt?image(11,278,'xMidYMid slice'):kn&&illustration?`<g mask="url(#art-sides${u})">${artLayout==='cover'?`<g mask="url(#art-ambience${u})">${image(11,194,'xMidYMax slice','opacity=".3" style="filter:blur(5px)"')}</g>`:''}<g mask="url(#art-fade${u})">${foreground}</g></g>`:silhouette(Number.isInteger(silhouetteIndex)?silhouetteIndex:H(id)%6,u);
  const name=kn?n:'Inconnu',clan=kn&&cl!=='?'?cl:kn?'Clan à définir':'Clan inconnu';
  const title=kn?(role||'Chronique Camarilla'):'Identité voilée';
  const frame='M13 6H187Q194 6 194 13V287Q194 294 187 294H13Q6 294 6 287V13Q6 6 13 6Z';
@@ -74,7 +75,7 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  <g clip-path="url(#${clip})"><rect x="10" y="10" width="180" height="280" fill="url(#glass${u})"/>
  <g stroke="${color}" fill="none" opacity="${kn?'.13':'.19'}" stroke-width=".7"><circle cx="100" cy="111" r="72"/><circle cx="100" cy="111" r="59"/><path d="${spokes(100,111,22,72,12)}"/><path d="M100 39 151 162 34 91H166L49 162Z"/></g>
  ${lv>=5?`<g stroke="${metal}" fill="none" opacity=".48"><circle cx="100" cy="102" r="55" stroke-width="1.1"/><path d="${spokes(100,102,58,69,lv===6?24:16)}" stroke-width="1.35"/></g>`:''}
- ${art}<rect x="10" y="10" width="180" height="212" fill="url(#shade${u})" opacity="${artLayout==='full'||artLayout==='cover'?'.15':'1'}"/>
+ ${art}<rect x="10" y="10" width="180" height="${fullArt&&kn&&illustration?280:212}" fill="url(#shade${u})" opacity="${fullArt&&kn&&illustration?'.9':artLayout==='full'||artLayout==='cover'?'.15':'1'}"/>
  ${fin==='gold'?goldSurface(u):''}
  ${fin==='blood'?`<g class="blood-patina" fill="#430c18" opacity=".7"><path d="M11 12 28 13 22 20 26 31 18 44 21 59 16 68 18 84 11 103Z"/><path d="M189 17 180 25 184 40 177 47 180 67 174 84 180 96 177 118 185 132 189 153Z"/><path d="M11 154 17 162 14 177 23 185 18 198 25 209H11ZM189 168 181 181 185 193 173 205 189 213Z"/></g><g class="blood-etching" fill="none" stroke="#86303b" stroke-width=".7" stroke-linecap="round" opacity=".65"><path d="M20 17 18 32 21 43 17 57 19 75M181 22 178 41 182 56 175 73 177 91 173 109M15 174 19 182 17 191M185 182 179 195 181 207"/><path d="M23 25 28 29M177 67 169 72M19 184 26 188" stroke-width=".4"/></g><g class="blood-residue" fill="#7b1c2e" opacity=".5"><circle cx="26" cy="38" r=".8"/><circle cx="23" cy="48" r=".45"/><circle cx="171" cy="82" r=".9"/><circle cx="175" cy="96" r=".4"/><circle cx="23" cy="176" r=".6"/><circle cx="178" cy="188" r=".8"/></g><g class="blood-incense" fill="none" stroke="#78303f" stroke-width="7" opacity=".1"><path d="M12 214C38 182 12 160 29 132S12 77 20 50M188 218C163 185 191 162 175 129S190 81 179 54"/></g>`:''}
  <rect x="10" y="10" width="180" height="280" fill="url(#grain${u})"/>
@@ -84,7 +85,7 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  ${fin?`<path class="finish-edge ${fin}-edge" d="${frame}" fill="none" stroke="${fin==='gold'?'#fff0b0':'#b36b66'}" stroke-width="2.3" pathLength="100" stroke-dasharray="12 88"/>`:''}
  <rect x="10" y="10" width="180" height="280" rx="7" fill="none" stroke="${color}" stroke-width=".75" opacity=".6"/>
  <path d="M14 56V34Q14 14 34 14H56M144 14H166Q186 14 186 34V56" fill="none" stroke="${metal}" stroke-width="1.15"/>
- <path d="M13 224Q12 210 25 207H72Q86 207 100 197 114 207 128 207H175Q188 210 187 224V277Q186 287 176 287H24Q14 287 13 277Z" fill="url(#panel${u})" stroke="${metal}" stroke-width="1.4"/>
+ <path d="M13 224Q12 210 25 207H72Q86 207 100 197 114 207 128 207H175Q188 210 187 224V277Q186 287 176 287H24Q14 287 13 277Z" fill="url(#panel${u})" fill-opacity="${fullArt&&kn&&illustration?'.5':'1'}" stroke="${metal}" stroke-width="1.4"/>
  <path d="M15 223Q24 212 42 215H77M123 215H158Q176 212 185 223M18 274Q30 280 46 281H75M125 281H154Q170 280 182 274" fill="none" stroke="${color}" stroke-width="1" opacity=".7"/>
  ${fin==='blood'?bloodFrame(u):fin==='gold'?goldFrame(u):['','translate(200 0) scale(-1 1)','translate(0 300) scale(1 -1)','translate(200 300) scale(-1 -1)'].map(t=>`<g transform="${t}">${corner(lv,metal)}</g>`).join('')}
 

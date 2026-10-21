@@ -98,3 +98,13 @@ describe('crédits d’illustration',()=>{
     expect(album.variants[0]).toMatchObject({kind:'legacy',credit:'Lune Noire'});
   });
 });
+
+describe('plein cadre',()=>{
+  it('accepte le cadrage full art et le rend modifiable sur une version',async()=>{
+    const c=await char(6);
+    const id=await rpc<string>(db,admin,'admin_add_card_art',[c,PAINT,{layout:'fullart'},'Version pleine','Test']);
+    await rpc(db,admin,'admin_set_card_art_meta',[id,{layout:'cover'},'Recadrage']);
+    expect((await rpc<any[]>(db,admin,'admin_card_arts',[c])).find(a=>a.id===id).art_meta).toMatchObject({layout:'cover'});
+    await expectError(rpc(db,admin,'admin_set_card_art_meta',[id,{layout:'geant'},'x']),/invalid_art_meta/);
+  });
+});
