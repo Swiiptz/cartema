@@ -170,8 +170,8 @@ describe('succès de cartes : posséder au moment du déblocage (décision du 22
     const u=await player('possedant');
     await see(u,`c.rarity='Peu commun'`); // les deux Peu communes vues, aucune possédée
     expect(await ach(u,'set:CAM:rarity:Peu commun')).toMatchObject({progress:0,target:2,owned_rule:true,unlocked_at:null});
-    // Il manque les deux : leurs noms sont connus puisqu'elles ont été découvertes.
-    expect((await ach(u,'set:CAM:rarity:Peu commun')).missing.map((m:any)=>m.name).sort()).toEqual(['Perso CAM 3','Perso CAM 4']);
+    // Aucune possédée : pas de liste « Il vous manque » (elle n'aide qu'à finir un set à moitié fait).
+    expect((await ach(u,'set:CAM:rarity:Peu commun')).missing).toBeUndefined();
     await discover(u,`c.number=3`);
     // Un exemplaire en vente compte toujours : il est encore au joueur.
     await db.query(`update public.inventory_items set reserved_kind='listing',reserved_ref=gen_random_uuid() where owner_id=$1`,[u]);

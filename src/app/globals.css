@@ -1207,3 +1207,19 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 @keyframes ach-shine{to{transform:translateX(100%)}}
 @keyframes ach-medal{0%{transform:scale(.3) rotate(-30deg)}60%{transform:scale(1.15) rotate(6deg)}100%{transform:none}}
 @media(prefers-reduced-motion:reduce){.ach-toast{animation:none}.ach-toast-shine{display:none}}
+/* Page Concours aérée (22/10) : marges entre en-tête, onglets et contenu ; règles en encadré numéroté. */
+/* En-tête puis onglets (Concours, Doléances, Amis, Progrès, Historique, Marché) : la page respire. */
+.page>.market-head{margin-bottom:22px}
+.page>.social-tabs,.page>.market-tabs{margin-bottom:24px}
+.contest-page .contest-when{margin-top:12px}
+.contest-rules{max-width:880px;gap:18px;padding:26px 30px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(170deg,#21151d,#140d14)}
+.contest-rules h2{margin:0;font-size:22px}
+.contest-rules ol{list-style:none;counter-reset:rule;padding:0;gap:0}
+.contest-rules ol>li{counter-increment:rule;position:relative;padding:16px 0 16px 50px;border-top:1px solid #4a2a3a80;font:400 14.5px/1.7 var(--ui);color:#ddd0c4}
+.contest-rules ol>li:first-child{border-top:0;padding-top:4px}
+.contest-rules ol>li:before{content:counter(rule);position:absolute;left:0;top:15px;width:32px;height:32px;display:grid;place-items:center;border-radius:50%;border:1px solid #c9a45c66;background:radial-gradient(circle at 35% 30%,#3a2430,#1a1118);color:var(--gold2);font:600 13px var(--display)}
+.contest-rules ol>li:first-child:before{top:3px}
+.contest-rules ol>li strong{display:block;margin-bottom:3px;font:600 15px/1.3 var(--display);letter-spacing:.03em;color:var(--gold2)}
+.contest-rules ol>li.plain{counter-increment:none;margin-left:0;padding-left:0}
+.contest-rules ol>li.plain:before{display:none}
+@media(max-width:560px){.contest-rules{padding:18px 16px}.contest-rules ol>li{padding-left:42px;font-size:14px}.contest-rules ol>li:before{width:28px;height:28px;font-size:12px}}

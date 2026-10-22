@@ -153,9 +153,9 @@ function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievemen
     :done?<small className="ach-date">Obtenu le {new Date(a.unlocked_at!).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}{a.title?` · titre « ${a.title} »`:''}</small>
     :<div className="ach-progress"><div className="meter"><i style={{'--v':`${a.target?Math.min(100,(a.progress??0)/a.target*100):0}%`} as React.CSSProperties}/></div><small>{a.progress??0}/{a.target}{a.owned_rule&&<em className="ach-owned"> possédées</em>}</small></div>}
    {!done&&!hidden&&a.missing&&a.missing.length>0&&<div className="ach-missing"><span>Il vous manque</span>
-    {a.missing.map(m=>m.name
-     ?<Link key={m.code} className="ach-missing-chip" href={`/market/?q=${encodeURIComponent(m.name)}`} title={`Chercher ${m.name} au marché`}><Search size={11}/>{m.name}</Link>
-     :<span key={m.code} className="ach-missing-chip unknown" title="Carte jamais découverte">{m.code} · inconnue</span>)}</div>}
+    {a.missing.filter(m=>m.name).map(m=><Link key={m.code} className="ach-missing-chip" href={`/market/?q=${encodeURIComponent(m.name!)}`} title={`Chercher ${m.name} au marché`}><Search size={11}/>{m.name}</Link>)}
+    {/* Les cartes jamais découvertes restent anonymes, regroupées en une pastille. */}
+    {(()=>{const n=a.missing.filter(m=>!m.name).length;return n>0&&<span className="ach-missing-chip unknown" title="Cartes jamais découvertes">+{n} inconnue{n>1?'s':''}</span>;})()}</div>}
    {!hidden&&((a.reward_deniers??0)>0||(a.reward_boosters??0)>0)&&<small className="ach-reward">{(a.reward_deniers??0)>0&&`+${a.reward_deniers} Deniers`}{(a.reward_boosters??0)>0&&` · +${a.reward_boosters} booster${(a.reward_boosters??0)>1?'s':''}`}</small>}
   </div>
  </li>;};
