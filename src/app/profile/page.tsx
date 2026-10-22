@@ -18,6 +18,8 @@ export default function Profile(){
  const {configured,ready,session,client,player,refreshPlayer,signOut}=useAuth();
  const [album,setAlbum]=useState<AlbumEntry[]|null>(null);
  const [handle,setHandle]=useState('');
+ // Erreur du pseudonyme affichée sous son champ (le message général est en bas de page).
+ const [handleError,setHandleError]=useState<string|null>(null);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState<string|null>(null);
  const [notice,setNotice]=useState<string|null>(null);
@@ -49,7 +51,11 @@ export default function Profile(){
   setBusy(true);setError(null);setNotice(null);
   try{await action();setNotice(label);}catch(e){setError((e as Error).message);}finally{setBusy(false);}
  }
- const saveHandle=(e:React.FormEvent)=>{e.preventDefault();void run('Pseudonyme enregistré.',async()=>{await callRpc(client!,'set_handle',{p_handle:handle});await refreshPlayer();setHandle('');});};
+ const handleIssue=checkHandle(handle);
+ const saveHandle=(e:React.FormEvent)=>{e.preventDefault();if(handleIssue){setHandleError(handleIssue);return;}
+  setHandleError(null);void run('Pseudonyme enregistré.',async()=>{try{await callRpc(client!,'set_handle',{p_handle:handle.trim()});}catch(err){setHandleError((err as Error).message);throw err;}await refreshPlayer();setHandle('');});};
+ const handleField=(label:string,placeholder:string)=><><input aria-label={label} aria-invalid={!!(handleIssue||handleError)} aria-describedby="handle-help" value={handle} onChange={e=>{setHandle(e.target.value);setHandleError(null);}} minLength={3} maxLength={24} required placeholder={placeholder}/></>;
+ const handleHelp=<p id="handle-help" className={handleIssue||handleError?'auth-error handle-help':'muted handle-help'} role={handleError?'alert':undefined}>{handleError??handleIssue??'3 à 24 caractères : lettres, chiffres, _ . - (sans espace).'}</p>;
  const savePrivacy=(visibility:string,showStats:boolean)=>void run('Confidentialité enregistrée.',async()=>{
   await callRpc(client!,'set_privacy',{p_visibility:visibility,p_show_stats:showStats});
   setPub(p=>p&&{...p,settings:{visibility:visibility as 'public'|'friends'|'private',show_stats:showStats}});
@@ -75,7 +81,7 @@ export default function Profile(){
    <div><span className="eyebrow">{player.profile.title??'Collectionneur'}</span><h1>{name??'Sans nom'}</h1><p className="muted">Membre depuis le {new Date(player.profile.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</p></div>
   </header>
 
-  {!name&&<form className="panel handle-callout rise" onSubmit={saveHandle}><h2>Choisissez votre pseudonyme</h2><p className="muted">Il vous représentera auprès des autres collectionneurs.</p><div className="inline-form"><input aria-label="Pseudonyme" value={handle} onChange={e=>setHandle(e.target.value)} minLength={3} maxLength={24} required placeholder="Lilith"/><button className="primary" disabled={busy}><Check size={16}/> Valider</button></div></form>}
+  {!name&&<form className="panel handle-callout rise" onSubmit={saveHandle}><h2>Choisissez votre pseudonyme</h2><p className="muted">Il vous représentera auprès des autres collectionneurs.</p><div className="inline-form">{handleField('Pseudonyme','Lilith')}<button className="primary" disabled={busy||!!handleIssue}><Check size={16}/> {busy?'Enregistrement…':'Valider'}</button></div>{handleHelp}</form>}
 
   <ul className="stat-grid">{stats.map((s,i)=><li key={s.label} className="panel rise" style={{'--i':i+1} as React.CSSProperties}><s.icon size={18}/><strong>{s.value===undefined?<Skeleton style={{height:28,width:60}}/>:<><CountUp value={s.value}/>{s.suffix&&<small>{s.suffix}</small>}</>}</strong><span>{s.label}</span></li>)}</ul>
 
@@ -98,7 +104,7 @@ export default function Profile(){
 
   <section className="panel settings-panel rise" style={{'--i':6} as React.CSSProperties} aria-labelledby="reglages">
    <h2 id="reglages"><Settings size={18}/> Paramètres du compte</h2>
-   {name&&<form className="settings-row" onSubmit={saveHandle}><div><strong>Pseudonyme</strong><span className="muted">{name}</span></div><div className="inline-form"><input aria-label="Nouveau pseudonyme" value={handle} onChange={e=>setHandle(e.target.value)} minLength={3} maxLength={24} required placeholder="Nouveau pseudonyme"/><button className="primary ghost" disabled={busy}>Modifier</button></div></form>}
+   {name&&<form className="settings-row" onSubmit={saveHandle}><div><strong>Pseudonyme</strong><span className="muted">{name}</span></div><div className="inline-form">{handleField('Nouveau pseudonyme','Nouveau pseudonyme')}<button className="primary ghost" disabled={busy||!!handleIssue}>Modifier</button>{handle&&handleHelp}</div></form>}
    {pub?.settings&&<div className="settings-row"><div><strong>Visibilité du profil</strong><span className="muted">{pub.settings.visibility==='public'?'Tout le monde voit votre vitrine':pub.settings.visibility==='friends'?'Seuls vos amis voient votre vitrine':'Seuls votre pseudonyme et votre titre sont visibles'}</span></div>
     <select className="privacy-select" aria-label="Visibilité du profil" disabled={busy} value={pub.settings.visibility} onChange={e=>savePrivacy(e.target.value,pub.settings!.show_stats)}><option value="public">Public</option><option value="friends">Amis seulement</option><option value="private">Privé</option></select></div>}
    {pub?.settings&&<label className="settings-row privacy-toggle"><div><strong>Statistiques visibles</strong><span className="muted">Classement, succès, visages et finitions sur votre profil</span></div>
@@ -112,4 +118,15 @@ export default function Profile(){
    {error&&<p className="auth-error" role="alert">{error}</p>}{notice&&<p className="auth-notice" role="status">{notice}</p>}
   </section>
  </div>;
+}
+
+/** Même règle que le serveur : 3 à 24 lettres, chiffres, _ . - ; propose une correction. */
+function checkHandle(raw:string):string|null{
+ const v=raw.trim();
+ if(!v||/^[\p{L}\p{N}_.-]{3,24}$/u.test(v))return null;
+ const fixed=v.replace(/\s+/g,'_').replace(/[^\p{L}\p{N}_.-]/gu,'').slice(0,24);
+ if(v.length<3)return 'Au moins 3 caractères.';
+ if(v.length>24)return `24 caractères maximum (${v.length} actuellement).`;
+ const why=/\s/.test(v)?'Pas d’espace':'Seuls les lettres, chiffres, _ . - sont acceptés';
+ return fixed.length>=3?`${why} : essayez « ${fixed} ».`:`${why}.`;
 }

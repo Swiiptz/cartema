@@ -919,3 +919,5 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .handle-banner{display:flex;align-items:center;gap:10px;max-width:1100px;margin:0 auto 12px;padding:10px 14px;border-radius:12px;border:1px solid #c9a45c66;background:#1d131bcc;font:400 14px var(--ui)}
 .handle-banner svg{color:var(--gold);flex:none}.handle-banner span{flex:1}.handle-banner .primary{flex:none}
 @media(max-width:600px){.handle-banner{flex-wrap:wrap;margin:0 12px 12px}.handle-banner .primary{width:100%}}
+
+.handle-help{margin:0;font:400 13px var(--ui)}.settings-row .handle-help{flex-basis:100%;text-align:right}
