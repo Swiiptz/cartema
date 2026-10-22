@@ -50,7 +50,7 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  const fullArt=artLayout==='fullart';
  const foreground=artLayout==='cover'?image(11+artOffsetY,194,'xMidYMax slice'):artLayout==='full'?image(11,174,'xMidYMid meet'):`<image href="${illustration}" x="4" y="7" width="192" height="310" preserveAspectRatio="xMidYMin meet"/>`;
  const art=kn&&illustration&&fullArt?image(11,278,'xMidYMid slice'):kn&&illustration?`<g mask="url(#art-sides${u})">${artLayout==='cover'?`<g mask="url(#art-ambience${u})">${image(11,194,'xMidYMax slice','opacity=".3" style="filter:blur(5px)"')}</g>`:''}<g mask="url(#art-fade${u})">${foreground}</g></g>`:silhouette(Number.isInteger(silhouetteIndex)?silhouetteIndex:H(id)%6,u);
- const name=kn?n:'Inconnu',clan=kn&&cl!=='?'?cl:kn?'Clan à définir':'Clan inconnu';
+ const name=kn?n:'Inconnu',clan=kn&&cl!=='?'?cl:'Clan inconnu';
  const title=kn?(role||'Chronique Camarilla'):'Identité voilée';
  const frame='M13 6H187Q194 6 194 13V287Q194 294 187 294H13Q6 294 6 287V13Q6 6 13 6Z';
  return `<div class="card crafted-card ${fin} rarity-${lv}${unique?' unique-veiled':''}"><svg viewBox="0 0 200 300" role="img" aria-label="${kn?n+', '+(provisional?'cadre de présentation':ra):'Personnage inconnu, '+ra}">

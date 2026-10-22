@@ -119,7 +119,7 @@ Migration `…150000_admin.sql`. Les RPC `admin_*` exigent `private.require_admi
   - fonction = Poste, sinon Statut/Secte (vide si « Inconnu » ou « * ») ;
   - numéro = ligne du fichier − 1 ;
   - `Malkavian` est importé comme `Malkavien` (symbole gravé) ;
-  - un clan « Inconnu » ou « * » devient « clan à définir » ;
+  - un clan « Inconnu » ou « * » devient « clan inconnu » ;
   - Mort/vivant, Praxis, Statut et la valeur source sont gardés dans `characters.lore`.
 - `characters.source_ref` empêche tout doublon si l'import est relancé.
 - Résultat : **230 brouillons** dans l'édition Camarilla (CAM, album non publié, boosters fermés), 14 clans.

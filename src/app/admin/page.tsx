@@ -179,7 +179,7 @@ function CharacterEditor({draft,setDraft,catalog,act,client,onError}:{draft:Draf
     {creating&&<p className="admin-hint">Numéro et rareté sont définitifs après création.</p>}
     <label className="auth-field"><span>Nom</span><input value={draft.name} maxLength={60} onChange={e=>set('name',e.target.value)} required/></label>
     <label className="auth-field"><span>Titre / fonction</span><input value={draft.role_title} maxLength={60} onChange={e=>set('role_title',e.target.value)}/></label>
-    <label className="auth-field"><span>Clan</span><select value={draft.clan_id??''} onChange={e=>set('clan_id',e.target.value||null)}><option value="">Clan à définir (médaillon mystérieux)</option>{catalog.clans.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+    <label className="auth-field"><span>Clan</span><select value={draft.clan_id??''} onChange={e=>set('clan_id',e.target.value||null)}><option value="">Clan inconnu (médaillon mystérieux)</option>{catalog.clans.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
     <fieldset className="admin-art">
      <legend>Illustration</legend>
      <label className="primary ghost admin-upload"><Upload size={16}/> {draft.art_path?'Remplacer l’illustration':'Ajouter une illustration'}<input type="file" accept={ACCEPTED_TYPES.join(',')} disabled={busy} onChange={e=>{void upload(e.target.files?.[0]);e.target.value='';}}/></label>
