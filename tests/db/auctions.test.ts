@@ -117,3 +117,25 @@ describe('mises placées avant les taxes',()=>{
     expect(await balance(a)).toBe(1000);
   });
 });
+
+describe('Mes ventes et Mes mises, allégés',()=>{
+  it('ne clôturent plus les enchères au passage ; la tâche planifiée s’en charge',async()=>{
+    const s=await veteran();const b=await veteran();await credit(db,b,1000);
+    const l=(await rpc(db,s,'create_auction',[await give(s),50,12,randomUUID()])).listing_id;
+    await bid(b,l,50);await expire(l);
+    expect((await rpc<any[]>(db,s,'get_my_listings',[])).find(x=>x.listing_id===l).status).toBe('active');
+    expect((await rpc<any[]>(db,b,'get_my_bids',[])).find(x=>x.listing_id===l)).toMatchObject({status:'active',leading:true});
+    expect(await close()).toBeGreaterThanOrEqual(1);
+    expect((await rpc<any[]>(db,s,'get_my_listings',[])).find(x=>x.listing_id===l)).toMatchObject({status:'sold',buyer:expect.any(String)});
+    expect((await rpc<any[]>(db,b,'get_my_bids',[])).find(x=>x.listing_id===l)).toMatchObject({status:'sold',won:true});
+    expect((await rpc<any[]>(db,b,'get_my_listings',[])).some(x=>x.listing_id===l)).toBe(true); // achat dans l'historique
+  });
+  it('garde toutes les annonces en cours et les 50 dernières terminées',async()=>{
+    const s=await veteran();
+    for(let i=0;i<55;i++){const l=(await rpc(db,s,'create_listing',[await give(s),10,randomUUID()])).listing_id;await rpc(db,s,'cancel_listing',[l]);}
+    for(let i=0;i<3;i++)await rpc(db,s,'create_listing',[await give(s),10,randomUUID()]);
+    const mine=await rpc<any[]>(db,s,'get_my_listings',[]);
+    expect(mine.filter(x=>x.status==='active')).toHaveLength(3);
+    expect(mine.filter(x=>x.status==='cancelled')).toHaveLength(50);
+  });
+});
