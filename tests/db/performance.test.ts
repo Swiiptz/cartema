@@ -31,6 +31,13 @@ describe('performances',()=>{
     const first=(await rpc(db,u,'get_achievements')).find((a:any)=>a.code==='first_pack');
     expect(first.unlocked_at).toBeTruthy();
   });
+  it('a les index des lectures fréquentes (audit du 22/10)',async()=>{
+    const {rows}=await db.query<{indexname:string}>(`select indexname from pg_indexes where schemaname='public'`);
+    const names=rows.map(r=>r.indexname);
+    for(const ix of ['gifts_sender_ix','gifts_recipient_ix','trades_proposer_ix','trades_recipient_ix','friendships_addressee_ix','friendships_requester_ix',
+      'listings_sold_card_ix','listings_active_card_ix','booster_grants_owner_ix','contest_votes_voter_ix','contest_entries_author_ix'])
+      expect(names,ix).toContain(ix);
+  });
   it('masque une enchère échue sans la clôturer, la tâche planifiée s’en charge',async()=>{
     const s=await player('vendeur_p');const b=await player('acheteur_p');await credit(db,b,500);
     const {rows:[i]}=await db.query<{id:string}>(`insert into public.inventory_items (owner_id,character_id,finish) select $1,id,'Standard' from public.characters where edition_id=$2 limit 1 returning id`,[s,edition]);

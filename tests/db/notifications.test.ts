@@ -69,4 +69,14 @@ describe('notifications',()=>{
     expect(rows[0].n).toBeGreaterThan(0);
     expect((await rpc(db,a.id,'get_notifications')).items.some((n:any)=>n.payload.from==='silencieux')).toBe(false);
   });
+  it('purge les notifications lues depuis 60 jours dans la tâche planifiée, pas à la lecture',async()=>{
+    const p=await player('purge_notif');
+    const {rows:[old]}=await db.query<{id:string}>(`insert into public.notifications (owner_id,kind,read_at) values ($1,'test',now()-interval '61 days') returning id`,[p.id]);
+    const {rows:[fresh]}=await db.query<{id:string}>(`insert into public.notifications (owner_id,kind,read_at) values ($1,'test',now()-interval '1 day') returning id`,[p.id]);
+    await rpc(db,p.id,'get_notifications');
+    const left=async()=>(await db.query<{id:string}>(`select id from public.notifications where owner_id=$1 order by created_at`,[p.id])).rows.map(r=>r.id).sort();
+    expect(await left()).toEqual([old.id,fresh.id].sort()); // la lecture n'écrit rien
+    await db.query('select private.expire_social()');
+    expect(await left()).toEqual([fresh.id]);
+  });
 });

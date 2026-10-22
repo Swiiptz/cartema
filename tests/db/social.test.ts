@@ -64,6 +64,16 @@ describe('cadeaux',()=>{
     expect(await owner(card)).toEqual({owner_id:a.id,reserved_kind:null});
     await expectError(rpc(db,b.id,'respond_gift',[gift_id,true]),/gift_unavailable/);
   });
+  it('la page Amis n’expire rien elle-même : la tâche planifiée s’en charge',async()=>{
+    const a=await player();const b=await player();await befriend(a,b);
+    const card=await give(a.id);
+    const {gift_id}=await rpc(db,a.id,'send_gift',[b.id,card,randomUUID()]);
+    await db.query(`update public.gifts set expires_at=now()-interval '1 second' where id=$1`,[gift_id]);
+    await rpc(db,b.id,'get_social');
+    expect((await db.query('select status from public.gifts where id=$1',[gift_id])).rows[0]).toEqual({status:'pending'});
+    await db.query('select private.expire_social()');
+    expect((await db.query('select status from public.gifts where id=$1',[gift_id])).rows[0]).toEqual({status:'expired'});
+  });
 });
 
 describe('échanges',()=>{
@@ -91,7 +101,8 @@ describe('échanges',()=>{
     expect(await balance(a.id)).toBe(300);
     const t3=await rpc(db,a.id,'propose_trade',[b.id,[card],[],100,0,randomUUID(),null]);
     await db.query(`update public.trades set expires_at=now()-interval '1 second' where id=$1`,[t3.trade_id]);
-    await rpc(db,a.id,'get_social');
+    await expectError(rpc(db,b.id,'respond_trade',[t3.trade_id,true]),/trade_unavailable/); // échue : refusée avant même la clôture
+    await db.query('select private.expire_social()'); // la tâche planifiée la clôt
     expect(await balance(a.id)).toBe(300);expect(await owner(card)).toEqual({owner_id:a.id,reserved_kind:null});
   });
   it('contre-proposition : l’offre initiale est close et les rôles s’inversent',async()=>{
