@@ -49,6 +49,13 @@ export function PlayerCards({client,act,reason,playerId,playerName,characters,on
  const [pick,setPick]=useState<AdminCharacter|null>(null);
  const [finish,setFinish]=useState('Standard');
  const [quantity,setQuantity]=useState('1');
+ // Versions d'illustration du personnage choisi ('' = illustration officielle).
+ const [arts,setArts]=useState<{id:string;label:string;kind:string;active:boolean}[]>([]);
+ const [art,setArt]=useState('');
+ useEffect(()=>{setArts([]);setArt('');if(!pick)return;let alive=true;
+  void callRpc<{id:string;label:string;kind:string;active:boolean}[]>(client,'admin_card_arts',{p_character_id:pick.id}).then(a=>{if(alive)setArts(a);}).catch(()=>{});
+  return()=>{alive=false;};},[pick,client]);
+ const artLabel=arts.find(a=>a.id===art)?.label;
  const [filter,setFilter]=useState('');
  const load=useCallback(async()=>{setCards(await callRpc<OwnedCard[]>(client,'admin_player_cards',{p_id:playerId}).catch(()=>[]));},[client,playerId]);
  useEffect(()=>{setCards(null);void load();},[load]);
@@ -56,8 +63,8 @@ export function PlayerCards({client,act,reason,playerId,playerName,characters,on
  const shown=useMemo(()=>(cards??[]).filter(c=>!filter||c.name.toLowerCase().includes(filter.toLowerCase())||c.code.toLowerCase().includes(filter.toLowerCase())),[cards,filter]);
  async function give(){
   if(!pick)return;const n=Number(quantity);
-  const r=await reason(`Donner ${n} × ${pick.name} (${finish}) à ${playerName} ?`,'Donner');if(r===null)return;
-  if(await act(`${n} × ${pick.name} donné${n>1?'s':''} à ${playerName}.`,c=>callRpc(c,'admin_grant_card',{p_id:playerId,p_character_id:pick.id,p_finish:finish,p_quantity:n,p_reason:r,p_request_id:crypto.randomUUID()}))){setPick(null);setQuery('');setQuantity('1');void load();onChanged();}
+  const r=await reason(`Donner ${n} × ${pick.name} (${finish}${artLabel?` · ${artLabel}`:''}) à ${playerName} ?`,'Donner');if(r===null)return;
+  if(await act(`${n} × ${pick.name} donné${n>1?'s':''} à ${playerName}.`,c=>callRpc(c,'admin_grant_card',{p_id:playerId,p_character_id:pick.id,p_finish:finish,p_quantity:n,p_reason:r,p_request_id:crypto.randomUUID(),p_art_id:art||null}))){setPick(null);setQuery('');setQuantity('1');void load();onChanged();}
  }
  async function remove(card:OwnedCard){
   const r=await reason(`Retirer un exemplaire de ${card.name} (${card.finish}) à ${playerName} ? Il ne recevra pas de Deniers ; la découverte reste.`,'Retirer');if(r===null)return;
@@ -71,6 +78,7 @@ export function PlayerCards({client,act,reason,playerId,playerName,characters,on
      {matches.length>0&&<ul className="friend-pick">{matches.map(c=><li key={c.id}><button onClick={()=>{setPick(c);setQuery('');}}>{c.number}. {c.name} · {c.rarity}</button></li>)}</ul>}</>}
    {pick&&<div className="admin-row give-row">
     <label className="auth-field"><span>Finition</span><select value={finish} onChange={e=>setFinish(e.target.value)}>{['Standard','Dorée','Sanglante'].map(f=><option key={f}>{f}</option>)}</select></label>
+    {arts.length>0&&<label className="auth-field"><span>Version</span><select value={art} onChange={e=>setArt(e.target.value)}><option value="">Illustration officielle</option>{arts.map(a=><option key={a.id} value={a.id}>{a.label}{a.kind==='legacy'?' (ancienne officielle)':a.active?'':' (désactivée)'}</option>)}</select></label>}
     <label className="auth-field"><span>Quantité</span><input inputMode="numeric" value={quantity} onChange={e=>setQuantity(e.target.value.replace(/\D/g,'').slice(0,2))}/></label>
     <button className="primary compact" disabled={!(Number(quantity)>=1&&Number(quantity)<=20)} onClick={()=>void give()}><Gift size={14}/> Donner</button></div>}
   </div>

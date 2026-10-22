@@ -158,6 +158,23 @@ describe('succès conditionnels personnalisés',()=>{
   });
 });
 
+describe('succès conditionnels avec finition',()=>{
+  it('exige la finition choisie pour certains personnages, la simple découverte pour les autres',async()=>{
+    const admin=(await db.query<{id:string}>(`select id from public.profiles where role='admin'`)).rows[0].id;
+    const {rows:[a,b]}=await db.query<{id:string}>(`select id from public.characters where edition_id=$1 and number in (7,8) order by number`,[edition]);
+    const code=await rpc<string>(db,admin,'admin_save_achievement',[null,'Duo doré','Varco et Joséphine en Dorée.',false,0,0,null,[a.id,b.id],null,{[a.id]:'Dorée'}]);
+    expect((await rpc<any[]>(db,admin,'admin_custom_achievements')).find(x=>x.code===code).characters.map((c:any)=>c.finish)).toEqual(['Dorée',null]);
+    const u=await player('dore_duo');
+    const state=async()=>(await rpc<any[]>(db,u,'get_achievements')).find(x=>x.code===code);
+    await db.query(`insert into public.discoveries (owner_id,character_id) values ($1,$2),($1,$3)`,[u,a.id,b.id]);
+    await db.query(`insert into public.finish_discoveries (owner_id,character_id,finish) values ($1,$2,'Standard'),($1,$3,'Standard')`,[u,a.id,b.id]);
+    expect(await state()).toMatchObject({progress:1,target:2,unlocked_at:null}); // a découvert, mais pas en Dorée
+    await db.query(`insert into public.finish_discoveries (owner_id,character_id,finish) values ($1,$2,'Dorée')`,[u,a.id]);
+    expect((await state()).unlocked_at).not.toBeNull();
+    await expectError(rpc(db,admin,'admin_save_achievement',[code,'Duo doré','',false,0,0,null,[a.id,b.id],null,{[a.id]:'Argentée'}]),/invalid_finish/);
+  });
+});
+
 describe('succès conditionnels secrets',()=>{
   it('apparaissent comme « succès secret » jusqu’au déblocage',async()=>{
     const admin=(await db.query<{id:string}>(`select id from public.profiles where role='admin'`)).rows[0].id;

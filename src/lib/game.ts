@@ -115,6 +115,7 @@ const messages:Record<string,string>={
  number_taken:'Ce numéro est déjà pris dans cette édition.',
  name_required:'Le nom est obligatoire.',
  invalid_art_path:'Illustration refusée : elle doit venir du stockage du projet.',
+ invalid_finish:'Finition invalide : Dorée ou Sanglante.',
  invalid_odds:'Chance invalide : un nombre entier entre 0 et 1 000 000, ou vide pour la chance globale.',
  invalid_art_meta:'Réglage de cadrage invalide.',
  already_published:'Une carte déjà publiée ne revient pas en brouillon : archivez-la.',

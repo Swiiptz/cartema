@@ -66,6 +66,8 @@ Mise à jour : 22 octobre 2026. Le §0 est le journal de ce qui a été livré ;
 - **Loupe dans les échanges** : chaque carte de la fenêtre d'échange a une loupe qui l'affiche en grand, avec « Choisir cette carte » ou « Retirer de l'échange » (Échap ferme la loupe sans fermer l'échange).
 - **Prix de référence** (migration `20261022190000_card_prices`, `get_card_prices`) : 10 dernières ventes sur 90 jours de la même carte (personnage, finition, version), moyenne, dernière, et offre la moins chère d'un autre joueur. Affiché à la mise en vente (« Utiliser la moyenne ») et dans la liste des offres du marché.
 - **Tests à chaque push** (`.github/workflows/tests.yml`) : tests, types et build sur `main` et les pull requests.
+- **Succès conditionnels avec finition** (migration `20261022200000_achievement_finishes`, colonne `achievements.required_finishes`) : dans Admin › Succès, chaque personnage requis peut exiger « Dorée » ou « Sanglante » (ex. Varco en Dorée et Joséphine de Vilmot en Dorée) ; sinon la découverte suffit. La finition compte dès qu'elle a été obtenue une fois.
+- **Don de cartes en version alternative** (même migration) : dans la fiche d'un joueur, l'admin choisit la version d'illustration (officielle, alternative ou ancienne officielle) en plus de la finition (`admin_grant_card` reçoit `p_art_id`).
 - **Passation réécrite** (22/10) : les §1 à §3, §5, §6 et §8 décrivaient encore la démo d'avant Supabase.
 
 ## 1. Reprendre ici

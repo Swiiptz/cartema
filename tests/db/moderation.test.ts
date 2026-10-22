@@ -51,6 +51,15 @@ describe('cartes données et retirées par l’admin',()=>{
     expect(Number((await db.query<{b:string}>('select balance b from public.wallets where owner_id=$1',[u])).rows[0].b)).toBe(before);
     await expectError(rpc(db,admin,'admin_grant_card',[u,c,'Standard',21,'x',randomUUID()]),/invalid_amount/);
   });
+  it('donne une carte dans une version d’illustration choisie',async()=>{
+    const u=await player('collectionneur_version');const c=await charId(5);
+    const art=await rpc<string>(db,admin,'admin_add_card_art',[c,'/illustrations/x/paint.webp',{},'Version Paint','Test']);
+    await rpc(db,admin,'admin_grant_card',[u,c,'Sanglante',1,'Récompense GN',randomUUID(),art]);
+    const {rows:[i]}=await db.query<{art_id:string;finish:string}>('select art_id,finish from public.inventory_items where owner_id=$1',[u]);
+    expect(i).toEqual({art_id:art,finish:'Sanglante'});
+    expect((await rpc<any[]>(db,u,'get_inventory',[c]))[0]).toMatchObject({variant:'Version Paint'});
+    await expectError(rpc(db,admin,'admin_grant_card',[u,await charId(6),'Standard',1,'x',randomUUID(),art]),/not_found/); // version d'un autre personnage
+  });
   it('retire un exemplaire libre, refuse un exemplaire engagé, garde la découverte',async()=>{
     const u=await player('retire');
     await rpc(db,admin,'admin_grant_card',[u,await charId(4),'Standard',2,'Test',randomUUID()]);

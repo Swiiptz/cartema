@@ -311,7 +311,7 @@ function ClansTab({catalog,act}:{catalog:AdminCatalog;act:Act}){
 }
 
 // ------------------------------------------------------------------ succès personnalisés
-type CustomAchievement={code:string;label:string;description:string;secret:boolean;reward_deniers:number;reward_boosters:number;title:string|null;conditional:boolean;automatic?:boolean;edition?:string|null;edition_id?:string|null;characters:{id:string;name:string;code:string}[];holders:string[]};
+type CustomAchievement={code:string;label:string;description:string;secret:boolean;reward_deniers:number;reward_boosters:number;title:string|null;conditional:boolean;automatic?:boolean;edition?:string|null;edition_id?:string|null;characters:{id:string;name:string;code:string;finish?:string|null}[];holders:string[]};
 type AchievementForm={code:string;label:string;description:string;secret:boolean;deniers:string;boosters:string;title:string;mode:'conditional'|'manual';edition:string};
 const emptyAchievement:AchievementForm={code:'',label:'',description:'',secret:false,deniers:'100',boosters:'0',title:'',mode:'conditional',edition:''};
 
@@ -319,6 +319,8 @@ function AchievementsTab({catalog,act,client}:{catalog:AdminCatalog;act:Act;clie
  const [list,setList]=useState<CustomAchievement[]|null>(null);
  const [form,setForm]=useState<AchievementForm>(emptyAchievement);
  const [chars,setChars]=useState<string[]>([]);
+ // Finition exigée par personnage requis (absente = simple découverte).
+ const [finishes,setFinishes]=useState<Record<string,string>>({});
  const [query,setQuery]=useState('');
  const [grant,setGrant]=useState<{code:string;handle:string;reason:string}|null>(null);
  const load=useCallback(async()=>{setList(await callRpc<CustomAchievement[]>(client,'admin_custom_achievements').catch(()=>[]));},[client]);
@@ -326,10 +328,10 @@ function AchievementsTab({catalog,act,client}:{catalog:AdminCatalog;act:Act;clie
  const published=useMemo(()=>catalog.characters.filter(c=>c.status==='published'),[catalog]);
  const matches=useMemo(()=>{const q=query.trim().toLowerCase();return q.length<2?[]:published.filter(c=>c.name.toLowerCase().includes(q)&&!chars.includes(c.id)).slice(0,8);},[query,published,chars]);
  const label=(id:string)=>{const c=catalog.characters.find(x=>x.id===id);const e=catalog.editions.find(x=>x.id===c?.edition_id);return c?`${c.name} (${e?.prefix}-${String(c.number).padStart(3,'0')})`:id;};
- const edit=(a:CustomAchievement)=>{setForm({code:a.code,label:a.label,description:a.description,secret:a.secret,deniers:String(a.reward_deniers),boosters:String(a.reward_boosters),title:a.title??'',mode:a.conditional?'conditional':'manual',edition:a.edition_id??''});setChars(a.characters.map(c=>c.id));};
- const reset=()=>{setForm(emptyAchievement);setChars([]);};
+ const edit=(a:CustomAchievement)=>{setForm({code:a.code,label:a.label,description:a.description,secret:a.secret,deniers:String(a.reward_deniers),boosters:String(a.reward_boosters),title:a.title??'',mode:a.conditional?'conditional':'manual',edition:a.edition_id??''});setChars(a.characters.map(c=>c.id));setFinishes(Object.fromEntries(a.characters.filter(c=>c.finish).map(c=>[c.id,c.finish!])));};
+ const reset=()=>{setForm(emptyAchievement);setChars([]);setFinishes({});};
  const digits=(v:string)=>v.replace(/[^\d]/g,'');
- const save=(e:React.FormEvent)=>{e.preventDefault();void act(form.code?'Succès mis à jour.':'Succès créé.',async c=>{await callRpc(c,'admin_save_achievement',{p_code:form.code||null,p_label:form.label,p_description:form.description,p_secret:form.secret,p_reward_deniers:Number(form.deniers)||0,p_reward_boosters:Number(form.boosters)||0,p_title:form.title||null,p_characters:form.mode==='conditional'?chars:null,p_edition_id:form.edition||null});}).then(ok=>{if(ok){reset();void load();}});};
+ const save=(e:React.FormEvent)=>{e.preventDefault();void act(form.code?'Succès mis à jour.':'Succès créé.',async c=>{await callRpc(c,'admin_save_achievement',{p_code:form.code||null,p_label:form.label,p_description:form.description,p_secret:form.secret,p_reward_deniers:Number(form.deniers)||0,p_reward_boosters:Number(form.boosters)||0,p_title:form.title||null,p_characters:form.mode==='conditional'?chars:null,p_edition_id:form.edition||null,p_finishes:form.mode==='conditional'?Object.fromEntries(Object.entries(finishes).filter(([id])=>chars.includes(id))):null});}).then(ok=>{if(ok){reset();void load();}});};
  const doGrant=(e:React.FormEvent)=>{e.preventDefault();if(!grant)return;void act(`Succès décerné à ${grant.handle}.`,c=>callRpc(c,'admin_grant_achievement',{p_code:grant.code,p_handle:grant.handle,p_reason:grant.reason})).then(ok=>{if(ok){setGrant(null);void load();}});};
  return <div className="admin-editions">
   <form className="panel admin-create" onSubmit={save}>
@@ -337,8 +339,8 @@ function AchievementsTab({catalog,act,client}:{catalog:AdminCatalog;act:Act;clie
    <label className="auth-field"><span>Nom</span><input value={form.label} onChange={e=>setForm({...form,label:e.target.value})} required placeholder="LES BRATS!!"/></label>
    <label className="auth-field"><span>Explication (révélée une fois débloqué)</span><input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Avoir collectionné Sirius et Wezen."/></label>
    <div className="segmented" role="tablist"><button type="button" role="tab" aria-selected={form.mode==='conditional'} onClick={()=>setForm({...form,mode:'conditional'})}>Conditionnel</button><button type="button" role="tab" aria-selected={form.mode==='manual'} onClick={()=>setForm({...form,mode:'manual'})}>Décerné à la main</button></div>
-   {form.mode==='conditional'?<div className="admin-art"><span className="admin-hint">Se débloque automatiquement quand le joueur a découvert tous ces personnages.</span>
-    <div className="chip-row">{chars.map(id=><button type="button" key={id} className="chip" onClick={()=>setChars(chars.filter(x=>x!==id))}>{label(id)} <X size={12}/></button>)}{!chars.length&&<span className="muted">Aucun personnage choisi.</span>}</div>
+   {form.mode==='conditional'?<div className="admin-art"><span className="admin-hint">Se débloque automatiquement quand le joueur a découvert tous ces personnages, dans la finition choisie le cas échéant (obtenue au moins une fois).</span>
+    <div className="chip-row">{chars.map(id=><span key={id} className="chip req-chip">{label(id)}<select aria-label={`Finition exigée pour ${label(id)}`} value={finishes[id]??''} onChange={e=>setFinishes(f=>{const n={...f};if(e.target.value)n[id]=e.target.value;else delete n[id];return n;})}><option value="">toute finition</option><option value="Dorée">Dorée</option><option value="Sanglante">Sanglante</option></select><button type="button" className="icon-button" aria-label={`Retirer ${label(id)}`} onClick={()=>setChars(chars.filter(x=>x!==id))}><X size={12}/></button></span>)}{!chars.length&&<span className="muted">Aucun personnage choisi.</span>}</div>
     <input className="picker-search" placeholder="Ajouter un personnage (nom)…" value={query} onChange={e=>setQuery(e.target.value)}/>
     {matches.length>0&&<ul className="friend-pick">{matches.map(c=><li key={c.id}><button type="button" onClick={()=>{setChars([...chars,c.id]);setQuery('');}}>{label(c.id)}</button></li>)}</ul>}
    </div>:<p className="admin-hint">Vous le décernerez à un joueur avec un motif (séance de GN, événement…).</p>}
@@ -351,7 +353,7 @@ function AchievementsTab({catalog,act,client}:{catalog:AdminCatalog;act:Act;clie
   {!list?<Skeleton style={{height:120}}/>:list.map(a=><section key={a.code} className="panel admin-edition">
    <div className="section-header"><div><span className="eyebrow">{a.conditional?'Conditionnel':a.automatic?'Automatique':'Décerné à la main'}{a.edition?` · ${a.edition}`:''}{a.secret?' · secret':''}</span><h2>{a.label}</h2></div><button className="text-link" onClick={()=>edit(a)}>Modifier</button></div>
    <p className="admin-hint">{a.description||'Sans explication.'} · +{a.reward_deniers} Deniers{a.reward_boosters?` · +${a.reward_boosters} booster(s)`:''}{a.title?` · titre « ${a.title} »`:''}</p>
-   {a.conditional&&<p className="admin-hint">Requis : {a.characters.map(c=>`${c.name} (${c.code})`).join(', ')}</p>}
+   {a.conditional&&<p className="admin-hint">Requis : {a.characters.map(c=>`${c.name} (${c.code})${c.finish?` en ${c.finish}`:''}`).join(', ')}</p>}
    <p className="admin-hint">Obtenu par : {a.holders.length?a.holders.join(', '):'personne pour l’instant'}</p>
    {!a.automatic&&(grant?.code===a.code?<form className="admin-row" onSubmit={doGrant}><input className="picker-search" placeholder="Pseudonyme" value={grant.handle} onChange={e=>setGrant({...grant,handle:e.target.value})} required/><input className="picker-search" placeholder="Motif" value={grant.reason} onChange={e=>setGrant({...grant,reason:e.target.value})} required/><button className="primary compact">Décerner</button></form>
     :<button className="primary ghost compact" onClick={()=>setGrant({code:a.code,handle:'',reason:''})}>Décerner à un joueur</button>)}
