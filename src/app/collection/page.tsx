@@ -70,7 +70,7 @@ export default function Collection(){
  const owned=source.filter(c=>(c.owned??0)>0).length;
  const dupes=source.filter(c=>(c.owned??0)>1);
  const extra=dupes.reduce((n,c)=>n+(c.owned??1)-1,0);
- const byRarity=useMemo(()=>ALL_RARITIES.map(r=>{const list=source.filter(c=>c.rarity===r&&!c.provisional);return {rarity:r,total:list.length,owned:list.filter(c=>(c.owned??0)>0).length};}).filter(x=>x.total>0),[source]);
+ const byRarity=useMemo(()=>ALL_RARITIES.map(r=>{const list=source.filter(c=>c.rarity===r&&!c.provisional&&!c.unique)/* comme les succès : sans la carte unique */;return {rarity:r,total:list.length,owned:list.filter(c=>(c.owned??0)>0).length};}).filter(x=>x.total>0),[source]);
  const tabs:{value:AlbumFilters['status'];label:string;count:number}[]=[{value:'all',label:'Toutes',count:source.length},{value:'known',label:'Découvertes',count:discovered},{value:'missing',label:'À découvrir',count:source.length-discovered},...(live?[{value:'dupes' as const,label:'Doublons',count:dupes.length}]:[])];
  const editionName=live?(editions.find(e=>e.id===editionId)?.name??(editions.length===1?editions[0].name:'Toutes les éditions')):'Camarilla';
  const active=[filters.clan!=='all',filters.rarity!=='all',filters.finish!=='all'].filter(Boolean).length;
