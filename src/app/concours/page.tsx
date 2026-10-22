@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import Link from 'next/link';
-import {Brush,Check,Clock,Crown,Flag,Heart,ImagePlus,Palette,ScrollText,Search,Trophy,X} from 'lucide-react';
+import {Brush,Check,Clock,Crown,Flag,Flame,Heart,ImagePlus,Palette,ScrollText,Search,Trophy,X} from 'lucide-react';
 import {useAuth} from '@/components/AuthProvider';
 import {useAsk} from '@/components/AskDialog';
 import {CardBack,TarotCard,palette} from '@/components/Card';
@@ -13,7 +13,7 @@ import {defaultContestRules,parseContestRules,type RuleItem} from '@/lib/contest
 import {contestImageUrl} from '@/lib/paths';
 
 type Tab='cards'|'ranking'|'rules';
-type Filter='all'|'entries'|'mine'|'empty';
+type Filter='all'|'priority'|'entries'|'mine'|'empty';
 const dateFr=(iso:string)=>new Date(iso).toLocaleString('fr-FR',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
 const fr=(n:number)=>n.toLocaleString('fr-FR');
 
@@ -38,10 +38,13 @@ export default function Concours(){
  useEffect(()=>{if(session)void load();},[session,load]);
  useEffect(()=>{if(!message.notice)return;const t=setTimeout(()=>setMessage({}),5000);return()=>clearTimeout(t);},[message.notice]);
 
+ // Cartes à privilégier : sans illustration ou illustration IA, points multipliés.
+ const mult=contest?.priority_multiplier??2;
+ const prioCount=(contest?.cards??[]).filter(c=>c.priority).length;
  const cards=useMemo(()=>{
   const q=query.trim().toLowerCase();
   return (contest?.cards??[]).filter(c=>(!q||c.name.toLowerCase().includes(q)||c.code.toLowerCase().includes(q)||(c.clan??'').toLowerCase().includes(q))
-   &&(!rarity||c.rarity===rarity)&&(filter==='all'||(filter==='entries'&&c.entries>0)||(filter==='mine'&&c.mine)||(filter==='empty'&&c.entries===0)));
+   &&(!rarity||c.rarity===rarity)&&(filter==='all'||(filter==='priority'&&!!c.priority)||(filter==='entries'&&c.entries>0)||(filter==='mine'&&c.mine)||(filter==='empty'&&c.entries===0)));
  },[contest,query,rarity,filter]);
 
  if(!configured||!ready)return <div className="page"><Skeleton style={{height:40,width:'40%'}}/><Skeleton style={{height:260,marginTop:16}}/></div>;
@@ -65,12 +68,14 @@ export default function Concours(){
    <div className="market-filters">
     <label className="search-field"><Search size={18}/><input aria-label="Rechercher une carte" placeholder="Nom, numéro ou clan…" value={query} onChange={e=>setQuery(e.target.value)}/></label>
     <select aria-label="Rareté" value={rarity} onChange={e=>setRarity(e.target.value as Rarity|'')}><option value="">Toutes raretés</option>{ALL_RARITIES.filter(r=>r!=='Mythique').map(r=><option key={r}>{r}</option>)}</select>
-    <select aria-label="Filtrer" value={filter} onChange={e=>setFilter(e.target.value as Filter)}><option value="all">Toutes les cartes</option><option value="entries">Avec des dessins</option><option value="empty">Sans dessin</option><option value="mine">Mes propositions</option></select>
+    <select aria-label="Filtrer" value={filter} onChange={e=>setFilter(e.target.value as Filter)}><option value="all">Toutes les cartes</option><option value="priority">À privilégier</option><option value="entries">Avec des dessins</option><option value="empty">Sans dessin</option><option value="mine">Mes propositions</option></select>
    </div>
    <p className="market-count muted">{cards.length} carte{cards.length>1?'s':''} · les Mythiques ne sont pas au concours</p>
+   {prioCount>0&&<button className={`prio-banner ${filter==='priority'?'on':''}`} onClick={()=>setFilter(filter==='priority'?'all':'priority')}><Flame size={16}/><span><strong>{prioCount} carte{prioCount>1?'s':''} à privilégier · points ×{mult}</strong><small>Sans illustration ou illustration IA : le dessin en tête et le dessin retenu y valent {mult} points.</small></span><b>{filter==='priority'?'Toutes les cartes':'Les voir'}</b></button>}
    <div className="card-grid contest-grid">{cards.map((c,i)=><button key={c.character_id} className="contest-card rise" style={{'--i':Math.min(i,12)} as React.CSSProperties} onClick={()=>setOpen(c)} aria-label={`${c.code} ${c.name} : ${c.entries} dessin${c.entries>1?'s':''}`}>
     <ContestCardFace c={c}/>
     <span className="contest-meta"><strong>{c.entries}</strong> dessin{c.entries>1?'s':''}{c.leader&&<small><Crown size={11}/> {c.leader}</small>}</span>
+    {c.priority&&<span className="prio-badge" title={`Carte à privilégier : points ×${mult}`}><Flame size={11}/>×{mult}</span>}
     {(c.mine||c.voted)&&<span className="contest-flags">{c.mine&&<i title="Votre dessin"><Brush size={11}/></i>}{c.voted&&<i title="Vous avez voté"><Heart size={11}/></i>}</span>}
    </button>)}</div>
   </>}
@@ -169,6 +174,7 @@ function Rules({contest}:{contest:Contest}){
   <h2>Règles du concours</h2>
   <ol>
    <li><strong>Dates.</strong> Du {dateFr(contest.starts_at)} au {dateFr(contest.ends_at)}. Après la fin, plus de dessins ni de votes.</li>
+   <li><strong>Cartes à privilégier ×{contest.priority_multiplier??2}.</strong> Les cartes sans illustration, ou dont l’illustration a été générée par IA, portent la pastille « ×{contest.priority_multiplier??2} » : être en tête des votes ou voir son dessin retenu y rapporte {contest.priority_multiplier??2} points au lieu de 1. Ce sont les cartes qui ont le plus besoin de vos crayons !</li>
    {contest.rules
     ?parseContestRules(contest.rules).map((x,k)=>x.kind==='rule'?rule(x.item,k):<li key={k} className="plain">{x.text}</li>)
     :defaults.before.map(rule)}

@@ -12,6 +12,8 @@ beforeAll(async()=>{
   db=await createDb();cam=await seedEdition(db,{prefix:'CAM',perRarity:1});
   admin=await createUser(db);await rpc(db,admin,'set_handle',['jury']);
   await db.query(`update public.profiles set role='admin' where id=$1`,[admin]);
+  // Toutes illustrées par défaut : seules les cartes choisies par un test sont « à privilégier ».
+  await db.query(`update public.characters set art_path='/illustrations/test.webp' where edition_id=$1`,[cam]);
   contest=await rpc<string>(db,admin,'admin_save_contest',[null,'Concours d’automne',cam,new Date(Date.now()-3600e3).toISOString(),new Date(Date.now()+86400e3).toISOString(),null,'Week-end']);
 },30000);
 
@@ -71,6 +73,26 @@ describe('concours d’illustrations',()=>{
     await rpc(db,admin,'admin_hide_contest_entry',[eb,true,'Troll']);
     expect((await board()).peintre_b).toBeUndefined();
     expect((await rpc<any[]>(db,v1,'get_contest_card',[c])).some(e=>e.entry_id===eb)).toBe(false);
+  });
+  it('cartes à privilégier (sans illustration ou illustration IA) : points en tête doublés, signalées sur la page',async()=>{
+    const a=await player('peintre_prio'),v=await player('votant_prio');
+    const c=await card('Peu commun');
+    const isPrio=async()=>(await rpc(db,v,'get_contest')).cards.find((x:any)=>x.character_id===c).priority;
+    expect(await isPrio()).toBe(false);
+    await expectError(rpc(db,v,'admin_set_art_ai',[c,true,'Triche']),/forbidden/);
+    await rpc(db,admin,'admin_set_art_ai',[c,true,'Illustration IA à remplacer']);
+    expect(await isPrio()).toBe(true);
+    expect((await rpc(db,v,'get_contest')).priority_multiplier).toBe(2);
+    const e=await submit(a,c);await vote(v,e);
+    expect((await board()).peintre_prio).toBe(2); // en tête d'une carte à privilégier : 2 points
+    // Une nouvelle illustration officielle n'est plus « IA ».
+    await db.query(`update public.characters set art_path='/illustrations/nouvelle.webp' where id=$1`,[c]);
+    expect(await isPrio()).toBe(false);
+    expect((await board()).peintre_prio).toBe(1);
+    // Sans illustration : à privilégier aussi.
+    await db.query(`update public.characters set art_path=null where id=$1`,[c]);
+    expect(await isPrio()).toBe(true);
+    expect((await rpc(db,admin,'admin_catalog')).characters.find((x:any)=>x.id===c)).toMatchObject({art_ai:false,art_path:null});
   });
   it('après la clôture : validation, carte offerte, points et récompenses une seule fois',async()=>{
     const p=await player('artiste_or'),q=await player('artiste_argent'),w=await player('jury_public');

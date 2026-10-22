@@ -144,6 +144,14 @@ function CharacterEditor({draft,setDraft,catalog,act,client,onError}:{draft:Draf
  const [finish,setFinish]=useState('Standard');
  const askReason=useReason();
  const creating=!draft.id;
+ // Illustration générée par IA : la carte devient « à privilégier » aux concours (points multipliés).
+ const artAi=!!catalog.characters.find(c=>c.id===draft.id)?.art_ai;
+ async function setArtAi(value:boolean){
+  const r=await askReason(value?`Marquer l’illustration de ${draft.name} comme générée par IA : la carte sera « à privilégier » aux concours (points ×2).`:`Retirer la mention IA de ${draft.name}.`);
+  if(r===null)return;setBusy(true);
+  await act(value?'Illustration marquée IA.':'Mention IA retirée.',c=>callRpc(c,'admin_set_art_ai',{p_character_id:draft.id,p_ai:value,p_reason:r}));
+  setBusy(false);
+ }
  const set=<K extends keyof Draft>(k:K,v:Draft[K])=>setDraft({...draft,[k]:v});
  const setMeta=(m:Partial<IllustrationMeta>)=>setDraft({...draft,art_meta:{...draft.art_meta,...m}});
 
@@ -196,6 +204,7 @@ function CharacterEditor({draft,setDraft,catalog,act,client,onError}:{draft:Draf
       <label className="auth-field"><span>Cadrage</span><select value={draft.art_meta.layout??'portrait'} onChange={e=>setMeta({layout:e.target.value as IllustrationMeta['layout']})}><option value="portrait">Portrait (image entière, en haut)</option><option value="cover">Remplir la fenêtre</option><option value="full">Image entière, centrée</option><option value="fullart">Plein cadre (full art)</option></select></label>
       {draft.art_meta.layout==='cover'&&<label className="auth-field"><span>Décalage vertical : {draft.art_meta.offsetY??0}</span><input type="range" min={-40} max={40} value={draft.art_meta.offsetY??0} onChange={e=>setMeta({offsetY:Number(e.target.value)})}/></label>}
       <button className="text-link" onClick={()=>setDraft({...draft,art_path:null,art_meta:{}})}><X size={14}/> Retirer (silhouette)</button>
+      {!creating&&<label className="admin-check ai-check"><input type="checkbox" checked={artAi} disabled={busy||dirty} onChange={e=>void setArtAi(e.target.checked)}/> Illustration générée par IA <small>carte « à privilégier » aux concours ; décochée d’office quand l’illustration change</small></label>}
      </>}
      {!draft.art_path&&<p className="admin-hint"><ImagePlus size={13}/> Sans illustration, la silhouette attribuée au personnage est utilisée.</p>}
     </fieldset>
