@@ -65,20 +65,34 @@ export default function Market(){
   }
   return board;
  },[client,boardArgs]);
- const load=useCallback(async()=>{
+ // Trois chargements séparés pour ménager la base : un filtre ne relit que le marché, le statut est lu
+ // une fois, Mes ventes et Mes mises seulement quand leur onglet est ouvert.
+ const loadBoard=useCallback(async()=>{
   if(!client)return;
   try{
-   const [m,own,st,b]=await Promise.all([
-    fetchBoard(shown.current),
-    callRpc<Listing[]>(client,'get_my_listings'),
-    callRpc<TradeStatus>(client,'get_trade_status'),
-    callRpc<Listing[]>(client,'get_my_bids')]);
+   const m=await fetchBoard(shown.current);
    if(kind==='fixed')setGroups(m.items as MarketGroup[]);else setAuctions(m.items as Listing[]);
-   setTotal(m.total);setClans(m.clans);setMine(own);setStatus(st);setBids(b);
+   setTotal(m.total);setClans(m.clans);
    // L'offre ouverte suit les achats des autres joueurs.
    setOffersOf(o=>o&&((m.items as MarketGroup[]).find(g=>g.key===o.key)??null));
   }catch(e){setMessage({error:(e as Error).message});}
  },[client,kind,fetchBoard]);
+ const mineStale=useRef(true);
+ const loadMine=useCallback(async()=>{
+  if(!client)return;
+  mineStale.current=false;
+  try{const [own,b]=await Promise.all([callRpc<Listing[]>(client,'get_my_listings'),callRpc<Listing[]>(client,'get_my_bids')]);setMine(own);setBids(b);}
+  catch(e){setMessage({error:(e as Error).message});}
+ },[client]);
+ /** Après une action : le marché, et Mes ventes seulement si l'onglet est ouvert (sinon relu à son ouverture). */
+ const load=useCallback(async()=>{
+  mineStale.current=true;
+  await Promise.all([loadBoard(),tab==='mine'?loadMine():null]);
+ },[loadBoard,loadMine,tab]);
+ useEffect(()=>{if(session&&tab==='mine'&&mineStale.current)void loadMine();},[session,tab,loadMine]);
+ useEffect(()=>{if(!session||!client)return;let alive=true;
+  void callRpc<TradeStatus>(client,'get_trade_status').then(s=>{if(alive)setStatus(s);}).catch(()=>{});
+  return()=>{alive=false;};},[session,client]);
  async function loadMore(){
   if(!client)return;setMore(true);
   const count=(kind==='fixed'?groups?.length??0:auctions?.length??0)+PAGE;
@@ -92,7 +106,7 @@ export default function Market(){
  const ended=useRef<ReturnType<typeof setTimeout>[]>([]);
  useEffect(()=>()=>ended.current.forEach(clearTimeout),[]);
  const afterEnd=useCallback(()=>{void load();ended.current.push(setTimeout(()=>void load(),65000));},[load]);
- useEffect(()=>{if(!session)return;const t=setTimeout(()=>void load(),query?300:0);return()=>clearTimeout(t);},[session,load,query]);
+ useEffect(()=>{if(!session)return;const t=setTimeout(()=>void loadBoard(),query?300:0);return()=>clearTimeout(t);},[session,loadBoard,query]);
  useEffect(()=>{if(!message.notice)return;const t=setTimeout(()=>setMessage({}),5000);return()=>clearTimeout(t);},[message.notice]);
 
  async function buy(l:Purchase){
