@@ -13,6 +13,7 @@ import {PlayerCards,ReportsTab} from '@/components/admin/ModerationTabs';
 import {CardArtsPanel,ContributionsTab} from '@/components/admin/ContributionsTab';
 import {EventContent} from '@/components/admin/EventContent';
 import {MonitorTab} from '@/components/admin/MonitorTab';
+import {EditionShop} from '@/components/admin/EditionShop';
 import {TarotCard,palette,type DemoCard} from '@/components/Card';
 import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,silhouetteIndex} from '@/lib/game';
@@ -289,6 +290,7 @@ function EditionCard({edition:e,catalog,act}:{edition:AdminEdition;catalog:Admin
    <button className="primary ghost" disabled={!e.packs_enabled&&!e.complete} onClick={()=>void togglePacks()}>{e.packs_enabled?'Suspendre les boosters':'Activer les boosters'}</button>
    <button className="text-link" onClick={()=>void archive()}><Archive size={14}/> Archiver</button>
   </div>}
+  {!e.archived_at&&<EditionShop edition={e} act={act} reason={askReason}/>}
  </section>;
 }
 

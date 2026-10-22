@@ -948,3 +948,47 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .line-cards li{display:grid;grid-template-columns:44px 1fr;align-items:center;gap:10px}
 @media(max-width:600px){.arts-list li.line-row{grid-template-columns:1fr}.arts-list li.line-row .art-actions{flex-wrap:wrap}}
 .line-tag{margin-left:8px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);font:500 11px var(--ui);font-style:normal;color:var(--muted)}
+
+/* Boosters : carrousel des éditions, « Soon » et God booster */
+.sealed-scene.has-carousel .pack-object{touch-action:none}
+.side-pack{position:absolute;top:50%;width:120px;padding:0;border:0;background:none;cursor:pointer;opacity:.45;filter:saturate(.7) drop-shadow(0 14px 18px #0009);transition:opacity .3s,transform .5s var(--ease-out),filter .3s;z-index:1}
+.side-pack .booster-skin{display:block;width:100%;height:auto;border-radius:6px}
+.side-left{left:-104px;transform:translateY(-50%) rotate(-8deg) scale(.9)}
+.side-right{right:-104px;transform:translateY(-50%) rotate(8deg) scale(.9)}
+.side-pack:hover{opacity:.75}.side-left:hover{transform:translateY(-50%) rotate(-5deg) scale(.94)}.side-right:hover{transform:translateY(-50%) rotate(5deg) scale(.94)}
+.side-pack.empty{pointer-events:none;opacity:0}
+.side-pack.soon,.sealed-scene.is-soon .pack-object{filter:grayscale(1) brightness(.6) drop-shadow(0 25px 30px #0009)}
+.sealed-scene.is-soon .pack-object{cursor:default;transform:rotate(-3deg)}
+.pack-soon{position:absolute;left:50%;top:50%;z-index:6;transform:translate(-50%,-50%) rotate(-8deg);padding:6px 18px;border:1px solid #f1d99b;border-radius:4px;background:#0d090fcc;color:#f1d99b;font:600 22px var(--display);letter-spacing:.24em;text-transform:uppercase;box-shadow:0 0 24px #c9a45c55;pointer-events:none;animation:soon-pulse 2.4s ease-in-out infinite}
+.pack-soon.small{font-size:12px;padding:3px 9px}
+@keyframes soon-pulse{50%{box-shadow:0 0 40px #c9a45caa;color:#fff4cf}}
+.edition-label.is-soon .status-light{background:#8a7f86;box-shadow:none}
+.edition-picker{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:6px auto 0;max-width:560px}
+.edition-dot{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:4px 10px;border:1px solid transparent;border-radius:999px;background:none;color:var(--muted);font:500 12px var(--ui);cursor:pointer;transition:color .2s,border-color .2s,background .2s}
+.edition-dot i{width:8px;height:8px;border-radius:50%;background:#5c4a55}
+.edition-dot.on{color:var(--gold2);border-color:#c9a45c55;background:#1d131bcc}.edition-dot.on i{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+.edition-dot.soon span{font-style:italic}
+.god-banner{display:flex;align-items:center;justify-content:center;gap:10px;width:fit-content;margin:14px auto 0;padding:8px 18px;border:1px solid #f1d99b;border-radius:999px;background:linear-gradient(90deg,#3b2a0e,#a17a2b,#3b2a0e);color:#fff4cf;font:500 13px var(--ui);box-shadow:0 0 30px #e2bd6266}
+.god-banner strong{font:700 16px var(--display);letter-spacing:.12em;text-transform:uppercase}
+.god-banner svg{color:#fff4cf}
+.ritual-stage.god .ritual-halo{background:radial-gradient(circle,#f1d99b88,#c9a45c22 45%,transparent 70%)!important;animation:god-halo 1.8s ease-in-out infinite}
+.ritual-stage.god .reveal-slot{--slot-color:#f1d99b}
+.pack-object.god-transform{filter:drop-shadow(0 0 28px #f1d99b) drop-shadow(0 25px 30px #0009);animation:god-shine 1.8s ease-in-out}
+@keyframes god-halo{50%{transform:scale(1.08);opacity:.9}}
+@keyframes god-shine{0%{filter:drop-shadow(0 25px 30px #0009)}40%{filter:drop-shadow(0 0 50px #fff4cf) brightness(1.4)}100%{filter:drop-shadow(0 0 28px #f1d99b) drop-shadow(0 25px 30px #0009)}}
+@media(max-width:600px){.side-pack{width:84px}.side-left{left:-58px}.side-right{right:-58px}.pack-soon{font-size:18px}}
+@media(prefers-reduced-motion:reduce){.pack-soon,.ritual-stage.god .ritual-halo,.pack-object.god-transform{animation:none}}
+/* Admin : boutique d'une édition */
+.edition-shop-row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+.edition-shop-pack{width:110px;flex:none}.edition-shop-pack .booster-skin{display:block;width:100%;height:auto;border-radius:6px}
+.edition-shop-pack.soon{filter:grayscale(1) brightness(.6)}
+.edition-shop-fields{flex:1;min-width:220px;display:flex;flex-direction:column;gap:8px}
+/* Changement d'édition : le sachet entre en glissant du côté choisi */
+.sealed-scene .pack-object.swap-next{animation:pack-swap-next .55s cubic-bezier(.2,.8,.2,1) both}
+.sealed-scene .pack-object.swap-prev{animation:pack-swap-prev .55s cubic-bezier(.2,.8,.2,1) both}
+@keyframes pack-swap-next{from{opacity:0;transform:translateX(70px) rotate(6deg) scale(.88)}to{opacity:1;transform:rotate(-3deg)}}
+@keyframes pack-swap-prev{from{opacity:0;transform:translateX(-70px) rotate(-10deg) scale(.88)}to{opacity:1;transform:rotate(-3deg)}}
+.side-pack{animation:side-pack-in .5s ease-out backwards}
+@keyframes side-pack-in{from{opacity:0}}
+.sealed-scene.is-soon .pack-object.swap-next,.sealed-scene.is-soon .pack-object.swap-prev{filter:grayscale(1) brightness(.6) drop-shadow(0 25px 30px #0009)}
+@media(prefers-reduced-motion:reduce){.sealed-scene .pack-object.swap-next,.sealed-scene .pack-object.swap-prev,.side-pack{animation:none}}

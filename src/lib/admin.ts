@@ -1,8 +1,11 @@
 import type {SupabaseClient} from '@supabase/supabase-js';
 import type {Rarity} from './draw';
-import type {ArtMeta} from './game';
+import type {ArtMeta,BoosterThemeName} from './game';
 
-export type AdminEdition={id:string;name:string;prefix:string;cover_path:string|null;album_published:boolean;packs_enabled:boolean;archived_at:string|null;complete:boolean;used:boolean;published_by_rarity:Partial<Record<Rarity,number>>};
+/** Sachets de booster disponibles (voir BoosterSkin). */
+export type BoosterTheme=BoosterThemeName;
+export const BOOSTER_THEMES:[BoosterTheme,string][]=[['camarilla','Camarilla (bordeaux)'],['alpes','Alpes de Savoie (bleu nuit)'],['sabbat','Sabbat (nuit)'],['independant','Indépendants (émeraude)'],['gold','Or']];
+export type AdminEdition={id:string;name:string;prefix:string;cover_path:string|null;album_published:boolean;packs_enabled:boolean;archived_at:string|null;teaser?:boolean;booster_theme?:BoosterTheme;booster_offers?:Record<string,number>|null;complete:boolean;used:boolean;published_by_rarity:Partial<Record<Rarity,number>>};
 export type AdminClan={id:string;name:string;symbol_key:string|null};
 export type CharacterStatus='draft'|'published'|'archived';
 export type IllustrationMeta=ArtMeta&{width?:number;height?:number;transparent?:boolean;original?:string};

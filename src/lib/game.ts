@@ -4,6 +4,9 @@ import {ALL_RARITIES,type Finish,type Rarity} from './draw';
 
 // Formes renvoyées par les RPC (voir supabase/migrations, docs/BACKEND.md).
 export type ArtMeta={layout?:'portrait'|'full'|'cover'|'fullart';offsetY?:number};
+/** Sachets de booster (voir BoosterSkin). */
+export type BoosterThemeName='camarilla'|'alpes'|'sabbat'|'independant'|'gold';
+export type PlayerEdition={id:string;name:string;prefix?:string;cover_path?:string|null;openable:boolean;teaser?:boolean;theme?:BoosterThemeName;offers?:Record<string,number>;reserve?:number};
 export type PlayerState={
  profile:{id:string;handle:string|null;role:'player'|'admin';created_at:string;title?:string|null};
  balance:number;
@@ -15,10 +18,11 @@ export type PlayerState={
  social_pending?:number;
  /** Missions accomplies dont la récompense n'est pas encore réclamée. */
  missions_ready?:number;
- editions:{id:string;name:string;prefix:string;cover_path:string|null;openable:boolean}[];
+ /** Éditions ouvertes (prix, boosters achetés pour elles) puis annoncées « Soon » (nom et sachet seulement). */
+ editions:PlayerEdition[];
 };
 export type OpenedCard={position:number;instance_id:string;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique?:boolean;finish:Finish;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;variant?:string|null;variant_kind?:string|null};
-export type Opening={opening_id:string;edition_id:string;ruleset_version:number;pool:'free'|'purchased';created_at:string;cards:OpenedCard[];replayed:boolean};
+export type Opening={god?:boolean;opening_id:string;edition_id:string;ruleset_version:number;pool:'free'|'purchased'|'edition';created_at:string;cards:OpenedCard[];replayed:boolean};
 export type KnownAlbumEntry={known:true;character_id:string;edition_id:string;code:string;number:number;rarity:Rarity;unique?:boolean;name:string;role_title:string;clan:string|null;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;discovered_at:string;finishes_seen:Finish[];owned:Partial<Record<Finish,number>>;variants?:ArtVariant[];art_credit?:string|null;event?:string|null};
 export type ArtVariant={label:string;kind:string;art_path:string;art_meta:ArtMeta;credit?:string|null;count:number};
 export type UnknownAlbumEntry={known:false;edition_id:string;code:string;number:number;rarity:Rarity;unique?:boolean;silhouette_key:string|null};
