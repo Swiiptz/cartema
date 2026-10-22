@@ -80,25 +80,30 @@ export default function Boosters(){
  // Gratuits et récompenses : toute édition ; achats : seulement l'édition choisie.
  const available=player?player.boosters.free+player.boosters.purchased+(edition?.reserve??0):0;
  const offers=edition?.offers??player?.booster_offers??{};
- const skin={name:sel?.name??'Camarilla',theme:god?'gold' as const:sel?.theme??'camarilla'};
- const pack:DemoCard[]=revealOrder(live?(opening?.cards.map(openedToCard)??[]):previewPack);
+ // God booster : le skin d'origine reste dessous, un calque doré le recouvre progressivement (pas de saut).
+ const skin={name:sel?.name??'Camarilla',theme:sel?.theme??'camarilla'};
+ const goldLayer=god?<span className="god-layer" aria-hidden="true"><BoosterSkin name={skin.name} theme="gold"/></span>:null;
+ // Démonstration en développement local seulement (jamais en production) : « ?god » rejoue un God booster
+ // avec des cartes fictives, sans appeler la base ni toucher à la réserve.
+ const demoGod=process.env.NODE_ENV!=='production'&&typeof window!=='undefined'&&new URLSearchParams(window.location.search).has('god');
+ const pack:DemoCard[]=revealOrder(demoGod?previewPack.map(c=>god?{...c,finish:'Dorée'}:c):live?(opening?.cards.map(openedToCard)??[]):previewPack);
  const stacked=phase==='reveal'&&current<pack.length;
  const complete=phase==='reveal'&&!stacked&&revealed.length===pack.length;
  // Succès en direct : une seule vérification par ouverture, une fois toutes les cartes révélées
  // (jamais avant, pour ne rien dévoiler).
  const announced=useRef<Opening|null>(null);
  useEffect(()=>{
-  if(!complete||!live||!client||!opening||announced.current===opening)return;
+  if(demoGod||!complete||!live||!client||!opening||announced.current===opening)return;
   announced.current=opening;
   void callRpc<UnlockedAchievement[]>(client,'sync_my_achievements').then(list=>{if(list.length){announceAchievements(list);void refreshPlayerRef.current();}}).catch(()=>{});
- },[complete,live,client,opening]);
+ },[complete,live,client,opening,demoGod]);
  useEffect(()=>{if(stacked)activeCard.current?.focus({preventScroll:true});},[stacked,current]);
  useEffect(()=>()=>{timers.current.forEach(clearTimeout);void audio.current?.close();},[]);
  useEffect(()=>{if(live)setPending(readPending());},[live]);
  const maybeReveal=useCallback(()=>{
   const f=flow.current;if(!f.animationDone||(live&&!f.result))return;
   // God booster : un temps de plus pour la transformation dorée avant les cartes.
-  if(f.result?.god&&!f.godShown){f.godShown=true;const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;timers.current.push(setTimeout(()=>{setOpening(f.result);setPhase('reveal');},reduced?300:1800));return;}
+  if(f.result?.god&&!f.godShown){f.godShown=true;const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;timers.current.push(setTimeout(()=>{setOpening(f.result);setPhase('reveal');},reduced?300:3200));return;}
   setOpening(f.result);setPhase('reveal');
  },[live]);
  function tone(index=0){
@@ -111,7 +116,7 @@ export default function Boosters(){
   if(visitor){router.push('/connexion/');return;}
   if(soon&&!resume&&!pending)return;
   let request:Pending|null=null;
-  if(live){
+  if(live&&!demoGod){
    const n=Math.max(1,Math.min(count,available));
    request=resume??pending??(edition?{requestIds:Array.from({length:n},()=>crypto.randomUUID()),editionId:edition.id}:null);
    if(!request){setError('Aucune édition n’est ouverte aux boosters pour le moment.');return;}
@@ -122,7 +127,8 @@ export default function Boosters(){
   tone();setPhase('opening');
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   timers.current.push(setTimeout(()=>{flow.current.animationDone=true;maybeReveal();},reduced?150:1950));
-  if(live&&request)void openAll(request);
+  if(demoGod){flow.current.result={god:true,cards:[]} as unknown as Opening;setGod(true);}
+  else if(live&&request)void openAll(request);
  }
  // Chaque paquet est une transaction serveur distincte et idempotente : un rechargement rejoue
  // les mêmes clés (tirages déjà faits renvoyés à l'identique, les autres effectués une fois).
@@ -130,7 +136,8 @@ export default function Boosters(){
   const results:Opening[]=[];
   let failure:GameError|null=null;
   for(const requestId of request.requestIds){
-   try{results.push(await callRpc<Opening>(client!,'open_booster',{p_edition_id:request.editionId,p_request_id:requestId}));}
+   // Un God booster se dore dès son retour, sans attendre les paquets suivants.
+   try{const r=await callRpc<Opening>(client!,'open_booster',{p_edition_id:request.editionId,p_request_id:requestId});results.push(r);if(r.god)setGod(true);}
    catch(e){failure=e as GameError;break;}
   }
   void refreshPlayer();
@@ -189,9 +196,17 @@ export default function Boosters(){
   </div>}
   <header className="opening-heading"><div className="eyebrow"><span className="tiny-rule"/> Un rendez-vous avec l’inconnu <span className="tiny-rule"/></div><h1>{phase==='reveal'?'Le voile se lève.':'Ce que la nuit vous réserve.'}</h1><p>{phase==='reveal'?pack.length>5?`${pack.length} arcanes, un à un.`:'Cinq arcanes, un à un.':'Cinq cartes, cinq destins. Un nouveau chapitre de votre collection.'}</p></header>
   {live?<div className={`edition-label ${soon?'is-soon':''}`}><span className="status-light"/> {sel?.name??'Aucune édition ouverte'} <span className="edition-divider"/> {soon?'Bientôt':'Édition permanente'}</div>:<div className={`edition-label ${soon?'is-soon':''}`}><span className="status-light"/> {sel?.name??'Camarilla'} <span className="edition-divider"/> {soon?'Bientôt':'Aperçu'}</div>}
-  {god&&<div className="god-banner rise" role="status"><Crown size={18}/> <strong>God booster</strong> <span>Toutes les cartes sont dorées</span></div>}
+  {/* Petite bannière à la révélation ; pendant l'ouverture, le grand titre du spectacle la remplace. */}
+  {god&&phase==='reveal'&&<div className="god-banner rise" role="status"><Crown size={18}/> <strong>God booster</strong> <span>Toutes les cartes sont dorées</span></div>}
   <section className={`ritual-stage ${phase} ${god?'god':''} ${soon&&phase==='sealed'?'is-soon':''}`} aria-label="Prévisualisation d’ouverture de booster">
-   <div className="ritual-halo" aria-hidden="true"/>{phase==='opening'&&effects&&<div className="seal-light" aria-hidden="true"/>}<div className="ritual-orbit orbit-one" aria-hidden="true"/><div className="ritual-orbit orbit-two" aria-hidden="true"/>
+   <div className="ritual-halo" aria-hidden="true"/>{god&&phase!=='reveal'&&<>
+    {/* God booster : pilier de lumière, rayons et ondes derrière le sachet ; éclair, étincelles, pluie d'or et couronne devant. */}
+    <div className="god-back" aria-hidden="true"><span className="god-pillar"/><span className="god-rays"/><span className="god-ring r1"/><span className="god-ring r2"/><span className="god-ring r3"/></div>
+    <div className="god-front" aria-hidden="true"><span className="god-flash"/>
+     <span className="god-burst">{Array.from({length:28},(_,i)=><i key={i} style={{'--a':`${i*360/28}deg`,'--d':`${130+(i*37)%120}px`,'--t':`${(i*53)%260}ms`} as React.CSSProperties}/>)}</span>
+     <span className="god-rain">{Array.from({length:24},(_,i)=><i key={i} style={{'--x':`${(i*41)%100}%`,'--t':`${300+(i*137)%1800}ms`,'--s':`${3+(i%3)*2}px`} as React.CSSProperties}/>)}</span>
+     <div className="god-title"><Crown size={34}/><strong>God booster</strong><small>Toutes les cartes sont dorées</small></div>
+    </div></>}{phase==='opening'&&effects&&<div className="seal-light" aria-hidden="true"/>}<div className="ritual-orbit orbit-one" aria-hidden="true"/><div className="ritual-orbit orbit-two" aria-hidden="true"/>
    {effects&&<div className="motes" aria-hidden="true">{Array.from({length:18},(_,i)=><i key={i} style={{'--i':i,left:`${8+(i*37)%85}%`,top:`${10+(i*23)%80}%`} as React.CSSProperties}/>)}</div>}
    {phase!=='reveal'?<div className={`sealed-scene ${soon?'is-soon':''} ${carousel.length>1?'has-carousel':''}`}>{carousel.length>1&&phase==='sealed'?<>
     {prevEdition?<button className={`side-pack side-left ${prevEdition.teaser?'soon':''}`} aria-label={`Booster ${prevEdition.name}${prevEdition.teaser?' (bientôt)':''}`} onClick={()=>step(-1)}><BoosterSkin name={prevEdition.name} theme={prevEdition.theme}/>{prevEdition.teaser&&<span className="pack-soon small">Soon</span>}</button>:<span className="side-pack side-left empty" aria-hidden="true"/>}
@@ -199,7 +214,7 @@ export default function Boosters(){
    </>:<><div className="ghost-card ghost-left"><CardBack/></div><div className="ghost-card ghost-right"><CardBack/></div></>}<button key={sel?.id??'pack'} className={`pack-object ${god?'god-transform':''} ${swap&&phase==='sealed'?`swap-${swap}`:''}`} onAnimationEnd={e=>{if(e.animationName.startsWith('pack-swap'))setSwap(null);}} disabled={phase==='opening'||(soon&&!pending)} aria-label={soon?`${sel?.name} : bientôt disponible`:`Déchirer la languette du booster${live&&sel?` ${sel.name}`:''}`} onClick={()=>open()} onPointerMove={tilt} onPointerLeave={clearTilt} onPointerCancel={clearTilt} onPointerDown={e=>{swiped.current=false;startY.current={x:e.clientX,y:e.clientY};}} onPointerUp={e=>{const s=startY.current;startY.current=null;if(!s)return;const dx=e.clientX-s.x,dy=s.y-e.clientY;
      // Glisser à gauche / à droite : édition suivante / précédente ; tirer vers le haut : déchirer.
      if(carousel.length>1&&Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){swiped.current=true;step(dx<0?1:-1);return;}
-     if(dy>30)open();}}><span className="pack-side pack-side-left" aria-hidden="true"/><span className="pack-side pack-side-right" aria-hidden="true"/><span className="pack-top-edge" aria-hidden="true"/><span className="pack-face pack-reverse" aria-hidden="true"><CardBack/></span><span className="pack-face pack-obverse"><span className="packet-mouth" aria-hidden="true"/><span className="packet-body"><BoosterSkin {...skin}/></span><span className="packet-tear"><BoosterSkin {...skin}/></span><span className="packet-pull-tab" aria-hidden="true"/><span className="packet-torn-edge" aria-hidden="true"/><span className="pack-reflection" aria-hidden="true"/>{soon&&<span className="pack-soon">Soon</span>}</span></button>{live&&available>1&&<span className="pack-count" aria-hidden="true">×{available}</span>}<div className="pack-ground"/></div>:stacked?(()=>{const card=pack[current];const shown=revealed.includes(current);const behind=Math.min(4,pack.length-current-1);const tier=rarityTier(card),fin=finishTier(card),special=tier??fin;return <div className="reveal-stack-scene">
+     if(dy>30)open();}}><span className="pack-side pack-side-left" aria-hidden="true"/><span className="pack-side pack-side-right" aria-hidden="true"/><span className="pack-top-edge" aria-hidden="true"/><span className="pack-face pack-reverse" aria-hidden="true"><CardBack/></span><span className="pack-face pack-obverse"><span className="packet-mouth" aria-hidden="true"/><span className="packet-body"><BoosterSkin {...skin}/>{goldLayer}</span><span className="packet-tear"><BoosterSkin {...skin}/>{goldLayer}</span><span className="packet-pull-tab" aria-hidden="true"/><span className="packet-torn-edge" aria-hidden="true"/><span className="pack-reflection" aria-hidden="true"/>{soon&&<span className="pack-soon">Soon</span>}</span></button>{live&&available>1&&<span className="pack-count" aria-hidden="true">×{available}</span>}<div className="pack-ground"/></div>:stacked?(()=>{const card=pack[current];const shown=revealed.includes(current);const behind=Math.min(4,pack.length-current-1);const tier=rarityTier(card),fin=finishTier(card),special=tier??fin;return <div className="reveal-stack-scene">
     {shown&&tier&&<div key={`epic-${current}`} className={`epic-reveal epic-${special} ${effects?'with-rays':''}`} aria-hidden="true"><span className="epic-rays"/><span className="epic-ring"/>{tier==='eternelle'&&<><span className="eternal-mist"/><span className="eternal-halo"/><span className="eternal-motes">{Array.from({length:18},(_,k)=><i key={k} style={{'--m':k} as React.CSSProperties}/>)}</span></>}<span className="epic-banner"><strong>{TIER_LABEL[tier]}</strong>{tier&&fin&&<small>et {FINISH_LABEL[fin].toLowerCase()} !</small>}</span></div>}
     <div className="reveal-stack" style={{'--behind':behind} as React.CSSProperties}>
      <div key={current} className={`reveal-slot stack-active ${!shown&&tier?`hint hint-${tier}`:!shown&&fin?`hint-soft hint-${fin}`:''} ${shown&&fin&&!tier?`finish-flash hint-${fin}`:''} ${shown?'slot-revealed':''} ${leaving?'is-leaving':''} ${card.finish==='Dorée'?'slot-gold':card.finish==='Sanglante'?'slot-blood':''}`} style={{'--slot-color':card.finish==='Dorée'?'#f1d99b':card.finish==='Sanglante'?'#a92646':palette[card.rarity]} as React.CSSProperties}>{effects&&burst===current&&<span className="reveal-burst" key={`burst-${current}`} aria-hidden="true">{Array.from({length:10},(_,j)=><i key={j} style={{'--ray':j} as React.CSSProperties}/>)}</span>}<button ref={activeCard} className={`flip-card ${shown?'is-revealed':''}`} style={{'--glow':palette[card.rarity]} as React.CSSProperties} aria-label={shown?`${card.name}, ${card.rarity}${card.finish&&card.finish!=='Standard'?`, finition ${card.finish}`:''}. ${current+1<pack.length?'Carte suivante':'Voir les cinq cartes'}`:`Retourner la carte ${current+1} sur ${pack.length}`} onClick={touchActive}><span className="flip-inner"><span className="flip-back" aria-hidden={shown}><CardBack/></span><span className="flip-front" aria-hidden={!shown}><TarotCard card={card}/></span></span></button></div>

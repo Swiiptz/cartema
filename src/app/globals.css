@@ -1261,3 +1261,56 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 .ai-check{flex-wrap:wrap}
 .ai-check small{flex-basis:100%;margin-left:24px;font:400 11px var(--ui);color:var(--muted)}
 @media(prefers-reduced-motion:reduce){.prio-badge{animation:none}}
+/* God booster : l'or recouvre le sachet du bas vers le haut, précédé d'une ligne de lumière (plus de saut de skin). */
+.god-layer{position:absolute;inset:0;display:block;z-index:1;animation:god-wipe .95s cubic-bezier(.2,.8,.2,1) both}
+.god-layer:after{content:'';position:absolute;left:-10%;right:-10%;height:14%;bottom:-14%;background:linear-gradient(to top,transparent,#fff6d6 45%,#ffffff 50%,#fff6d6 55%,transparent);filter:blur(2px);mix-blend-mode:screen;animation:god-line .95s cubic-bezier(.2,.8,.2,1) both}
+.god-layer svg{display:block;width:100%;height:100%}
+@keyframes god-wipe{0%{clip-path:inset(100% 0 0 0)}100%{clip-path:inset(0 0 0 0)}}
+@keyframes god-line{0%{bottom:-14%;opacity:1}85%{opacity:1}100%{bottom:100%;opacity:0}}
+@media(prefers-reduced-motion:reduce){.god-layer,.god-layer:after{animation:none}.god-layer:after{display:none}}
+/* Fiche d'une carte sur téléphone étroit (~360 px) : rien ne dépasse à droite (23/10). */
+@media(max-width:600px){
+.card-dialog-content{grid-template-columns:minmax(0,1fr);padding:28px 16px}
+.dialog-copy{min-width:0}
+.dialog-copy .segmented{grid-auto-columns:minmax(0,1fr)}
+.dialog-copy .segmented button{min-width:0;padding-inline:4px}
+.owned-actions{flex-wrap:wrap;row-gap:4px}
+.owned-actions .action-btn{min-width:0;padding:0 8px;font-size:12px}
+.owned-top{flex-wrap:wrap;gap:8px}
+}
+/* Admin : retrait d'une version partout, choix de version dans un succès conditionnel (23/10). */
+.text-link.danger{color:#e8a3b0}
+.req-chip{flex-wrap:wrap}
+/* God booster : grande animation (23/10). Couches derrière (pilier, rayons, ondes) et devant (éclair, étincelles, pluie d'or, couronne). */
+.god-back,.god-front{position:absolute;inset:-40px -20px;pointer-events:none;overflow:hidden}
+.god-back{z-index:-1}
+.god-front{z-index:30}
+.god-pillar{position:absolute;left:50%;top:-30%;width:240px;height:160%;margin-left:-120px;background:linear-gradient(to bottom,#fff6d600,#fff1c2cc 35%,#f1d99b88 60%,#c9a45c00);filter:blur(18px);transform-origin:top center;animation:god-pillar 3.2s cubic-bezier(.2,.8,.2,1) both}
+.god-rays{position:absolute;left:50%;top:50%;width:150vmax;height:150vmax;margin:-75vmax 0 0 -75vmax;background:repeating-conic-gradient(from 0deg,#f1d99b55 0deg 4deg,transparent 4deg 14deg);mask-image:radial-gradient(circle,#000 0,transparent 38%);-webkit-mask-image:radial-gradient(circle,#000 0,transparent 38%);animation:god-rays-in .9s ease-out .15s both,epic-spin 9s linear infinite}
+.god-ring{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:2px solid #fff1c2;box-shadow:0 0 30px #f1d99b,inset 0 0 20px #f1d99b88;opacity:0;animation:god-ring 1.6s cubic-bezier(.15,.7,.3,1) both}
+.god-ring.r2{animation-delay:.35s}.god-ring.r3{animation-delay:.7s}
+.god-flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,#ffffff,#fff1c2 30%,#f1d99b00 70%);opacity:0;animation:god-flash .9s ease-out both}
+.god-burst i{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3px;border-radius:50%;background:radial-gradient(circle,#fff,#f1d99b 50%,#c9a45c00 72%);box-shadow:0 0 10px #ffe9a8;opacity:0;animation:god-spark 1.5s cubic-bezier(.1,.75,.3,1) var(--t) both}
+.god-burst i:nth-child(3n){width:4px;height:4px}
+.god-burst i:nth-child(4n){width:10px;height:3px;border-radius:3px}
+.god-rain i{position:absolute;top:-6%;left:var(--x);width:var(--s);height:var(--s);transform:rotate(45deg);background:linear-gradient(135deg,#fffbe6,#e2bd62);box-shadow:0 0 8px #f1d99b;opacity:0;animation:god-rain 2.6s ease-in var(--t) infinite}
+.god-title{position:absolute;left:50%;top:6%;display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateX(-50%);color:#fff4cf;text-align:center;white-space:nowrap;animation:god-title 3.2s cubic-bezier(.2,.8,.2,1) both}
+.god-title svg{color:#ffe7a1;filter:drop-shadow(0 0 12px #f1d99b);animation:god-crown 1s cubic-bezier(.2,1.4,.4,1) .2s both}
+.god-title strong{font:700 clamp(26px,6vw,40px)/1 var(--display);letter-spacing:.18em;text-transform:uppercase;background:linear-gradient(100deg,#b88a2c 0%,#fff6d6 40%,#ffffff 50%,#fff6d6 60%,#b88a2c 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 10px #0009);animation:god-text-shine 1.6s linear .5s infinite}
+.god-title small{font:600 12px var(--ui);letter-spacing:.14em;text-transform:uppercase;color:#f1d99b}
+.ritual-stage.god.opening{animation:god-quake .55s cubic-bezier(.36,.07,.19,.97) both}
+.god-layer:before{content:'';position:absolute;inset:0;z-index:2;background:linear-gradient(115deg,transparent 35%,#ffffffcc 48%,#fff1c2 52%,transparent 64%);background-size:300% 100%;mix-blend-mode:overlay;animation:god-gleam 1.4s ease-in-out .9s infinite}
+@keyframes god-pillar{0%{opacity:0;transform:scaleY(0)}25%{opacity:1;transform:scaleY(1)}80%{opacity:.85}100%{opacity:.35}}
+@keyframes god-rays-in{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+@keyframes god-ring{0%{opacity:0;transform:scale(.3)}15%{opacity:1}100%{opacity:0;transform:scale(4.2)}}
+@keyframes god-flash{0%{opacity:0}12%{opacity:.95}100%{opacity:0}}
+@keyframes god-spark{0%{opacity:0;transform:rotate(var(--a)) translateX(0) scale(.4)}12%{opacity:1}70%{opacity:1}100%{opacity:0;transform:rotate(var(--a)) translateX(var(--d)) translateY(40px) scale(1)}}
+@keyframes god-rain{0%{opacity:0;transform:translateY(0) rotate(45deg)}10%{opacity:1}100%{opacity:0;transform:translateY(560px) rotate(405deg)}}
+@keyframes god-title{0%{opacity:0;transform:translate(-50%,-30px) scale(.9)}18%{opacity:1;transform:translate(-50%,0) scale(1)}85%{opacity:1}100%{opacity:0;transform:translate(-50%,-6px)}}
+@keyframes god-crown{0%{opacity:0;transform:translateY(-40px) rotate(-12deg) scale(.6)}100%{opacity:1;transform:none}}
+@keyframes god-text-shine{to{background-position:-250% 0}}
+@keyframes god-quake{0%,100%{transform:none}20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-2px)}60%{transform:translate(-3px,1px)}80%{transform:translate(2px,-1px)}}
+@keyframes god-lift{0%{transform:none}30%{transform:translateY(-16px) scale(1.05)}70%{transform:translateY(-12px) scale(1.04)}100%{transform:translateY(-14px) scale(1.05)}}
+@keyframes god-gleam{0%{background-position:150% 0}100%{background-position:-150% 0}}
+@media(prefers-reduced-motion:reduce){.god-back,.god-front .god-burst,.god-front .god-rain,.god-flash{display:none}.god-title,.god-title svg,.god-title strong,.ritual-stage.god.opening,.god-layer:before{animation:none}.god-title{opacity:1}}
+@media(max-width:560px){.god-pillar{width:160px;margin-left:-80px}.god-title{top:2%}}

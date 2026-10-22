@@ -128,6 +128,11 @@ export function CardArtsPanel({client,act,reason,characterId,prefix,number,offic
   const r=await reason(a.active?`Ne plus faire tomber « ${a.label} » (les exemplaires existants la gardent) ?`:`Faire de nouveau tomber « ${a.label} » ?`,a.active?'Désactiver':'Activer');if(r===null)return;
   if(await act(a.active?'Version désactivée.':'Version réactivée.',c=>callRpc(c,'admin_set_card_art_active',{p_id:a.id,p_active:!a.active,p_reason:r})))void load();
  }
+ // Retirer partout : plus de tirage, et les exemplaires possédés reprennent l'illustration officielle.
+ async function retire(a:Art){
+  const r=await reason(`Retirer « ${a.label} » partout : elle ne tombera plus, et ${a.owned} exemplaire${a.owned>1?'s':''} possédé${a.owned>1?'s':''} repren${a.owned>1?'nent':'d'} l’illustration officielle (ou la silhouette). C’est définitif.`,'Retirer partout');if(r===null)return;
+  if(await act('Version retirée partout.',c=>callRpc(c,'admin_retire_card_art',{p_id:a.id,p_reason:r})))void load();
+ }
  const shown=preview==='new'?(fileUrl?{...base,illustration:fileUrl,artLayout:frame==='auto'?undefined:frame,artOffsetY:undefined,variant:label||'Version alternative'}:null)
   :(()=>{const a=arts?.find(x=>x.id===preview);return a?{...base,illustration:a.art_path,artLayout:layout(a.art_meta),artOffsetY:Number(a.art_meta?.offsetY)||undefined,variant:a.label,credit:a.credit??undefined}:null;})();
  return <fieldset className="admin-art card-arts"><legend>Versions d’illustration</legend>
@@ -138,7 +143,7 @@ export function CardArtsPanel({client,act,reason,characterId,prefix,number,offic
    :<ul className="arts-list">{arts.map(a=><li key={a.id} className={`${a.active?'':'off'} ${preview===a.id?'previewed':''}`}><button type="button" className="art-thumb" aria-pressed={preview===a.id} title="Aperçu sur la carte" onClick={()=>setPreview(p=>p===a.id?null:a.id)}><img src={a.art_path.startsWith('/')?`${process.env.NEXT_PUBLIC_BASE_PATH??''}${a.art_path}`:a.art_path} alt=""/><Eye size={14}/></button>
     <span><strong>{a.label}</strong><small>{a.kind==='legacy'?'ancienne officielle · ':''}{a.active?'tirable':'désactivée'} · {a.owned} exemplaire{a.owned>1?'s':''}{a.credit?` · par ${a.credit}`:''}</small></span>
     <span className="art-actions"><select aria-label={`Cadrage de ${a.label}`} value={a.art_meta?.layout??'portrait'} onChange={e=>void setLayout(a,e.target.value)}>{Object.entries(FRAMES).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select>
-    <button type="button" className="text-link" onClick={()=>void toggle(a)}>{a.active?'Désactiver':'Activer'}</button></span></li>)}</ul>}
+    <button type="button" className="text-link" onClick={()=>void toggle(a)}>{a.active?'Désactiver':'Activer'}</button>{(a.active||a.owned>0)&&<button type="button" className="text-link danger" onClick={()=>void retire(a)}>Retirer partout</button>}</span></li>)}</ul>}
   {shown&&<div className="art-preview"><TarotCard key={`${preview}-${shown.artLayout}-${shown.illustration}`} card={shown}/><p className="admin-hint">{preview==='new'?'Aperçu du fichier choisi, avec le cadrage sélectionné. Rien n’est enregistré tant que vous n’ajoutez pas.':'Aperçu tel que les joueurs verront cette version.'} <button type="button" className="text-link" onClick={()=>setPreview(null)}>Fermer</button></p></div>}
   <div className="admin-row give-row"><label className="feedback-file"><ImagePlus size={15}/><span>{file?file.name:'Image de la version'}</span><input type="file" accept="image/png,image/webp,image/jpeg" onChange={e=>setFile(e.target.files?.[0]??null)}/></label>
    <label className="auth-field"><span>Nom de la version</span><input value={label} onChange={e=>setLabel(e.target.value)} placeholder="Version Paint"/></label>

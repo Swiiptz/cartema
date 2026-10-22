@@ -155,3 +155,38 @@ describe('plein cadre',()=>{
     await expectError(rpc(db,admin,'admin_set_card_art_meta',[id,{layout:'geant'},'x']),/invalid_art_meta/);
   });
 });
+
+describe('succès sur une version d’illustration et retrait d’une version (23/10)',()=>{
+  it('un succès conditionnel peut exiger de posséder une version précise, ou n’importe quelle alternative',async()=>{
+    const c=await char(5);
+    await db.query(`update public.characters set art_path=$2 where id=$1`,[c,ART]);
+    const paint=await rpc<string>(db,admin,'admin_add_card_art',[c,PAINT,{},'Paint','Dessin maison']);
+    const precise=await rpc<string>(db,admin,'admin_save_achievement',[null,'Collectionneur de Paint','Avoir la version Paint.',false,0,0,null,[c],null,null,{[c]:paint}]);
+    const any=await rpc<string>(db,admin,'admin_save_achievement',[null,'Amateur d’alternatives','Avoir une version alternative.',false,0,0,null,[c],null,null,{[c]:'alt'}]);
+    await expectError(rpc(db,admin,'admin_save_achievement',[null,'Mauvais','x',false,0,0,null,[c],null,null,{[c]:randomUUID()}]),/invalid_art/);
+    const listed=(await rpc<any[]>(db,admin,'admin_custom_achievements')).find(a=>a.code===precise);
+    expect(listed.characters[0]).toMatchObject({art:paint,art_label:'Paint'});
+    const u=await player('amateur_paint');
+    const state=async(code:string)=>(await rpc<any[]>(db,u,'get_achievements')).find(a=>a.code===code);
+    await give(u,5); // version officielle
+    expect((await state(precise)).unlocked_at).toBeNull();
+    expect((await state(any)).unlocked_at).toBeNull();
+    await db.query(`insert into public.inventory_items (owner_id,character_id,finish,art_id) values ($1,$2,'Standard',$3)`,[u,c,paint]);
+    expect((await state(precise)).unlocked_at).not.toBeNull();
+    expect((await state(any)).unlocked_at).not.toBeNull();
+  });
+  it('retirer une version partout : plus de tirage, les exemplaires reprennent l’officielle',async()=>{
+    const c=await char(6);
+    await db.query(`update public.characters set art_path=$2 where id=$1`,[c,ART]);
+    await db.query(`update public.characters set art_path=$2 where id=$1`,[c,ART2]); // l'ancienne devient « Illustration d'origine »
+    const legacy=(await rpc<any[]>(db,admin,'admin_card_arts',[c]))[0];
+    const u=await player('garde_origine');
+    const item=await give(u,6);
+    await db.query(`update public.inventory_items set art_id=$2 where id=$1`,[item,legacy.id]);
+    await expectError(rpc(db,u,'admin_retire_card_art',[legacy.id,'Triche']),/forbidden/);
+    expect(await rpc<number>(db,admin,'admin_retire_card_art',[legacy.id,'Illustration retirée'])).toBe(1);
+    expect((await db.query('select art_id from public.inventory_items where id=$1',[item])).rows[0]).toEqual({art_id:null});
+    expect((await rpc<any[]>(db,admin,'admin_card_arts',[c])).find(a=>a.id===legacy.id).active).toBe(false);
+  });
+});
+
