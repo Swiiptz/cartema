@@ -57,8 +57,8 @@ describe('édition annoncée (Soon)',()=>{
     expect(s.editions.some((e:any)=>e.id===ed.id)).toBe(false);
     await rpc(db,admin,'admin_set_edition_shop',[ed.id,true,'alpes',null,'Annonce']);
     s=await rpc(db,u,'get_player_state');
-    expect(s.editions.find((e:any)=>e.id===ed.id)).toEqual({id:ed.id,name:'Anarchs',teaser:true,openable:false,theme:'alpes'});
-    expect(JSON.stringify(s)).not.toMatch(/Secret|"ANE"/);
+    expect(s.editions.find((e:any)=>e.id===ed.id)).toEqual({id:ed.id,name:'Anarchs',prefix:'ANE',teaser:true,openable:false,theme:'alpes'});
+    expect(JSON.stringify(s)).not.toMatch(/Secret/);
     await expectError(open(u,ed.id),/edition_unavailable/);
     await expectError(rpc(db,u,'buy_boosters',[1,randomUUID(),ed.id]),/edition_unavailable/);
   });

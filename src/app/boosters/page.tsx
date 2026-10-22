@@ -20,7 +20,7 @@ const TIER_LABEL:Record<Tier,string>={unique:'Carte unique',mythique:'Mythique',
 const FINISH_LABEL={gold:'Finition Dorée',blood:'Finition Sanglante'} as const;
 type Pending={requestIds:string[];editionId:string};
 // Aperçu local sans Supabase : une édition ouvrable et une annoncée, pour voir le carrousel.
-const DEMO_CAROUSEL:PlayerEdition[]=[{id:'demo-cam',name:'Camarilla',openable:true,theme:'camarilla'},{id:'demo-ane',name:'ANE',openable:false,teaser:true,theme:'alpes'}];
+const DEMO_CAROUSEL:PlayerEdition[]=[{id:'demo-cam',name:'Camarilla',prefix:'CAM',openable:true,theme:'camarilla'},{id:'demo-ane',name:'Les Sommets',prefix:'ANE',openable:false,teaser:true,theme:'alpes'}];
 const OPEN_COUNTS=[1,3,5,10];
 // La clé de requête survit au rechargement : rejouer une ouverture interrompue renvoie
 // le même tirage côté serveur, sans consommer un second booster.
@@ -200,7 +200,7 @@ export default function Boosters(){
   </section>
   {(live||!configured)&&carousel.length>1&&phase==='sealed'&&<div className="edition-picker" role="tablist" aria-label="Édition du booster">
    <button className="icon-button" aria-label="Édition précédente" disabled={!prevEdition||!!pending} onClick={()=>step(-1)}><ChevronLeft size={18}/></button>
-   {carousel.map((e,i)=><button key={e.id} role="tab" aria-selected={i===selIndex} className={`edition-dot ${i===selIndex?'on':''} ${e.teaser?'soon':''}`} disabled={!!pending} onClick={()=>step(i-selIndex)}><i/><span>{e.name}{e.teaser?' · Soon':''}</span></button>)}
+   {carousel.map((e,i)=><button key={e.id} role="tab" aria-selected={i===selIndex} className={`edition-dot ${i===selIndex?'on':''} ${e.teaser?'soon':''}`} disabled={!!pending} onClick={()=>step(i-selIndex)}><i/><span title={e.name}>{e.prefix??e.name}{e.teaser?' · Soon':''}</span></button>)}
    <button className="icon-button" aria-label="Édition suivante" disabled={!nextEdition||!!pending} onClick={()=>step(1)}><ChevronRight size={18}/></button>
   </div>}
   <div className="ritual-controls" aria-live="polite">
