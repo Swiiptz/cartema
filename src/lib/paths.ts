@@ -14,3 +14,9 @@ export function resolveIllustration(path?:string|null):string|undefined{
  if(path.startsWith(`blob:${typeof location==='undefined'?'':location.origin}/`))return path;
  return undefined;
 }
+
+/** Adresse publique d'un dessin du concours (stockage « contest »), ou rien sans Supabase. */
+export function contestImageUrl(path:string):string|undefined{
+ if(!storagePrefix||path.includes('..'))return undefined;
+ return `${storagePrefix}contest/${path}`;
+}

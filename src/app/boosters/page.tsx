@@ -13,10 +13,11 @@ import {BoosterSkin} from '@/components/BoosterSkin';
 
 type Phase='sealed'|'opening'|'reveal';
 // Cartes qui méritent une révélation spectaculaire, et finitions à signaler.
-type Tier='unique'|'mythique'|'legendaire';
-function rarityTier(c:DemoCard):Tier|null{return c.unique?'unique':c.rarity==='Mythique'?'mythique':c.rarity==='Légendaire'?'legendaire':null;}
+type Tier='unique'|'eternelle'|'mythique'|'legendaire';
+// Les cartes de l'édition éternelle (sixième carte) ont leur propre révélation.
+function rarityTier(c:DemoCard):Tier|null{return c.unique?'unique':c.id.startsWith('ETER-')?'eternelle':c.rarity==='Mythique'?'mythique':c.rarity==='Légendaire'?'legendaire':null;}
 function finishTier(c:DemoCard):'gold'|'blood'|null{return c.finish==='Dorée'?'gold':c.finish==='Sanglante'?'blood':null;}
-const TIER_LABEL:Record<Tier,string>={unique:'Carte unique',mythique:'Mythique',legendaire:'Légendaire'};
+const TIER_LABEL:Record<Tier,string>={unique:'Carte unique',eternelle:'Carte éternelle',mythique:'Mythique',legendaire:'Légendaire'};
 const FINISH_LABEL={gold:'Finition Dorée',blood:'Finition Sanglante'} as const;
 type Pending={requestIds:string[];editionId:string};
 // Aperçu local sans Supabase : une édition ouvrable et une annoncée, pour voir le carrousel.

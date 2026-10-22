@@ -18,6 +18,8 @@ export type PlayerState={
  social_pending?:number;
  /** Missions accomplies dont la récompense n'est pas encore réclamée. */
  missions_ready?:number;
+ /** Concours d'illustrations ouvert (bannière du site). */
+ contest?:{id:string;title:string;ends_at:string}|null;
  /** Éditions ouvertes (prix, boosters achetés pour elles) puis annoncées « Soon » (nom et sachet seulement). */
  editions:PlayerEdition[];
 };
@@ -53,7 +55,7 @@ export const EVENT_METRICS:Record<string,string>={open_boosters:'Boosters ouvert
  market_list:'Mises en vente',auction_bid:'Enchères placées',trade_done:'Échanges conclus',gift_send:'Cartes offertes',daily_login:'Jours de connexion'};
 export type GameEvent={id:string;name:string;description:string;starts_at:string;ends_at:string;active:boolean;finish_multiplier:number;deniers_multiplier:number;bonus_boosters:number;free_interval_hours:number|null;claimed:boolean};
 export type NotificationPrefs={friends:boolean;social:boolean;market:boolean;achievements:boolean};
-export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{event?:string;rank?:number;accepted?:boolean;kind?:string;note?:string|null;target?:string;category?:string;from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number}};
+export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{character?:string;title?:string;position?:number;deniers?:number;boosters?:number;podium?:boolean;event?:string;rank?:number;accepted?:boolean;kind?:string;note?:string|null;target?:string;category?:string;from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number}};
 export type Notifications={items:AppNotification[];unread:number;prefs:NotificationPrefs};
 export type PublicProfile={verified?:boolean;featured:FeaturedAchievement[];profile_id:string;handle:string;title:string|null;created_at:string;relation:'self'|'friends'|'pending_out'|'pending_in'|'none';visible:boolean;settings:{visibility:'public'|'friends'|'private';show_stats:boolean}|null;showcase:SocialCard[]|null;stats:{faces:number;total_characters:number;achievements:number;gold:number;blood:number;position:number}|null;recent:{label:string;unlocked_at:string;tier:number|null}[]|null};
 export type Leaderboard={top:{position:number;handle:string;title:string|null;score:number;achievements:number;faces:number;me:boolean}[];me:{position:number;score:number;achievements:number;faces:number}|null;total_characters:number;total_achievements:number};
@@ -135,6 +137,13 @@ const messages:Record<string,string>={
  unique_indestructible:'Une carte unique ne peut pas être recyclée.',
  recycled_item:'Cette carte a déjà été recyclée.',
  account_too_new:'Les échanges entre joueurs s’ouvrent 24 h après la création du compte.',
+ contest_closed:'Le concours est fermé.',
+ own_entry:'Vous ne pouvez pas voter pour votre propre dessin.',
+ invalid_image:'Image refusée : envoyez-la depuis cette page.',
+ contest_open:'Le concours est encore ouvert : la validation se fait après sa clôture.',
+ already_decided:'Ce dessin a déjà été retenu autrement.',
+ invalid_dates:'Dates invalides : la fin doit suivre le début.',
+ eternal_edition:'Une édition éternelle ne s’ouvre pas en booster : ses cartes tombent en sixième carte.',
  handle_required:'Choisissez d’abord un pseudonyme dans votre profil : il s’affiche auprès des autres joueurs.',
  transactions_blocked:'Les échanges sont suspendus sur ce compte.',
  invalid_price:'Prix invalide : un nombre entier de Deniers, au moins 1.',
@@ -227,3 +236,11 @@ const FINISH_ORDER=['Standard','Dorée','Sanglante'];
 export function revealOrder<C extends {rarity:Rarity;finish?:string;unique?:boolean}>(cards:readonly C[]):C[]{
  return cards.map((card,i)=>({card,i})).sort((a,b)=>Number(!!a.card.unique)-Number(!!b.card.unique)||ALL_RARITIES.indexOf(a.card.rarity)-ALL_RARITIES.indexOf(b.card.rarity)||FINISH_ORDER.indexOf(a.card.finish??'Standard')-FINISH_ORDER.indexOf(b.card.finish??'Standard')||a.i-b.i).map(x=>x.card);
 }
+
+/** Concours d'illustrations (voir supabase/migrations/20261022260000_art_contest.sql). */
+export type ContestCard={character_id:string;code:string;number:number;name:string;clan:string|null;rarity:Rarity;discovered:boolean;card:SocialCard|null;entries:number;leader:string|null;mine:boolean;voted:boolean};
+export type ContestPlace={from:number;to:number;deniers:number;boosters:number};
+export type ContestRewards={places:ContestPlace[];others:{deniers:number;boosters:number}};
+export type Contest={id:string;title:string;starts_at:string;ends_at:string;open:boolean;rewarded:boolean;edition:string;rewards:ContestRewards;my_entries:number;my_points:number;cards:ContestCard[]};
+export type ContestEntry={entry_id:string;image_path:string;author:string;votes:number;leading:boolean;mine:boolean;my_vote:boolean;selected:'main'|'alternate'|null;created_at:string};
+export type ContestRank={position:number;handle:string;leads:number;selected:number;real:number;points:number;me:boolean};

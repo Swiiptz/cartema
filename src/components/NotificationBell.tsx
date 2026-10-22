@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useState} from 'react';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
-import {ArrowLeftRight,Award,Bell,CheckCheck,Coins,Gavel,Flag,Gift,Heart,UserPlus,Users} from 'lucide-react';
+import {ArrowLeftRight,Award,Bell,CheckCheck,Coins,Gavel,Flag,Gift,Heart,Palette,UserPlus,Users} from 'lucide-react';
 import {useAuth} from './AuthProvider';
 import {Sheet,Skeleton} from './ui';
 import {callRpc,type AppNotification,type Notifications} from '@/lib/game';
@@ -36,6 +36,10 @@ export function describe(n:AppNotification):{text:string;icon:typeof Bell;href:s
   case 'achievement':{
    const r=[(p.reward_deniers??0)>0&&`+${d(p.reward_deniers)}`,(p.reward_boosters??0)>0&&`+${p.reward_boosters} booster${(p.reward_boosters??0)>1?'s':''}`].filter(Boolean).join(' · ');
    return {text:`Succès débloqué : ${p.label}${r?` (${r})`:''}.`,icon:Award,href:'/progression/?onglet=succes'};}
+  case 'contest_selected':return {text:`Votre dessin pour ${p.character} est retenu (${p.label}) : la carte vous est offerte${p.finish&&p.finish!=='Standard'?` en finition ${p.finish}`:''}.`,icon:Palette,href:'/collection/'};
+  case 'contest_reward':{
+   const r=[(p.deniers??0)>0&&`+${d(p.deniers)}`,(p.boosters??0)>0&&`+${p.boosters} booster${(p.boosters??0)>1?'s':''}`].filter(Boolean).join(' · ');
+   return {text:`Concours « ${p.title} » : ${p.position}${p.position===1?'re':'e'} place${p.podium?', titre « Illustrateur de génie »':''}${r?` (${r})`:''}.`,icon:Palette,href:'/concours/'};}
   default:return {text:'Nouvelle activité.',icon:Bell,href:'/'};
  }
 }

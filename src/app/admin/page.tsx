@@ -14,12 +14,13 @@ import {CardArtsPanel,ContributionsTab} from '@/components/admin/ContributionsTa
 import {EventContent} from '@/components/admin/EventContent';
 import {MonitorTab} from '@/components/admin/MonitorTab';
 import {EditionShop} from '@/components/admin/EditionShop';
+import {ContestTab} from '@/components/admin/ContestTab';
 import {TarotCard,palette,type DemoCard} from '@/components/Card';
 import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,silhouetteIndex} from '@/lib/game';
 import {ACCEPTED_TYPES,ENGRAVED_CLANS,matchIllustrations,nextNumber,uploadIllustration,type AdminCatalog,type AdminCharacter,type AdminEdition,type CharacterStatus,type IllustrationMeta} from '@/lib/admin';
 
-type Tab='characters'|'editions'|'clans'|'achievements'|'players'|'events'|'stats'|'economy'|'reports'|'contributions'|'monitor';
+type Tab='characters'|'editions'|'clans'|'achievements'|'players'|'events'|'stats'|'economy'|'reports'|'contributions'|'contest'|'monitor';
 const STATUS_LABEL:Record<CharacterStatus,string>={draft:'Brouillon',published:'Publiée',archived:'Archivée'};
 // jsonb ne conserve pas l'ordre des clés : comparaison indépendante de l'ordre.
 const canonical=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
@@ -65,9 +66,9 @@ export default function Admin(){
 
  return <AskContext.Provider value={ask}><div className="page admin-page">{askNode}
   <header className="admin-heading"><div><span className="eyebrow">Back-office</span><h1>Le cabinet de l’archiviste</h1></div><p className="muted">Chaque modification est enregistrée dans le journal d’administration.</p></header>
-  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['economy','Économie'],['players','Joueurs'],['contributions','Contributions'],['reports','Signalements'],['monitor','Surveillance'],['stats','Statistiques']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
+  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['economy','Économie'],['players','Joueurs'],['contributions','Contributions'],['contest','Concours'],['reports','Signalements'],['monitor','Surveillance'],['stats','Statistiques']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
   <div className="admin-toast" aria-live="polite">{error&&<p className="auth-error" role="alert">{error}<button className="icon-button" aria-label="Fermer" onClick={()=>setError(null)}><X size={16}/></button></p>}{notice&&<p className="auth-notice">{notice}<button className="icon-button" aria-label="Fermer" onClick={()=>setNotice(null)}><X size={16}/></button></p>}</div>
-  <div key={tab} className="tab-panel">{!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!} characters={catalog.characters}/>:tab==='stats'?<StatsTab client={client!}/>:tab==='economy'?<EconomyHost act={act} client={client!}/>:tab==='reports'?<ReportsHost act={act} client={client!}/>:tab==='monitor'?<MonitorTab client={client!} onOpenPlayer={id=>{setFocusPlayer(id);setTab('players');}}/>:tab==='contributions'?<ContributionsHost act={act} client={client!} catalog={catalog}/>:<PlayersTab act={act} client={client!} characters={catalog.characters} focus={focusPlayer}/>}</div>
+  <div key={tab} className="tab-panel">{!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!} characters={catalog.characters}/>:tab==='stats'?<StatsTab client={client!}/>:tab==='economy'?<EconomyHost act={act} client={client!}/>:tab==='reports'?<ReportsHost act={act} client={client!}/>:tab==='monitor'?<MonitorTab client={client!} onOpenPlayer={id=>{setFocusPlayer(id);setTab('players');}}/>:tab==='contributions'?<ContributionsHost act={act} client={client!} catalog={catalog}/>:tab==='contest'?<ContestHost act={act} client={client!} catalog={catalog}/>:<PlayersTab act={act} client={client!} characters={catalog.characters} focus={focusPlayer}/>}</div>
  </div></AskContext.Provider>;
 }
 
@@ -521,6 +522,11 @@ function EconomyHost({act,client}:{act:Act;client:SupabaseClient}){
 function ReportsHost({act,client}:{act:Act;client:SupabaseClient}){
  const reason=useReason();
  return <ReportsTab act={act} client={client} reason={reason}/>;
+}
+
+function ContestHost({act,client,catalog}:{act:Act;client:SupabaseClient;catalog:AdminCatalog}){
+ const reason=useReason();const ask=useContext(AskContext);
+ return <ContestTab act={act} client={client} reason={reason} ask={ask} catalog={catalog}/>;
 }
 
 function ContributionsHost({act,client,catalog}:{act:Act;client:SupabaseClient;catalog:AdminCatalog}){

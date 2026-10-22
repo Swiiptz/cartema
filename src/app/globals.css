@@ -992,3 +992,41 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 @keyframes side-pack-in{from{opacity:0}}
 .sealed-scene.is-soon .pack-object.swap-next,.sealed-scene.is-soon .pack-object.swap-prev{filter:grayscale(1) brightness(.6) drop-shadow(0 25px 30px #0009)}
 @media(prefers-reduced-motion:reduce){.sealed-scene .pack-object.swap-next,.sealed-scene .pack-object.swap-prev,.side-pack{animation:none}}
+
+/* Concours d'illustrations */
+.contest-banner{border-color:#c9a45c88;background:linear-gradient(90deg,#24162b,#1d131bcc)}
+.contest-when{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0 0;font:400 13px var(--ui)}
+.contest-grid{align-items:start}
+.contest-card{position:relative;display:flex;flex-direction:column;gap:6px;padding:0;border:0;background:none;color:inherit;text-align:left;cursor:pointer}
+.contest-card:hover .tarot-card,.contest-card:hover .contest-neutral{transform:translateY(-3px)}
+.contest-meta{display:flex;align-items:baseline;justify-content:space-between;gap:6px;font:400 12px var(--ui);color:var(--muted)}
+.contest-meta strong{color:var(--gold2);font-size:14px}.contest-meta small{display:inline-flex;align-items:center;gap:3px;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%}
+.contest-flags{position:absolute;top:6px;right:6px;z-index:3;display:flex;gap:4px}.contest-flags i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#0d090fdd;border:1px solid var(--gold);color:var(--gold2)}
+.contest-neutral{position:relative;display:block;transition:transform .3s var(--ease-out)}
+.contest-neutral .tarot-card{filter:brightness(.55) saturate(.6)}
+.contest-neutral-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px;text-align:center;color:#efe5d2}
+.contest-neutral-text strong{font:600 15px/1.2 var(--display)}.contest-neutral-text em{font:italic 400 12px var(--body);color:#cdbfa9}
+.contest-neutral-text small{font:500 10px var(--ui);letter-spacing:.08em;color:var(--rc,#c9a45c)}
+.contest-sheet{display:flex;flex-direction:column;gap:14px}
+.contest-sheet-head{display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:start}
+.contest-sheet-info{display:flex;flex-direction:column;gap:8px}.contest-sheet-info p{margin:0}
+.contest-sheet-info .feedback-file{width:fit-content}
+.contest-entries{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.contest-entries li{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid var(--line);border-radius:12px;background:#140d14}
+.contest-entries li.leading{border-color:var(--gold);box-shadow:0 0 14px #c9a45c33}.contest-entries li.mine{background:linear-gradient(170deg,#c9a45c14,#140d14)}
+.contest-entry-img{padding:0;border:0;background:#0d090f;border-radius:8px;overflow:hidden;cursor:zoom-in;aspect-ratio:2/3}
+.contest-entry-img img{display:block;width:100%;height:100%;object-fit:cover}
+.contest-entry-info{display:flex;flex-direction:column;gap:4px;font:400 12px var(--ui)}
+.contest-entry-author{display:flex;align-items:center;gap:4px;font-weight:600;color:var(--gold2)}
+.contest-entry-votes{display:flex;align-items:center;gap:4px;color:var(--muted)}
+.contest-entry-actions{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.selected-pill{display:inline-flex;align-items:center;gap:2px;margin-left:4px;padding:0 6px;border-radius:999px;background:#9fd8b022;color:#9fd8b0}
+.contest-zoom-img{max-width:min(92vw,520px);max-height:72vh;border-radius:10px;box-shadow:0 20px 50px #000a}
+.contest-rules ol{display:flex;flex-direction:column;gap:10px;margin:0;padding-left:20px;font:400 14px/1.55 var(--ui)}
+.contest-rules strong{color:var(--gold2)}
+@media(max-width:560px){.contest-sheet-head{grid-template-columns:96px 1fr}.contest-entries{grid-template-columns:repeat(2,1fr)}}
+.contest-entries li.off{opacity:.5}
+.contest-reports{display:flex;gap:4px;align-items:flex-start;color:#e8a3b0;font-size:11px}
+.contest-place{align-items:flex-end}.contest-place .auth-field{min-width:70px;flex:1}
+.contest-admin>.admin-row select{min-height:44px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:#171017;color:var(--text)}
+.epic-reveal.epic-eternelle .epic-banner strong{background:linear-gradient(90deg,#d8ecff,#f6ecd2,#d8ecff);-webkit-background-clip:text;background-clip:text;color:transparent}
