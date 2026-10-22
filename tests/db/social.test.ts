@@ -186,7 +186,7 @@ describe('limites quotidiennes',()=>{
 });
 
 describe('délai après réception',()=>{
-  it('empêche de redonner une carte reçue avant 72 h, sauf au marché',async()=>{
+  it('empêche de redonner ou de vendre une carte reçue avant 72 h',async()=>{
     const a=await player();const b=await player();const c=await player();await befriend(a,b);await befriend(b,c);
     const card=await give(a.id);const other=await give(b.id);
     const t=await rpc(db,a.id,'propose_trade',[b.id,[card],[other],0,0,randomUUID(),null]);
@@ -198,8 +198,12 @@ describe('délai après réception',()=>{
     expect((await rpc(db,a.id,'get_friend_cards',[b.id])).some((x:any)=>x.instance_id===card)).toBe(false);
     const {rows:[ch]}=await db.query<{character_id:string}>('select character_id from public.inventory_items where id=$1',[card]);
     expect((await rpc(db,b.id,'get_inventory',[ch.character_id])).find((x:any)=>x.instance_id===card).cooldown_until).toBeTruthy();
-    await rpc(db,b.id,'create_listing',[card,50,randomUUID()]); // la vente reste possible
+    // La vente est bloquée aussi (décision du 22/10), à prix fixe comme aux enchères.
+    await expectError(rpc(db,b.id,'create_listing',[card,50,randomUUID()]),/card_cooldown/);
+    await expectError(rpc(db,b.id,'create_auction',[card,50,24,randomUUID()]),/card_cooldown/);
     // Passé le délai, la carte redevient libre.
+    await db.query(`update public.inventory_items set social_received_at=now()-interval '73 hours' where id=$1`,[card]);
+    await rpc(db,b.id,'create_listing',[card,50,randomUUID()]);
     await db.query(`update public.inventory_items set social_received_at=now()-interval '25 hours' where id=$1`,[other]);
     await befriend(a,c);
     await expectError(rpc(db,a.id,'send_gift',[c.id,other,randomUUID()]),/card_cooldown/); // 72 h désormais

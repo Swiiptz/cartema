@@ -1027,6 +1027,30 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 @media(max-width:560px){.contest-sheet-head{grid-template-columns:96px 1fr}.contest-entries{grid-template-columns:repeat(2,1fr)}}
 .contest-entries li.off{opacity:.5}
 .contest-reports{display:flex;gap:4px;align-items:flex-start;color:#e8a3b0;font-size:11px}
-.contest-place{align-items:flex-end}.contest-place .auth-field{min-width:70px;flex:1}
-.contest-admin>.admin-row select{min-height:44px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:#171017;color:var(--text)}
+/* Admin › Concours : une colonne, formulaire en blocs, barème en tableau, règles libres. */
+.contest-admin{display:flex;flex-direction:column;gap:16px;max-width:960px}
+.contest-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.contest-toolbar select,.contest-form select{flex:1 1 260px;min-width:0;min-height:44px;padding:6px 12px;border-radius:10px;border:1px solid var(--line);background:#171017;color:var(--text);font:400 15px var(--ui)}
+.contest-form{display:flex;flex-direction:column;gap:18px}
+.contest-form-head{display:flex;align-items:center;justify-content:space-between;margin:-6px -6px -6px 0}
+.contest-fieldset{display:flex;flex-direction:column;gap:12px;min-width:0;margin:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:#140d14}
+.contest-fieldset legend{padding:0 8px;font:600 11px var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.contest-fieldset .admin-hint{margin:0}
+.contest-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.contest-info-grid .contest-wide{grid-column:1/-1}
+.contest-info-grid .auth-field input{min-width:0;width:100%}
+.contest-error{margin:0;color:#e8a3b0;font:500 13px var(--ui)}
+.contest-rewards{display:flex;flex-direction:column;gap:6px}
+.contest-rewards-row{display:grid;grid-template-columns:minmax(150px,1.2fr) 1fr 1fr 44px;gap:8px;align-items:center}
+.contest-rewards-row.head{font:600 11px var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.contest-rewards-row.others{padding-top:8px;border-top:1px dashed var(--line)}
+.contest-rewards-row input{width:100%;min-width:0;min-height:42px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#171017;color:var(--text);font:400 15px var(--ui);text-align:right}
+.contest-rewards-row input:focus-visible,.contest-rules-input:focus-visible{outline:none;border-color:#c9a45c99;box-shadow:0 0 0 3px #c9a45c10}
+.contest-range{display:flex;align-items:center;gap:6px}.contest-range input{text-align:center}.contest-range i{font:400 12px var(--ui);color:var(--muted);font-style:normal}
+.contest-range-label{font:500 13px/1.3 var(--ui);color:var(--muted)}
+.contest-rules-input{width:100%;min-height:200px;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:#171017;color:var(--text);font:400 14px/1.6 var(--ui);resize:vertical}
+.contest-rules-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}.contest-rules-tools small{margin-left:auto;font:400 12px var(--ui);color:var(--muted)}
+.contest-form .text-link{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;background:none;border:0;padding:0}
+.contest-summary .stats-filter{flex-wrap:wrap;max-width:100%}
+.contest-rules li.plain{list-style:none;margin-left:-20px}
+@media(max-width:560px){.contest-info-grid{grid-template-columns:1fr}.contest-fieldset{padding:12px}.contest-rewards-row{grid-template-columns:1fr 1fr 1fr 40px}.contest-rewards-row.head span:first-child,.contest-range-label{grid-column:1/-1}.contest-rewards-row.others{grid-template-columns:1fr 1fr 40px}.contest-range{grid-column:1/-1}}
 .epic-reveal.epic-eternelle .epic-banner strong{background:linear-gradient(90deg,#d8ecff,#f6ecd2,#d8ecff);-webkit-background-clip:text;background-clip:text;color:transparent}

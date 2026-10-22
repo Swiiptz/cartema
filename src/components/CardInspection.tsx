@@ -123,10 +123,10 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
    </div>
    <div className="owned-actions">
     {it.reserved&&!it.listing_id?<span className="owned-note">Gérez-la depuis la page <Link className="text-link" href="/amis/">Amis</Link></span>:it.listing_id?<button className="action-btn" disabled={busy} onClick={()=>void unlist(it)}><X size={14}/> Retirer la vente</button>
-     :<><button className="action-btn sell" disabled={busy||it.locked||it.reserved} onClick={()=>void sell(it)}><Tag size={14}/> Vendre</button>
+     :<><button className="action-btn sell" disabled={busy||it.locked||it.reserved||!!it.cooldown_until} title={it.cooldown_until?`Reçue récemment : vous pourrez la vendre ${until(it.cooldown_until)}`:undefined} onClick={()=>void sell(it)}><Tag size={14}/> Vendre</button>
       <span className="action-sep" aria-hidden="true"/>
       <button className="action-btn" disabled={busy||it.locked||it.reserved||!!it.cooldown_until} title={it.cooldown_until?`Reçue récemment : vous pourrez l’offrir ou l’échanger ${until(it.cooldown_until)}`:undefined} onClick={()=>setGifting(it)}><Gift size={14}/> Offrir</button>
-      {it.cooldown_until&&<span className="owned-note">Reçue récemment · échangeable {until(it.cooldown_until)}</span>}
+      {it.cooldown_until&&<span className="owned-note">Reçue récemment · échangeable et vendable {until(it.cooldown_until)}</span>}
       <span className="action-sep" aria-hidden="true"/>
       {it.unique?<span className="owned-note">Indestructible</span>:<button className="action-btn recycle" disabled={busy||it.locked||it.reserved} onClick={()=>void recycle([it])}><Recycle size={14}/> Recycler <b>+{it.value.toLocaleString('fr-FR')}</b></button>}</>}
    </div>

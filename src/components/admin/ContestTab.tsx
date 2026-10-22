@@ -1,17 +1,18 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState} from 'react';
-import {Check,Crown,Eye,EyeOff,Flag,Gift,Layers,Plus,Replace,Save,Trash2} from 'lucide-react';
+import {Check,Crown,Eye,EyeOff,Flag,Gift,Layers,Plus,Replace,Save,ScrollText,Trash2,X} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {Skeleton} from '@/components/ui';
 import type {AskOptions} from '@/components/AskDialog';
 import {callRpc,type ContestPlace,type ContestRank,type ContestRewards} from '@/lib/game';
 import {uploadIllustration,type AdminCatalog} from '@/lib/admin';
 import {contestImageUrl} from '@/lib/paths';
+import {defaultContestRulesText} from '@/lib/contest';
 
 type Act=(label:string,action:(c:SupabaseClient)=>Promise<unknown>)=>Promise<boolean>;
 type Reason=(message:string,confirmLabel?:string)=>Promise<string|null>;
 type Ask=(o:AskOptions)=>Promise<string|null>;
-type AdminContest={id:string;title:string;edition_id:string;starts_at:string;ends_at:string;rewards:ContestRewards;rewarded_at:string|null;open:boolean;entries:number;reports:number};
+type AdminContest={id:string;title:string;edition_id:string;starts_at:string;ends_at:string;rewards:ContestRewards;rewarded_at:string|null;rules:string|null;open:boolean;entries:number;reports:number};
 type Entry={entry_id:string;character_id:string;code:string;name:string;rarity:string;prefix:string;number:number;author:string;image_path:string;created_at:string;votes:number;leading:boolean;hidden:boolean;hidden_reason:string|null;reports:string[];selected:'main'|'alternate'|null;line_label:string|null;real_drawing:boolean;granted:boolean};
 
 const DEFAULT_REWARDS:ContestRewards={places:[{from:1,to:1,deniers:3000,boosters:10},{from:2,to:2,deniers:2000,boosters:6},{from:3,to:3,deniers:1500,boosters:4},{from:4,to:10,deniers:500,boosters:2}],others:{deniers:200,boosters:1}};
@@ -28,11 +29,11 @@ export function ContestTab({client,act,reason,ask,catalog}:{client:SupabaseClien
  useEffect(()=>{void load();},[load]);
  const current=contests?.find(c=>c.id===selected);
  if(!contests)return <Skeleton style={{height:200}}/>;
- return <div className="admin-editions contest-admin">
-  <div className="admin-row">
+ return <div className="contest-admin">
+  <div className="contest-toolbar">
    <select aria-label="Concours" value={selected??''} onChange={e=>setSelected(e.target.value||null)}>{contests.length===0&&<option value="">Aucun concours</option>}{contests.map(c=><option key={c.id} value={c.id}>{c.title} · {when(c.starts_at)}</option>)}</select>
    <button className="primary ghost compact" onClick={()=>setEditing('new')}><Plus size={14}/> Nouveau concours</button>
-   {current&&!current.rewarded_at&&<button className="text-link" onClick={()=>setEditing(current)}>Modifier les dates et le barème</button>}
+   {current&&!current.rewarded_at&&!editing&&<button className="primary ghost compact" onClick={()=>setEditing(current)}>Modifier le concours</button>}
   </div>
   {editing&&<ContestForm key={editing==='new'?'new':editing.id} contest={editing==='new'?null:editing} catalog={catalog} act={act} reason={reason} onDone={id=>{setEditing(null);if(id)setSelected(id);void load();}}/>}
   {current&&<ContestReview key={current.id} contest={current} client={client} act={act} reason={reason} ask={ask} onChanged={load}/>}
@@ -47,32 +48,56 @@ function ContestForm({contest,catalog,act,reason,onDone}:{contest:AdminContest|n
  const [end,setEnd]=useState(contest?toLocal(contest.ends_at):toLocal(new Date(Date.now()+3*86400e3).toISOString()));
  const [places,setPlaces]=useState<ContestPlace[]>(contest?.rewards.places??DEFAULT_REWARDS.places);
  const [others,setOthers]=useState(contest?.rewards.others??DEFAULT_REWARDS.others);
+ const [rules,setRules]=useState(contest?.rules??'');
  const num=(v:string)=>Math.max(0,Number(v.replace(/\D/g,''))||0);
  const setPlace=(i:number,k:keyof ContestPlace,v:string)=>setPlaces(p=>p.map((x,j)=>j===i?{...x,[k]:num(v)}:x));
- const bad=!title.trim()||!edition||!start||!end||new Date(end)<=new Date(start)||places.some(p=>p.from<1||p.to<p.from);
+ const editionName=editions.find(e=>e.id===edition)?.name??'';
+ const badDates=!!start&&!!end&&new Date(end)<=new Date(start);
+ const bad=!title.trim()||!edition||!start||!end||badDates||places.some(p=>p.from<1||p.to<p.from)||rules.length>8000;
  async function save(){
   const r=await reason(`${contest?'Modifier':'Créer'} « ${title} » : du ${when(new Date(start).toISOString())} au ${when(new Date(end).toISOString())}.`);
   if(r===null)return;
   let id:string|undefined;
-  if(await act(contest?'Concours mis à jour.':'Concours créé.',async c=>{id=await callRpc<string>(c,'admin_save_contest',{p_id:contest?.id??null,p_title:title,p_edition_id:edition,p_starts_at:new Date(start).toISOString(),p_ends_at:new Date(end).toISOString(),p_rewards:{places,others},p_reason:r});}))onDone(id);
+  if(await act(contest?'Concours mis à jour.':'Concours créé.',async c=>{id=await callRpc<string>(c,'admin_save_contest',{p_id:contest?.id??null,p_title:title,p_edition_id:edition,p_starts_at:new Date(start).toISOString(),p_ends_at:new Date(end).toISOString(),p_rewards:{places,others},p_reason:r,p_rules:rules});}))onDone(id);
  }
- return <section className="panel admin-create">
-  <span className="eyebrow">{contest?'Modifier le concours':'Nouveau concours'}</span>
-  <label className="auth-field"><span>Titre</span><input value={title} onChange={e=>setTitle(e.target.value)}/></label>
-  <label className="auth-field"><span>Édition</span><select value={edition} onChange={e=>setEdition(e.target.value)}>{editions.map(e=><option key={e.id} value={e.id}>{e.name} ({e.prefix})</option>)}</select></label>
-  <div className="admin-row"><label className="auth-field"><span>Début</span><input type="datetime-local" value={start} onChange={e=>setStart(e.target.value)}/></label><label className="auth-field"><span>Fin</span><input type="datetime-local" value={end} onChange={e=>setEnd(e.target.value)}/></label></div>
-  <span className="eyebrow">Barème par place</span>
-  {places.map((p,i)=><div key={i} className="admin-row contest-place">
-   <label className="auth-field"><span>De</span><input inputMode="numeric" value={p.from} onChange={e=>setPlace(i,'from',e.target.value)}/></label>
-   <label className="auth-field"><span>À</span><input inputMode="numeric" value={p.to} onChange={e=>setPlace(i,'to',e.target.value)}/></label>
-   <label className="auth-field"><span>Deniers</span><input inputMode="numeric" value={p.deniers} onChange={e=>setPlace(i,'deniers',e.target.value)}/></label>
-   <label className="auth-field"><span>Boosters</span><input inputMode="numeric" value={p.boosters} onChange={e=>setPlace(i,'boosters',e.target.value)}/></label>
-   <button className="icon-button" aria-label="Retirer cette ligne" onClick={()=>setPlaces(x=>x.filter((_,j)=>j!==i))}><Trash2 size={14}/></button></div>)}
-  <button className="text-link" onClick={()=>{const last=places[places.length-1];setPlaces(x=>[...x,{from:(last?.to??0)+1,to:(last?.to??0)+1,deniers:100,boosters:0}]);}}><Plus size={13}/> Ajouter une ligne</button>
-  <div className="admin-row"><span className="admin-hint">Au-delà, avec au moins 1 point :</span>
-   <label className="auth-field"><span>Deniers</span><input inputMode="numeric" value={others.deniers} onChange={e=>setOthers(o=>({...o,deniers:num(e.target.value)}))}/></label>
-   <label className="auth-field"><span>Boosters</span><input inputMode="numeric" value={others.boosters} onChange={e=>setOthers(o=>({...o,boosters:num(e.target.value)}))}/></label></div>
-  <p className="admin-hint">Le titre « Illustrateur de génie » est donné aux 3 premières places à la distribution.</p>
+ return <section className="panel contest-form">
+  <header className="contest-form-head"><span className="eyebrow">{contest?'Modifier le concours':'Nouveau concours'}</span><button className="icon-button" aria-label="Fermer" onClick={()=>onDone()}><X size={16}/></button></header>
+  <fieldset className="contest-fieldset">
+   <legend>Informations</legend>
+   <div className="contest-info-grid">
+    <label className="auth-field contest-wide"><span>Titre</span><input value={title} onChange={e=>setTitle(e.target.value)}/></label>
+    <label className="auth-field contest-wide"><span>Édition</span><select value={edition} onChange={e=>setEdition(e.target.value)}>{editions.map(e=><option key={e.id} value={e.id}>{e.name} ({e.prefix})</option>)}</select></label>
+    <label className="auth-field"><span>Début</span><input type="datetime-local" value={start} onChange={e=>setStart(e.target.value)}/></label>
+    <label className="auth-field"><span>Fin</span><input type="datetime-local" value={end} onChange={e=>setEnd(e.target.value)}/></label>
+   </div>
+   {badDates&&<p className="contest-error">La fin doit venir après le début.</p>}
+  </fieldset>
+  <fieldset className="contest-fieldset">
+   <legend>Barème par place</legend>
+   <div className="contest-rewards">
+    <div className="contest-rewards-row head"><span>Places</span><span>Deniers</span><span>Boosters</span><span/></div>
+    {places.map((p,i)=><div key={i} className="contest-rewards-row">
+     <span className="contest-range"><input aria-label="De la place" inputMode="numeric" value={p.from} onChange={e=>setPlace(i,'from',e.target.value)}/><i>à</i><input aria-label="À la place" inputMode="numeric" value={p.to} onChange={e=>setPlace(i,'to',e.target.value)}/></span>
+     <input aria-label="Deniers" inputMode="numeric" value={p.deniers} onChange={e=>setPlace(i,'deniers',e.target.value)}/>
+     <input aria-label="Boosters" inputMode="numeric" value={p.boosters} onChange={e=>setPlace(i,'boosters',e.target.value)}/>
+     <button className="icon-button" aria-label="Retirer cette ligne" onClick={()=>setPlaces(x=>x.filter((_,j)=>j!==i))}><Trash2 size={14}/></button>
+    </div>)}
+    <div className="contest-rewards-row others">
+     <span className="contest-range-label">Au-delà, avec au moins 1 point</span>
+     <input aria-label="Deniers au-delà" inputMode="numeric" value={others.deniers} onChange={e=>setOthers(o=>({...o,deniers:num(e.target.value)}))}/>
+     <input aria-label="Boosters au-delà" inputMode="numeric" value={others.boosters} onChange={e=>setOthers(o=>({...o,boosters:num(e.target.value)}))}/>
+     <span/>
+    </div>
+   </div>
+   <button className="text-link" onClick={()=>{const last=places[places.length-1];setPlaces(x=>[...x,{from:(last?.to??0)+1,to:(last?.to??0)+1,deniers:100,boosters:0}]);}}><Plus size={13}/> Ajouter une ligne</button>
+   <p className="admin-hint">Le titre « Illustrateur de génie » est donné aux 3 premières places à la distribution.</p>
+  </fieldset>
+  <fieldset className="contest-fieldset">
+   <legend>Règles</legend>
+   <p className="admin-hint">Affichées dans l’onglet Règles du concours, entre les dates et les récompenses (calculées à part). Une ligne qui commence par « - » devient une règle, et « Titre. » en tête est mis en valeur. Vide : règles par défaut du site.</p>
+   <textarea className="contest-rules-input" rows={10} value={rules} maxLength={8000} placeholder={'- Thème. Les vampires au clair de lune.\n- Format. Dessin vertical, sans texte.'} onChange={e=>setRules(e.target.value)}/>
+   <div className="contest-rules-tools"><button className="text-link" onClick={()=>setRules(defaultContestRulesText(editionName))}><ScrollText size={13}/> Partir des règles par défaut</button>{rules&&<button className="text-link" onClick={()=>setRules('')}>Vider</button>}<small>{rules.length.toLocaleString('fr-FR')} / 8 000</small></div>
+  </fieldset>
   <div className="admin-actions"><button className="primary" disabled={bad} onClick={()=>void save()}><Save size={15}/> Enregistrer</button><button className="text-link" onClick={()=>onDone()}>Annuler</button></div>
  </section>;
 }
@@ -121,7 +146,7 @@ function ContestReview({contest,client,act,reason,ask,onChanged}:{contest:AdminC
   await done(await act('Récompenses distribuées.',c=>callRpc(c,'admin_reward_contest',{p_contest_id:contest.id,p_reason:r})));
  }
  return <>
-  <section className="panel admin-edition">
+  <section className="panel admin-edition contest-summary">
    <div className="section-header"><div><span className="eyebrow">{contest.open?'Ouvert':closed?(contest.rewarded_at?'Terminé · récompenses distribuées':'Terminé · à valider'):'À venir'} · {when(contest.starts_at)} → {when(contest.ends_at)}</span><h2>{contest.title}</h2></div></div>
    <p className="admin-hint">{contest.entries} dessin{contest.entries>1?'s':''} · {contest.reports} signalement{contest.reports>1?'s':''} en attente.{closed?' Retenez les dessins (principale ou alternative), cochez les vrais dessins, puis distribuez.':' La validation s’ouvre après la clôture ; vous pouvez déjà masquer un dessin.'}</p>
    <div className="stats-filter" role="radiogroup" aria-label="Dessins affichés">{([['all','Tous'],['reported','Signalés'],['leading','En tête'],['selected','Retenus'],['hidden','Masqués']] as const).map(([v,l])=><button key={v} role="radio" aria-checked={filter===v} className={filter===v?'on':''} onClick={()=>setFilter(v)}>{l}</button>)}</div>

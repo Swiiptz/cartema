@@ -9,6 +9,7 @@ import {Countdown,Sheet,Skeleton} from '@/components/ui';
 import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,socialToCard,type Contest,type ContestCard,type ContestEntry,type ContestRank} from '@/lib/game';
 import {prepareContestImage} from '@/lib/admin';
+import {defaultContestRules,parseContestRules,type RuleItem} from '@/lib/contest';
 import {contestImageUrl} from '@/lib/paths';
 
 type Tab='cards'|'ranking'|'rules';
@@ -158,22 +159,20 @@ function CardEntries({card,contest,client,canSubmit,ask,onChanged,onError}:{card
  </div>;
 }
 
-/** Règles du concours, avec ses dates et son barème réels. */
+/** Règles du concours : dates et barème réels, puis les règles écrites par l'admin ou, à défaut, celles du site. */
 function Rules({contest}:{contest:Contest}){
  const places=contest.rewards.places;
+ const rule=(r:RuleItem,k:number)=><li key={k}>{r.title&&<strong>{r.title}</strong>} {r.text}</li>;
+ const defaults=defaultContestRules(contest.edition);
  return <section className="social-section contest-rules">
   <h2>Règles du concours</h2>
   <ol>
    <li><strong>Dates.</strong> Du {dateFr(contest.starts_at)} au {dateFr(contest.ends_at)}. Après la fin, plus de dessins ni de votes.</li>
-   <li><strong>Les cartes.</strong> Toutes les cartes de l’édition {contest.edition}, sauf les Mythiques. Une carte que vous n’avez pas découverte apparaît neutre (nom et clan seulement) : vous pouvez quand même la dessiner.</li>
-   <li><strong>Vos dessins.</strong> Un dessin par carte et par joueur, fait par vous. Vous pouvez le remplacer tant que le concours est ouvert, mais ses votes repartent alors à zéro. Pseudonyme obligatoire.</li>
-   <li><strong>Les votes.</strong> Un vote par carte : choisissez votre dessin préféré, changez d’avis quand vous voulez. On ne vote pas pour son propre dessin.</li>
-   <li><strong>Les points.</strong> Pour chaque carte, l’auteur du dessin le plus voté gagne 1 point ; à égalité, celui qui a atteint ce nombre de votes en premier le garde. Si un autre dessin passe devant, le point change de main.</li>
-   <li><strong>Après la clôture.</strong> L’équipe choisit les dessins retenus (illustration officielle ou version alternative) : +1 point par dessin retenu, et +1 point de plus pour un vrai dessin soigné. Les votes guident ce choix sans le décider.</li>
-   <li><strong>Dessin retenu.</strong> Son auteur reçoit la carte avec son illustration : en Sanglante jusqu’aux Très rares, en Dorée pour une Épique, en Standard pour une Légendaire.</li>
+   {contest.rules
+    ?parseContestRules(contest.rules).map((x,k)=>x.kind==='rule'?rule(x.item,k):<li key={k} className="plain">{x.text}</li>)
+    :defaults.before.map(rule)}
    <li><strong>Récompenses.</strong> {places.map(p=>`${p.from===p.to?`${p.from}${p.from===1?'er':'e'}`:`${p.from}e à ${p.to}e`} : ${fr(p.deniers)} Deniers et ${p.boosters} booster${p.boosters>1?'s':''}`).join(' · ')} · au-delà, avec au moins 1 point : {fr(contest.rewards.others.deniers)} Deniers et {contest.rewards.others.boosters} booster{contest.rewards.others.boosters>1?'s':''}.</li>
-   <li><strong>Podium.</strong> Les 3 premiers gagnent le titre « Illustrateur de génie ». Le 1er crée une carte de son choix dans l’édition Éternelle (ETER) et en reçoit un exemplaire ; les cartes éternelles ne tombent que dans les God boosters et certains boosters.</li>
-   <li><strong>Respect.</strong> Pas de dessin copié, généré par IA, choquant ou moqueur. Un dessin signalé peut être masqué : il perd alors ses votes. Les illustrations retenues peuvent être utilisées dans le jeu, avec votre nom en crédit.</li>
+   {!contest.rules&&defaults.after.map((r,k)=>rule(r,100+k))}
   </ol>
  </section>;
 }

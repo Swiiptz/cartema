@@ -13,7 +13,7 @@ Jeu de cartes tarot gothiques **en production**, avec de vrais joueurs. Site sta
 - `npm test` : tests unitaires et tests SQL. PGlite rejoue toutes les migrations depuis zéro.
 - `npx tsc --noEmit` puis `npm run build`. Si le build échoue sur `/_not-found`, arrêter le serveur de développement et supprimer `.next`.
 - Aperçu local : `.claude/launch.json` (`npm run dev -- -p 3101`). Sans `.env.local`, le site tourne en mode démo, sans compte.
-- Migrations : `npx supabase db push --dry-run`, vérifier la liste, puis `npx supabase db push --yes`. La CLI est déjà reliée au projet. `npx supabase db query --linked "select …"` permet de lire la base de production (lecture seulement).
+- Migrations : `npx supabase db push --dry-run`, vérifier la liste, puis `npx supabase db push --yes`. La CLI est déjà reliée au projet. `npx supabase db query --linked "select …"` permet de lire la base de production (lecture seulement). **Chaque appel coûte ~10 s de calcul à la base** (introspection des extensions, rôle de connexion) : jamais en rafale, regrouper les questions dans une seule requête. Une dizaine d'appels de suite a provoqué des timeouts le 22/10 vers 17 h 56.
 
 ## Règles base de données
 - Ne **jamais** modifier une migration déjà appliquée. Créer un nouveau fichier `supabase/migrations/AAAAMMJJHHMMSS_nom.sql` et y recopier la fonction entière (`create or replace`).

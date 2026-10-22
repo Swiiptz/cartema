@@ -189,7 +189,8 @@ const messages:Record<string,string>={
  request_pending:'Demande déjà envoyée.',
  not_friends:'Réservé à vos amis.',
  gift_unavailable:'Ce cadeau n’est plus disponible.',
- card_cooldown:'Carte reçue récemment : elle ne peut pas être échangée ni offerte avant 72 h.',
+ rules_too_long:'Les règles sont trop longues (8 000 caractères au plus).',
+ card_cooldown:'Carte reçue récemment : elle ne peut pas être échangée, offerte ni vendue avant 72 h.',
  card_returning:'Cette carte a appartenu à ce joueur il y a moins de 30 jours : elle ne peut pas encore lui revenir.',
  trade_daily_limit:'Limite d’échanges du jour atteinte (pour vous ou votre ami). Elle se renouvelle à 6 h.',
  gift_daily_limit:'Vous avez envoyé tous vos cadeaux du jour. La limite se renouvelle à 6 h.',
@@ -241,6 +242,6 @@ export function revealOrder<C extends {rarity:Rarity;finish?:string;unique?:bool
 export type ContestCard={character_id:string;code:string;number:number;name:string;clan:string|null;rarity:Rarity;discovered:boolean;card:SocialCard|null;entries:number;leader:string|null;mine:boolean;voted:boolean};
 export type ContestPlace={from:number;to:number;deniers:number;boosters:number};
 export type ContestRewards={places:ContestPlace[];others:{deniers:number;boosters:number}};
-export type Contest={id:string;title:string;starts_at:string;ends_at:string;open:boolean;rewarded:boolean;edition:string;rewards:ContestRewards;my_entries:number;my_points:number;cards:ContestCard[]};
+export type Contest={id:string;title:string;starts_at:string;ends_at:string;open:boolean;rewarded:boolean;edition:string;rewards:ContestRewards;rules?:string|null;my_entries:number;my_points:number;cards:ContestCard[]};
 export type ContestEntry={entry_id:string;image_path:string;author:string;votes:number;leading:boolean;mine:boolean;my_vote:boolean;selected:'main'|'alternate'|null;created_at:string};
 export type ContestRank={position:number;handle:string;leads:number;selected:number;real:number;points:number;me:boolean};

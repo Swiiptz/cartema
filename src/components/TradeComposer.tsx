@@ -51,7 +51,7 @@ export function TradeComposer({client,myId,draft,onClose,onDone}:{client:Supabas
  }
  return <Sheet open={!!draft} onClose={onClose} title={draft?.parentId?'Contre-proposition':'Proposer un échange'}>
   {draft&&<div className="trade-composer">
-   <p className="muted sheet-text">Avec <strong>{draft.friendHandle}</strong> · 10 cartes maximum de chaque côté. Vos cartes et vos Deniers sont réservés jusqu’à la réponse (48 h).</p>
+   <p className="muted sheet-text">Avec <strong>{draft.friendHandle}</strong> · 10 cartes maximum de chaque côté. Vos cartes et vos Deniers sont réservés jusqu’à la réponse (48 h). Les cartes reçues il y a moins de 72 h n’apparaissent pas.</p>
    <Picker title="Vous donnez" cards={mine} selected={give} onToggle={id=>setGive(t=>toggle(t,id))} wishes={theirWishes} wishLabel={`Recherchée par ${draft.friendHandle}`} wishHint={n=>`${draft.friendHandle} recherche ${n} de vos cartes`}/>
    <label className="deniers-field"><Coins size={14}/> Deniers donnés<input inputMode="numeric" value={giveDeniers} onChange={e=>setGiveDeniers(e.target.value.replace(/[^\d]/g,''))}/></label>
    <div className="trade-swap" aria-hidden="true"><ArrowLeftRight size={18}/></div>

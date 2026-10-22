@@ -29,6 +29,21 @@ describe('concours d’illustrations',()=>{
     expect(commun).toMatchObject({discovered:false,card:null});expect(commun.name).toBeTruthy();
     await expectError(rpc(db,u,'get_contest_card',[await card('Mythique')]),/not_found/);
   });
+  it('règles écrites par l’admin : gardées si absentes, effacées par un texte vide',async()=>{
+    const u=await player('lecteur_regles');
+    const c0=await rpc(db,u,'get_contest');
+    expect(c0.rules).toBeNull(); // règles par défaut
+    const save=(rules:string|null)=>rpc(db,admin,'admin_save_contest',[contest,c0.title,cam,c0.starts_at,c0.ends_at,null,'Règles',rules]);
+    await save('  Thème : la nuit.\n- Noir et blanc seulement.  ');
+    expect((await rpc(db,u,'get_contest')).rules).toBe('Thème : la nuit.\n- Noir et blanc seulement.');
+    expect((await rpc<any[]>(db,admin,'admin_contests')).find(x=>x.id===contest).rules).toBe('Thème : la nuit.\n- Noir et blanc seulement.');
+    await save(null); // ancien site : sans règles, rien ne change
+    expect((await rpc(db,u,'get_contest')).rules).toBe('Thème : la nuit.\n- Noir et blanc seulement.');
+    await expectError(save('x'.repeat(8001)),/rules_too_long/);
+    await expectError(rpc(db,u,'admin_save_contest',[contest,c0.title,cam,c0.starts_at,c0.ends_at,null,'Triche','Rien']),/forbidden|admin/);
+    await save('   ');
+    expect((await rpc(db,u,'get_contest')).rules).toBeNull();
+  });
   it('un dessin et un vote par carte, point à l’auteur en tête, premier arrivé à égalité',async()=>{
     const a=await player('peintre_a'),b=await player('peintre_b'),v1=await player('votant_1'),v2=await player('votant_2'),v3=await player('votant_3');
     const c=await card('Commun');
