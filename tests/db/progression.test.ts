@@ -302,6 +302,20 @@ describe('missions longues et bonus',()=>{
   });
 });
 
+describe('Narcisse',()=>{
+  it('se débloque avec 200 exemplaires d’une même carte et donne le titre Narcissique (23/10)',async()=>{
+    const u=await player('miroir');
+    const add=(n:number)=>db.query(`insert into public.inventory_items (owner_id,character_id,finish) select $1,c.id,'Standard' from public.characters c, generate_series(1,$3) where c.edition_id=$2 and c.number=1`,[u,edition,n]);
+    await add(199);
+    await db.query(`insert into public.inventory_items (owner_id,character_id,finish) select $1,id,'Standard' from public.characters where edition_id=$2 and number=2`,[u,edition]);
+    let a=(await rpc<any[]>(db,u,'get_achievements')).find(x=>x.code==='narcisse');
+    expect(a).toMatchObject({label:'Narcisse',title:'Narcissique',target:200,progress:199,unlocked_at:null});
+    await add(1);
+    a=(await rpc<any[]>(db,u,'get_achievements')).find(x=>x.code==='narcisse');
+    expect(a.unlocked_at).not.toBeNull();
+  });
+});
+
 describe('succès secrets de la chronique',()=>{
   it('récompense les comptes du premier mois seulement',async()=>{
     const early=await player('pionnier');

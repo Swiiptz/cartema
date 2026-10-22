@@ -38,6 +38,21 @@ describe('vitrine',()=>{
     await rpc(db,a.id,'recycle_cards',[[id],randomUUID(),true]);
     expect((await rpc(db,a.id,'get_profile',['recycleur_vitrine'])).showcase).toEqual([]);
   });
+  it('propose chaque version d’illustration et accepte plusieurs exemplaires d’une même carte (23/10)',async()=>{
+    const a=await player('vitrine_versions');
+    const admin=await createUser(db);await db.query(`update public.profiles set role='admin' where id=$1`,[admin]);
+    const {rows:[c]}=await db.query<{id:string}>(`select id from public.characters where edition_id=$1 and number=8`,[edition]);
+    const art=await rpc<string>(db,admin,'admin_add_card_art',[c.id,'/illustrations/CAM/v2.webp',{},'Version nocturne','Test']);
+    const std=[await give(a.id,8),await give(a.id,8),await give(a.id,8)];
+    const alt=await give(a.id,8);await db.query('update public.inventory_items set art_id=$2 where id=$1',[alt,art]);
+    const list=(await rpc<any[]>(db,a.id,'get_showcase_candidates')).filter(x=>x.number===8);
+    expect(list).toHaveLength(2);
+    expect(list.find(x=>!x.variant)).toMatchObject({copies:3});
+    expect(list.find(x=>!x.variant).instances).toHaveLength(3);
+    expect(list.find(x=>x.variant)).toMatchObject({variant:'Version nocturne',copies:1,instances:[alt]});
+    const p=await rpc(db,a.id,'set_showcase',[[std[0],alt,std[1]]]);
+    expect(p.showcase.map((x:any)=>x.variant??null)).toEqual([null,'Version nocturne',null]);
+  });
   it('propose un exemplaire par personnage et finition',async()=>{
     const a=await player('candidat');
     await give(a.id,2);await give(a.id,2);await give(a.id,2,'Sanglante');

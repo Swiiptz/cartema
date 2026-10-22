@@ -65,6 +65,21 @@ describe('édition annoncée (Soon)',()=>{
 });
 
 describe('God booster',()=>{
+  it('est garanti tous les 2 000 boosters ouverts dans le jeu (23/10)',async()=>{
+    await rpc(db,admin,'admin_save_god_settings',[0,0,20,2,'Test : seulement la garantie']);
+    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({guarantee_every:2000});
+    const u=await player();await db.query('update public.booster_balances set purchased_count=3 where owner_id=$1',[u]);
+    await db.query(`select setval('private.pack_opening_seq',3998)`); // 3 999e ouverture, puis la 4 000e
+    expect((await open(u,cam)).god).toBe(false);
+    const g=await open(u,cam);
+    expect(g.god).toBe(true);
+    expect(g.cards.every((c:any)=>c.finish==='Dorée')).toBe(true);
+    expect((await open(u,cam)).god).toBe(false);
+    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({total_opened:4001,next_guaranteed:1999});
+    await rpc(db,admin,'admin_save_god_settings',[0,0,20,2,'Test : sans garantie',0]);
+    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({guarantee_every:0,next_guaranteed:null});
+  });
+
   it('donne des cartes dorées, plus de Rares et le signale',async()=>{
     await rpc(db,admin,'admin_save_god_settings',[1,0,20,2,'Test : toujours']);
     const u=await player();await db.query('update public.booster_balances set purchased_count=3 where owner_id=$1',[u]);
@@ -78,7 +93,7 @@ describe('God booster',()=>{
     await rpc(db,admin,'admin_save_god_settings',[1,100,20,2,'Test : Sanglante']);
     await db.query('update public.booster_balances set purchased_count=1 where owner_id=$1',[u]);
     expect((await open(u,cam)).cards.every((c:any)=>c.finish==='Sanglante')).toBe(true);
-    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({odds:1,blood_pct:100,opened:4});
+    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({odds:1,blood_pct:100,opened:5});
     await rpc(db,admin,'admin_save_god_settings',[0,10,20,2,'Test : jamais']);
     await db.query('update public.booster_balances set purchased_count=1 where owner_id=$1',[u]);
     expect((await open(u,cam)).god).toBe(false);

@@ -137,6 +137,10 @@ Mise à jour : 22 octobre 2026 (soir). Commencer par l'état ci-dessous et par `
   - **Retirer une version partout** (`admin_retire_card_art`, bouton dans Versions d'illustration) : plus de tirage et les exemplaires possédés reprennent l'officielle. Cas Rumpelstilchzen (CAM-050) : l'officielle retirée était restée « Illustration d'origine », active et sur 41 exemplaires.
   - **Fiche d'une carte sur téléphone étroit** (~360 px) : colonnes autorisées à rétrécir, actions qui passent à la ligne ; plus rien ne dépasse à droite.
   - **God booster** : l'or recouvre le sachet du bas vers le haut (calque `god-layer`, plus de saut de skin) dès le retour du premier paquet God ; grand spectacle de 3,2 s (pilier de lumière, rayons, ondes, éclair, étincelles, pluie d'or, couronne et titre) ; petite bannière seulement à la révélation. Démo en local seulement : `/boosters/?god` (éliminé du build de production).
+- **23/10** (migration `20261023110000_showcase_narcisse_god`, tests dans `profile`, `progression`, `edition-boosters`) :
+  - **Vitrine par version** : `get_showcase_candidates` renvoie une entrée par carte, finition et version d'illustration, avec `copies` et jusqu'à 5 `instances`. Dans « Ma vitrine », chaque version alternative se choisit à part, et un toucher de plus expose un exemplaire de plus (badge 2/3) ; `set_showcase` acceptait déjà des exemplaires distincts.
+  - **Succès « Narcisse »** (métrique `same_card_copies`) : posséder 200 exemplaires d'une même carte. Titre « Narcissique », 2 500 deniers et 6 boosters.
+  - **God booster garanti** : chaque 2 000e booster ouvert dans le jeu (séquence `private.pack_opening_seq`, partie du nombre d'ouvertures existantes) est un God booster, en plus de la chance habituelle. Réglable dans Admin › Économie (`guarantee_every`, 0 = sans garantie), avec le compteur jusqu'au prochain.
   - Pistes suivantes proposées : assouplir les protections anti-prêt (délai de 72 h, 30 jours sans retour), devenues moins utiles avec cette règle ; suivi des erreurs côté joueurs ; classement de saison ; série de connexions.
 
 ## 1. Reprendre ici

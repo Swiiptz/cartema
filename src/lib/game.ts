@@ -36,7 +36,9 @@ export type AlbumCard=DemoCard&{variants?:ArtVariant[];characterId?:string;editi
 export type InventoryItem={cooldown_until?:string|null;variant?:string|null;variant_kind?:string|null;instance_id:string;finish:Finish;locked:boolean;reserved:boolean;reserved_kind?:string|null;listing_id?:string|null;listing_price?:number|null;listing_kind?:'fixed'|'auction'|null;acquired_at:string;unique:boolean;value:number};
 export type ListingCard={variant?:string|null;art_credit?:string|null;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
 export type Listing={buyer_tax?:number;min_next_tax?:number;listing_id:string;price:number;net:number;status:'active'|'sold'|'cancelled'|'expired';kind:'fixed'|'auction';ends_at:string|null;current_bid:number|null;bid_count:number;min_next_bid:number;leading:boolean;won:boolean;created_at:string;closed_at:string|null;mine:boolean;seller:string|null;buyer:string|null;finish:Finish;discovered:boolean;card:ListingCard};
-export type SocialCard={instance_id:string|null;finish:Finish;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;art_credit?:string|null};
+export type SocialCard={instance_id:string|null;finish:Finish;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;art_credit?:string|null;variant?:string|null;
+ /** Choix de la vitrine : exemplaires possédés de cette version (au plus 5 identifiants). */
+ copies?:number;instances?:string[]};
 export type Friend={profile_id:string;handle:string;since:string;discovered:number};
 export type FriendRequest={request_id:string;profile_id:string;handle:string;created_at:string};
 export type Friends={friends:Friend[];incoming:FriendRequest[];outgoing:FriendRequest[]};
