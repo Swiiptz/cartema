@@ -7,7 +7,8 @@ import {useAuth} from '@/components/AuthProvider';
 import {useAsk} from '@/components/AskDialog';
 import {CountUp,Countdown,Sheet,Skeleton} from '@/components/ui';
 import {ALL_RARITIES,type Finish,type Rarity} from '@/lib/draw';
-import {callRpc,listingToCard,marketCard,type Listing,type MarketBoard,type MarketGroup,type MarketOffer,type TradeStatus} from '@/lib/game';
+import {PriceHints} from '@/components/PriceHints';
+import {callRpc,listingToCard,marketCard,type CardPrices,type Listing,type MarketBoard,type MarketGroup,type MarketOffer,type TradeStatus} from '@/lib/game';
 
 const PAGE=48;
 /** Maximum renvoyé par get_market_board en un appel. */
@@ -33,6 +34,12 @@ export default function Market(){
  const [undiscovered,setUndiscovered]=useState(false);
  const [more,setMore]=useState(false);
  const [offersOf,setOffersOf]=useState<MarketGroup|null>(null);
+ // Prix de référence de la carte dont on regarde les offres (clé : personnage:finition:version).
+ const [offerPrices,setOfferPrices]=useState<CardPrices|null>(null);
+ const offersKey=offersOf?.key??null;
+ useEffect(()=>{setOfferPrices(null);if(!offersKey||!client)return;let alive=true;const [character,finish,art]=offersKey.split(':');
+  void callRpc<CardPrices>(client,'get_card_prices',{p_character_id:character,p_finish:finish,p_art_id:art||null}).then(p=>{if(alive)setOfferPrices(p);}).catch(()=>{});
+  return()=>{alive=false;};},[offersKey,client]);
  const [mine,setMine]=useState<Listing[]|null>(null);
  const [bids,setBids]=useState<Listing[]|null>(null);
  const [status,setStatus]=useState<TradeStatus|null>(null);
@@ -166,7 +173,8 @@ export default function Market(){
    <Sheet open={!!offersOf} onClose={()=>setOffersOf(null)} title={offersOf?`${offersOf.card.name}${offersOf.finish!=='Standard'?` · ${offersOf.finish}`:''}${offersOf.card.variant?` · ${offersOf.card.variant}`:''}`:''}>
     {offersOf&&<div className="offers-sheet"><div className="offers-card"><TarotCard card={marketCard(offersOf.card,offersOf.finish)}/></div>
      <ul className="offers-list">{offersOf.listings.map(o=><Offer key={o.listing_id} o={o} disabled={!!busy||!status?.allowed} busy={busy===o.listing_id} balance={player?.balance??0} onBuy={()=>void buy({...o,name:offersOf.card.name,finish:offersOf.finish})}/>)}</ul>
-     {offersOf.offers>offersOf.listings.length&&<p className="muted">Les {offersOf.listings.length} meilleurs prix sur {offersOf.offers} offres.</p>}</div>}
+     {offersOf.offers>offersOf.listings.length&&<p className="muted">Les {offersOf.listings.length} meilleurs prix sur {offersOf.offers} offres.</p>}
+     <PriceHints prices={offerPrices}/></div>}
    </Sheet>
   </>:<>
    <section className="market-section"><h2>En vente</h2>{!mine?<Skeleton style={{height:120}}/>:activeMine.length===0?<p className="muted">Aucune carte en vente. Ouvrez une carte de votre <Link className="text-link" href="/collection/">collection</Link> puis choisissez « Vendre ».</p>

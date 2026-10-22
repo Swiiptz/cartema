@@ -60,6 +60,8 @@ export function marketCard(c:ListingCard,finish:Finish):DemoCard{return {variant
 /** Offre d'une carte regroupée au marché (prix fixe). */
 export type MarketOffer={listing_id:string;price:number;buyer_tax:number;seller:string|null;mine:boolean;created_at:string};
 export type MarketGroup={max_price?:number;best?:MarketOffer|null;key:string;offers:number;min_price:number;discovered:boolean;finish:Finish;card:ListingCard;listings:MarketOffer[]};
+/** Prix de référence d'une carte : 10 dernières ventes sur 90 jours, moyenne, dernière, offre la moins chère d'un autre joueur. */
+export type CardPrices={sales:{price:number;kind:'fixed'|'auction';closed_at:string}[];average:number|null;last:number|null;lowest:number|null};
 export type MarketBoard<T>={items:T[];total:number;clans:{id:string;name:string}[]};
 export type RecycleResult={operation_id?:string;total:number;count:number;balance:number;replayed:boolean};
 export type DuplicatePreview={count:number;total:number;by_rarity:Partial<Record<Rarity,number>>};

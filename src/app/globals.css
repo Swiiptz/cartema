@@ -921,3 +921,19 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 @media(max-width:600px){.handle-banner{flex-wrap:wrap;margin:0 12px 12px}.handle-banner .primary{width:100%}}
 
 .handle-help{margin:0;font:400 13px var(--ui)}.settings-row .handle-help{flex-basis:100%;text-align:right}
+
+/* Échanges guidés : cartes de la liste de souhaits */
+.picker-wish{display:flex;align-items:center;gap:6px;margin:0 0 6px;font:500 12px var(--ui);color:var(--gold2)}.picker-wish svg{color:#e8a3b0}
+.picker-card.wished{opacity:.85}.picker-heart{position:absolute;left:-5px;top:-5px;z-index:2;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#2a1520;border:1px solid #e8a3b0;color:#e8a3b0;box-shadow:0 2px 6px #0008}.picker-heart svg{fill:currentColor}
+
+/* Prix de référence */
+.price-hints{display:flex;align-items:flex-start;gap:6px;margin:0;font:400 12px/1.5 var(--ui);color:var(--muted)}.price-hints svg{flex:none;margin-top:3px;color:var(--gold)}.price-hints strong{color:var(--gold2)}
+.offers-sheet .price-hints{grid-column:1/-1}
+
+/* Échanges : loupe sur les cartes */
+.picker-cell{position:relative}.picker-cell .picker-card{width:100%}
+.picker-zoom-btn{position:absolute;right:-4px;bottom:-4px;z-index:2;display:grid;place-items:center;width:26px;height:26px;padding:0;border-radius:50%;border:1px solid #c9a45c88;background:#1d131bee;color:var(--gold2);cursor:pointer;box-shadow:0 2px 6px #0008}
+.picker-zoom-btn:hover{border-color:var(--gold);background:#2a1b26}
+.picker-zoom{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;background:#0d090fe6;backdrop-filter:blur(4px);animation:rise .25s var(--ease-out) both}
+.picker-zoom-card{width:min(320px,78vw)}.picker-zoom .picker-wish{margin:0}
+.picker-zoom-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}.picker-zoom-actions .primary{width:auto}

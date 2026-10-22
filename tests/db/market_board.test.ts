@@ -77,6 +77,21 @@ describe('marché regroupé',()=>{
     const solo=await character('Commun');await sell(viewer,solo,15);
     expect((await board({rarity:'Commun'})).items.find((x:any)=>x.card.character_id===solo).best).toBeNull();
   });
+  it('donne les prix de référence : dernières ventes, moyenne et offre la moins chère',async()=>{
+    const s=await player('vend_ref');const ch=await character('Légendaire');
+    const prices=(args:unknown[])=>rpc(db,viewer,'get_card_prices',args);
+    expect(await prices([ch,'Standard'])).toMatchObject({sales:[],average:null,last:null,lowest:null});
+    for(const p of [100,200]){const id=await sell(s,ch,p);await rpc(db,viewer,'buy_listing',[id]);}
+    await sell(s,ch,900,'Dorée'); // autre finition : ne compte pas
+    await sell(s,ch,350);
+    const r=await prices([ch,'Standard']);
+    expect(r.sales.map((x:any)=>x.price).sort()).toEqual([100,200]);
+    expect([r.average,r.lowest]).toEqual([150,350]);
+    // Depuis un exemplaire : même carte, même version.
+    const {rows:[i]}=await db.query<{id:string}>(`select id from public.inventory_items where owner_id=$1 and character_id=$2 limit 1`,[viewer,ch]);
+    expect((await prices([ch,'Standard',null,i.id])).average).toBe(150);
+    expect((await prices([ch,'Dorée'])).lowest).toBe(900);
+  });
   it('pagine les entrées',async()=>{
     const all=await board({limit:120});
     const page=await board({limit:2,offset:1});

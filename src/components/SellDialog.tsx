@@ -1,13 +1,15 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {Gavel,Tag,X} from 'lucide-react';
+import type {CardPrices} from '@/lib/game';
+import {PriceHints} from './PriceHints';
 
 export type SellChoice={kind:'fixed'|'auction';price:number;hours:number};
 const DURATIONS=[12,24,48,72];
 const net=(p:number,pct=5)=>p-Math.floor(p*pct/100);
 
 /** Mise en vente : prix fixe ou enchère, avec aperçu du gain net (commission 5 %). */
-export function SellDialog({open,name,finish,suggested,onCancel,onConfirm}:{open:boolean;name:string;finish:string;suggested:number;onCancel:()=>void;onConfirm:(c:SellChoice)=>void}){
+export function SellDialog({open,name,finish,suggested,prices,onCancel,onConfirm}:{open:boolean;name:string;finish:string;suggested:number;prices?:CardPrices|null;onCancel:()=>void;onConfirm:(c:SellChoice)=>void}){
  const ref=useRef<HTMLDialogElement>(null);
  const [kind,setKind]=useState<'fixed'|'auction'>('fixed');
  const [price,setPrice]=useState(String(suggested));
@@ -24,6 +26,7 @@ export function SellDialog({open,name,finish,suggested,onCancel,onConfirm}:{open
     <button type="button" role="tab" aria-selected={kind==='auction'} onClick={()=>setKind('auction')}><Gavel size={14}/> Enchère</button>
    </div>
    <label className="auth-field"><span>{kind==='fixed'?'Prix (Deniers)':'Mise de départ (Deniers)'}</span><input inputMode="numeric" value={price} onChange={e=>setPrice(e.target.value.replace(/[^\d]/g,''))} required/></label>
+   <PriceHints prices={prices??null} onUse={p=>setPrice(String(p))}/>
    {kind==='auction'&&<div className="duration-picker" role="radiogroup" aria-label="Durée">{DURATIONS.map(h=><button type="button" key={h} role="radio" aria-checked={hours===h} className={hours===h?'on':''} onClick={()=>setHours(h)}>{h} h</button>)}</div>}
    <p className="sell-net">{valid?<>{kind==='fixed'?'Vous recevrez':'Vous recevrez au moins'} <strong>{net(value).toLocaleString('fr-FR')} Deniers</strong> <small>(commission 5 %)</small></>:'Indiquez un nombre entier de Deniers.'}</p>
    {kind==='auction'&&<p className="muted sell-rules">Paliers : +10 sous 500, +25 jusqu’à 2 000, +50 au-delà. Une mise dans les 2 dernières minutes prolonge l’enchère. Sans mise, la carte vous revient. Une enchère ayant reçu une mise ne peut plus être retirée.</p>}

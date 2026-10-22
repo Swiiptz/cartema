@@ -1,6 +1,6 @@
 # CARTEMA — État des lieux et passation
 
-Date : 20 octobre 2026 · état constaté dans le code local.
+Mise à jour : 22 octobre 2026. Le §0 est le journal de ce qui a été livré ; les sections suivantes décrivent l'état actuel.
 
 ## 0. Avancement depuis la passation
 
@@ -41,66 +41,81 @@ Date : 20 octobre 2026 · état constaté dans le code local.
 - 21/10/2026 : **cadrage « plein cadre » (full art)** (`…220000_full_art.sql`, `tarot-renderer.js`) : l'illustration couvre toute la carte, bandeau du nom translucide sur un dégradé sombre. Choix à l'ajout d'une version d'illustration (par défaut pour les versions) et modifiable ensuite (`admin_set_card_art_meta`) ; aussi proposé pour l'illustration officielle.
 - 21/10/2026 : **taxes du marché** (`…230000_market_taxes.sql`), réglables dans Admin › Économie : taxe acheteur 5 % (`buyer_tax_pct`, payée en plus du prix ; pour une enchère, mise de côté avec la mise) et taxe de remboursement 5 % de la mise dépassée (`bid_refund_tax_pct`). Arrondi inférieur, Deniers détruits. Les 155 mises placées avant la mise en service gardent les anciennes règles (`bids.taxed = false`). Commission vendeur de 5 % inchangée.
 
+- **Surveillance anti-triche** (admin › Surveillance, migration `20261021240000_admin_anomalies`) : `admin_anomalies(p_days)` lance 12 contrôles. Les 6 contrôles d'intégrité (solde négatif, solde ≠ journal, mise sans fonds bloqués, carte bloquée sans offre, unique en double, boosters ouverts en trop) ne devraient jamais remonter. Les 6 pistes de comportement (duo actif, prix aberrant, comptes neufs qui donnent, faux enchérisseur, gains rapides, rafale) sont à vérifier sur la fiche du joueur avant toute sanction. Un clic sur un joueur ouvre sa fiche.
+- **Aperçu des versions d'illustration** (admin › Personnages › Versions d'illustration) : un clic sur la vignette d'une version l'affiche sur la carte avec son cadrage. Choisir un fichier montre aussitôt l'aperçu avec le cadrage sélectionné, avant tout envoi.
+- **Deniers dans les échanges** (migration `20261021250000_trade_taxes`) : taxe `trade_tax_pct` (5 %) retenue sur les Deniers reçus dans un échange, et plafond `trade_weekly_deniers_cap` (2 000 Deniers reçus par échange sur 7 jours glissants, avant taxe, 0 = sans plafond). Les deux se règlent dans admin › Économie. Le plafond est vérifié à la proposition et à l'acceptation. Les cartes restent libres : les cadeaux et les échanges sans Deniers ne sont pas touchés. Objectif : empêcher les comptes secondaires de vider leurs Deniers vers un compte principal.
+- **Limites quotidiennes** (migration `20261022100000_daily_trade_limits`) : `trade_daily_limit` (5 échanges conclus par joueur et par jour, comptés pour les deux parties) et `gift_daily_limit` (5 cadeaux envoyés et 5 reçus par jour). La journée de jeu va de 6 h à 6 h, heure de Paris, et 0 = sans limite. Réglables dans admin › Économie. Le contrôle se fait par déclencheurs sur `trades` et `gifts`, à la proposition ou à l'envoi, puis à l'acceptation.
+- **Délai après réception** (migration `20261022110000_trade_cooldown`) : une carte reçue par échange ou cadeau ne peut plus être échangée ni offerte pendant `trade_cooldown_hours` (24 h, réglable dans Économie). La vente au marché reste possible. Ça bloque les « prêts » par allers-retours qui gonflaient les découvertes et les succès d'échange (repérés le 22/10 autour de Shaolon). Le contrôle se fait par déclencheurs sur `trade_items` et `gifts` ; la date de réception est `inventory_items.social_received_at`.
+- **Performances** (migration `20261022120000_performance`, aucune règle changée) :
+  - les lectures fréquentes n'écrivent ni ne verrouillent plus rien quand il n'y a rien à faire (récompenses des succès de collection, boosters gratuits, récompense du jour) ;
+  - `get_achievements` calcule la progression en une seule passe (`private.sync_achievement_states`) ;
+  - `get_market` ne clôture plus les enchères échues : il les masque, et la tâche planifiée les clôture chaque minute ;
+  - `pg_stat_statements` a été remis à zéro le 22/10 pour mesurer l'effet en conditions réelles.
+- **Marché amélioré** (migration `20261022130000_market_board`, fonction `get_market_board`) :
+  - **Prix fixe** : les annonces d'une même carte (même personnage, finition et version) sont regroupées en une tuile, avec le prix le plus bas, le nombre d'offres et la liste des 12 meilleurs prix.
+  - **Enchères** : onglet séparé, trié par défaut sur la fin la plus proche.
+  - **Filtres** : rareté, finition, clan, recherche, « non découvertes ». Tris au choix, et bouton « Voir plus » pour la suite.
+  - **Correctif** : les versions alternatives s'affichent enfin avec leur illustration au marché (`listing_json` passe par `card_json`).
+  - `get_market` reste en place pour les pages déjà ouvertes.
+- **Pseudonyme obligatoire pour les transactions** (migration `20261022140000_handle_required`) : `require_trader` refuse sans pseudonyme (`handle_required`). Un bandeau global (`HandleBanner`) invite à le choisir. Au marché, un vendeur sans pseudonyme s'affiche « joueur sans pseudo ». Au 22/10, 4 comptes n'en avaient pas, dont un avec 23 annonces ; ses annonces restent en ligne.
+- **Marché regroupé, correctifs** (migration `20261022150000_market_board_prices`) : chaque carte à prix fixe renvoie `max_price` (prix le plus haut de toutes ses offres, la liste n'en montre que 12) et `best` (offre la moins chère d'un autre joueur, même au-delà des 12). La page relit les entrées déjà déroulées depuis le début à chaque rechargement : plus de retour à 48 cartes après un achat, ni de doublon ou de carte sautée avec « Voir plus ».
+- **Lignes de versions alternatives** (migration `20261022160000_art_lines`, table `card_art_lines`) : une ligne regroupe les versions alternatives qui portent le même nom. Dans Admin → Économie → « Lignes de versions », chaque ligne peut être désactivée ou recevoir sa propre chance « 1 sur N » (vide = `alternate_art_odds`, 0 = jamais). Au tirage, `private.pick_alternate_art` tente chaque ligne du personnage avec sa chance, dans un ordre aléatoire. Une version seule se désactive toujours depuis la fiche du personnage (« Versions d'illustration »).
+- **Fin des prêts de cartes** (migration `20261022170000_no_card_return`) : un exemplaire ne peut pas revenir, pendant 30 jours, à un joueur qui l'a cédé par échange, cadeau ou vente au marché (`card_returning`). Le contrôle se fait par déclencheurs sur `trade_items`, `gifts`, `bids` et à l'achat à prix fixe (`listings`) ; il casse aussi les boucles A → B → C → A. `get_friend_cards` masque les cartes d'un ami qui reviendraient trop tôt. Le délai après réception passe à 72 h (réglages économiques, toujours modifiable). Raison : les succès de collection comptent les cartes découvertes une fois, et le délai de 24 h ne faisait que retarder le retour d'une carte prêtée.
+- **Rangement des succès personnalisés** (migration `20261022180000_achievement_edition`) : dans Admin → Succès, le champ « Rangement » place un succès personnalisé dans les succès généraux ou dans le set d'une édition (`admin_save_achievement` reçoit `p_edition_id`). Les succès automatiques (paliers, collection) gardent leur place.
+- **Échanges guidés** (sans migration) : dans la fenêtre d'échange, les cartes de l'ami qui sont dans ma liste de souhaits, et les miennes que l'ami recherche (si sa liste est visible), passent en tête avec un cœur.
+- **Loupe dans les échanges** : chaque carte de la fenêtre d'échange a une loupe qui l'affiche en grand, avec « Choisir cette carte » ou « Retirer de l'échange » (Échap ferme la loupe sans fermer l'échange).
+- **Prix de référence** (migration `20261022190000_card_prices`, `get_card_prices`) : 10 dernières ventes sur 90 jours de la même carte (personnage, finition, version), moyenne, dernière, et offre la moins chère d'un autre joueur. Affiché à la mise en vente (« Utiliser la moyenne ») et dans la liste des offres du marché.
+- **Tests à chaque push** (`.github/workflows/tests.yml`) : tests, types et build sur `main` et les pull requests.
+- **Passation réécrite** (22/10) : les §1 à §3, §5, §6 et §8 décrivaient encore la démo d'avant Supabase.
+
 ## 1. Reprendre ici
 
-Le projet est une **démo visuelle avancée, pas encore un jeu connecté**. Le travail récent porte sur les cartes, les finitions, le booster et la lisibilité mobile. Les règles métier complètes restent dans `CAHIER_DES_CHARGES.md` ; ce document indique ce qui existe réellement et ce qui manque.
+Cartema est un **jeu en ligne, en service** : site statique sur GitHub Pages, toute la logique dans Supabase (Postgres, RLS, fonctions `security definer`, tâches pg_cron). Des joueurs réels ont des comptes, des collections et des Deniers : toute migration touche des données vivantes.
 
-Racine à ouvrir : `D:/Dev/Cartema/Cartema_Codex_Starter_v2/cartema_project`.
-Aucun dépôt Git détecté à cet emplacement ni dans ses parents lors de cette passation : il n’y a pas de commit ou de diff de référence à transmettre. Initialiser le suivi de versions avant de poursuivre les développements importants.
+- Dépôt : `https://github.com/Swiiptz/cartema`, branche `main`.
+- Base : projet Supabase `grlpysqlabwylexinbrl` (l'ancien « projet de dev » est devenu la base du jeu).
+- Administrateur unique : Swiiptz (`profiles.role = 'admin'`, contrainte `profiles_single_admin`).
 
-Ordre de lecture :
-1. Ce document, puis `CAHIER_DES_CHARGES.md` intégralement.
-2. Le code actuel des cartes et de `/boosters`, puis `README.md`.
-3. `DESIGN.md` et `design/preview.html` pour l’historique graphique. **La preview et certaines consignes de DESIGN sont anciennes** : conserver les évolutions validées décrites ci-dessous.
-4. `CODEX.md` pour les exigences d’implémentation complète et de sécurité.
+Ordre de lecture : ce document (§0 = journal de tout ce qui a été livré, avec les migrations), puis `BACKEND.md` (modèle de données et sécurité), `CAHIER_DES_CHARGES.md` (règles d'origine ; les écarts décidés par l'utilisateur sont notés au §0 et au §4), `SAUVEGARDES.md`, `DESIGN.md` (historique graphique, en partie ancien : le §4 prime).
 
-Les instructions de mission dans CODEX ne signifient pas que les modules sont déjà livrés. Le statut ci-dessous repose sur les fichiers inspectés, pas sur leur intention.
+## 2. Lancement, vérifications et mise en ligne
 
-## 2. Lancement et vérifications
-
-Stack installée : Next.js 15.5.28, React 19, TypeScript, lucide-react, Vitest. CSS classique ; Tailwind n’est pas installé. Node 22 / npm 11 utilisés pendant le travail.
+Stack : Next.js 15 (export statique), React 19, TypeScript, Supabase JS, lucide-react, Vitest, PGlite pour les tests SQL. Node 22 ou plus.
 
 ```powershell
-cd D:\Dev\Cartema\Cartema_Codex_Starter_v2\cartema_project
 npm ci
-npm run dev -- -p 3101
+npm run dev          # http://localhost:3000, lit .env.local (voir .env.example)
+npm test             # tests unitaires + tests SQL sur PGlite (toutes les migrations rejouées)
+npx tsc --noEmit
+npm run build        # produit out/
 ```
 
-Pour vérifier une livraison :
+Mise en production, dans cet ordre :
 
-```powershell
-npm test
-npm run build
-npm run start -- -p 3101
-```
+1. **Migrations** : `npx supabase db push --dry-run` (vérifier la liste), puis `npx supabase db push`. La première fois sur une machine : `npx supabase login` puis `npx supabase link --project-ref grlpysqlabwylexinbrl`.
+2. **Site** : GitHub › Actions › « Déployer sur GitHub Pages » › Run workflow (manuel, relance tests et build).
 
-Ne pas lancer deux serveurs sur le même port. Au moment de la passation, un serveur de production local écoute sur `http://localhost:3101` ; arrêter celui-ci avant de lancer un autre serveur sur ce port. `npm run dev` sans argument utilise 3000.
+Automatismes GitHub : `tests.yml` (tests, types et build à chaque push sur `main` et à chaque pull request), `backup.yml` (sauvegarde chiffrée quotidienne, voir `SAUVEGARDES.md`), `deploy-pages.yml` (manuel).
 
-- Dernier build applicatif : réussi après l’ajout du fondu et le retrait du lien vers les originaux.
-- Tests relancés pendant cette passation : **15/15**, dans 3 fichiers (tirage 4, album 5, cartes 6).
-- Les modifications de cette passation sont documentaires, sans nouveau changement applicatif.
-- Polices via `next/font/google` : un build peut nécessiter un accès réseau à Google Fonts.
-- `.env.example` ne contient que les noms des variables Supabase. Aucun backend provisionné ou connecté n’a été validé pendant ce travail.
-- Pas de tests d’intégration DB, de tests de concurrence, ni de suite E2E automatisée actuellement. Les 15 tests ne prouvent pas la conformité globale au CDC.
+Tâches planifiées côté base (pg_cron) : `cartema-close-auctions` (chaque minute), `cartema-expire-social` (toutes les 5 min, cadeaux et échanges expirés), `cartema-events` (chaque minute, début et fin des événements).
 
-## 3. État réel par module
+Une migration ne se modifie jamais après avoir été appliquée : on en ajoute une nouvelle (`create or replace`). Les tests rejouent toutes les migrations depuis zéro, donc une migration qui casse une plus ancienne est repérée par `npm test`.
 
-| Module | Disponible actuellement | Reste à implémenter |
+## 3. État par module
+
+| Module | En service | Pistes |
 |---|---|---|
-| Accueil et navigation | DA gothique, navigation 5 sections, responsive | Données du compte, réserve réelle, raccourcis métier |
-| Cartes | Générateur SVG, 7 habillages de rareté, 3 finitions, silhouettes, fondu | Pipeline automatique d’import, catalogue réel, métadonnées et silhouettes persistées |
-| Collection | Grille, recherche, filtres combinés, tris réversibles, progression et détail | Source serveur, multi-éditions, quantités, découvertes historiques, finitions possédées, actions inventaire |
-| Boosters | Paquet gothique, déchirure 3D, extraction, retournement libre/cascade, son optionnel | Réserve, attribution Paris, achat, tirage serveur atomique, persistance et historique |
-| Moteur de tirage | Fonctions pures et distributions de référence testées | RNG serveur, configuration versionnée, validation du catalogue publié, transaction et idempotence |
-| Auth et accès | Aucune intégration | Supabase email/Discord, sessions, liaison d’identités, RLS, propriétaire/admin |
-| Inventaire et économie | Schéma SQL partiel | Exemplaires, réservations, verrous, portefeuille/ledger, recyclage, boutique |
-| Marché | Page de présentation | Annonces, achats, enchères, commission, clôtures et transferts |
-| Profil | Maquette anonyme | Vraies données, confidentialité, personnalisation, vitrine de 5 cartes (la maquette n’en affiche que 4) |
-| Social et progression | Aucun service | Amis, cadeaux, échanges, souhaits, missions, succès, classement, événements, notifications et statistiques |
-| Admin | Catalogue complet (éditions, clans, personnages, illustrations, publication, boosters), journalisé | Import Sheets, couvertures, économie, interventions joueurs, modération, statistiques |
-| PWA et exploitation | Manifeste SVG et fichier service worker d’amorçage | Enregistrement du SW, icônes/installabilité, stratégie cache sûre, déploiement, monitoring et sauvegardes |
-
-Aucune route API, Server Action métier, dépendance Supabase, persistance de partie ou connexion DB n’est présente dans les sources inspectées. `/admin` est un écran d’attente, **pas une authentification ou une protection implémentée**.
+| Compte | E-mail et Discord (liaison, compte vérifié sans délai de 24 h), pseudonyme obligatoire pour les transactions, RGPD (export, suppression) | — |
+| Cartes et rendu | Générateur SVG (`tarot-renderer.js`), 7 raretés, finitions Dorée / Sanglante, carte unique Caïn, versions d'illustration (anciennes officielles, alternatives, lignes de versions), plein cadre, crédits | — |
+| Boosters | Crédits gratuits 06 h / 18 h Paris, boutique, ouverture atomique et idempotente, révélation en pile, événements (finitions boostées, boosters offerts) | — |
+| Collection | Album par édition, découvertes, exemplaires, verrouillage, recyclage, liste de souhaits | — |
+| Marché | Prix fixe regroupé par carte, enchères, taxes, filtres, prix de référence (dernières ventes, moyenne) | — |
+| Social | Amis, cadeaux, échanges guidés par les listes de souhaits, limites quotidiennes, délai de 72 h, pas de retour d'une carte avant 30 jours | — |
+| Progression | Missions quotidiennes / hebdomadaires, succès à paliers, de collection, secrets et personnalisés (rangés en général ou par set), titres, classement | Classement de saison à préparer pour le set 2 ; série de connexions à étudier |
+| Profil | Profil public, vitrine de 5 cartes, succès favoris, confidentialité, historique | — |
+| Notifications | Dans le site, par catégorie, préférences | Pas de push (décision du 22/10) |
+| Admin | Catalogue, illustrations, économie versionnée, joueurs, signalements, contributions, événements, statistiques, surveillance anti-triche | — |
+| Exploitation | PWA installable, sauvegardes quotidiennes, tests en CI | Pas encore de suivi des erreurs côté joueurs |
 
 ## 4. Décisions graphiques et produit à conserver
 
@@ -123,109 +138,26 @@ La position actuelle du médaillon est à la jonction portrait/cartouche (centre
 
 ## 5. Carte du code
 
-| Fichier | Rôle et précautions |
+| Emplacement | Rôle |
 |---|---|
-| `src/components/Card.tsx` | Type `DemoCard`, adaptateur React, échappement XML, chemins locaux d’illustration, ids SVG uniques via `useId` |
-| `src/components/tarot-renderer.js` | Composition SVG 200×300, portrait, silhouettes, cadre de rareté, textes et masques de fondu |
-| `src/components/gold-frame.js` | Ornements Dorée, masques du reflet, étoiles ; conserver le balayage au-dessus de l’illustration et limité au cadre |
-| `src/components/blood-frame.js` | Cadre Sanglante, définitions SVG et trajets de fluide descendants |
-| `src/components/CardInspection.tsx` | Dialogue natif, fermeture Échap, comparaison Standard/Dorée/Sanglante ; comparaison purement visuelle |
-| `src/components/BoosterSkin.tsx` | Dessin original SVG du sachet, réutilisé pour les parties déchirées |
-| `src/app/boosters/page.tsx` | États sealed/opening/reveal, temporisations, gestes, retournements, sons Web Audio ; `previewPack` fixe |
-| `src/app/globals.css` | Tokens, responsive, animations des cartes et du paquet ; nombreux blocs/overrides ajoutés successivement |
-| `src/lib/album.ts` | Sélection/tri purs, recherche sans accents, protection des identités inconnues dans les filtres |
-| `src/app/collection/page.tsx` | Interface de l’album, état local des filtres, compteurs de démo |
-| `src/data/demo.ts` | Seule source actuelle des cartes et du paquet de présentation ; à remplacer pour le jeu réel |
-| `src/lib/draw.ts` | Pondérations et tirage pur avec RNG injecté ; aucun accès DB |
-| `supabase/migrations/` | Schéma, RLS et RPC transactionnelles (remplace l’ancien `db/migrations/0001_init.sql`) ; voir `BACKEND.md` |
-| `tests/` | Tests unitaires actuels ; à compléter avec intégration et concurrence |
-| `docs/design/` | Preview historique et captures de travail ; captures complémentaires, pas spécification métier |
+| `supabase/migrations/` | Toute la logique métier, dans l'ordre chronologique. Les fonctions publiques (`public.*`) sont les RPC appelées par le site ; `private.*` n'est jamais exposé |
+| `src/lib/game.ts` | Types des réponses RPC, `callRpc`, traduction des codes d'erreur (`messages`) en français |
+| `src/lib/supabase.ts`, `src/components/AuthProvider.tsx` | Client Supabase et session ; `player` (solde, pseudo, compteurs) partagé par `useAuth` |
+| `src/app/<page>/page.tsx` | Une page par section (accueil, collection, boosters, marché, progression, profil, amis, joueur, historique, événement, admin, pages légales) |
+| `src/components/admin/` | Onglets du back-office (économie, contributions, statistiques, surveillance…) ; `src/app/admin/page.tsx` contient le reste |
+| `src/components/tarot-renderer.js`, `gold-frame.js`, `blood-frame.js`, `unique-frame.js` | Rendu SVG des cartes et des finitions |
+| `src/data/demo.ts` | Cartes de démonstration, seulement pour les visiteurs non connectés et les aperçus |
+| `src/app/globals.css` | Tout le style (fichier unique, gros : ajouter les nouveaux blocs à la fin avec un commentaire) |
+| `scripts/` | Import d'illustrations (`npm run illustrations`), icônes PWA, import Sheets |
+| `tests/db/` | Tests SQL par module sur PGlite (`harness.ts` : base neuve, utilisateurs, appels RPC) |
 
-Les effets Dorée/Sanglante et les textes ne sont pas intégrés dans les fichiers image : une correction du moteur peut donc s’appliquer globalement. Garder des ids SVG uniques même lorsqu’une carte apparaît simultanément dans la grille et le dialogue.
+Les effets Dorée / Sanglante et les textes ne sont pas intégrés dans les fichiers image : une correction du moteur s'applique partout. Garder des ids SVG uniques quand une carte apparaît à deux endroits à la fois.
 
-## 6. Illustrations et automatisation : fait / à faire
+## 6. Illustrations
 
-### Assets actuels
+Les illustrations officielles sont dans `public/illustrations/<préfixe>/` (originaux dans `originals/`). Import par dossier : `npm run illustrations` (voir §0, 21/10). Upload, cadrage et versions alternatives se gèrent dans Admin › Personnages. **Pas de génération d'illustrations par IA.**
 
-- Alhoon : `public/illustrations/alhoon.png`.
-- Rus : `public/illustrations/rus.webp`, original dans `public/illustrations/originals/rus.png`.
-- Norton : `public/illustrations/norton.webp`, original dans `public/illustrations/originals/norton.png`.
-- Les WebP Rus/Norton ont été produits à 900 px de large, sans modification créative. Aucun service de conversion automatique n’est intégré.
-- Rus est naturellement inversé dans le dessin fourni ; ce n’est pas une rotation CSS. Le dessin complet contient une longue composition avec reflet. Le cadrage actuel privilégie le personnage.
-- Ces trois personnages ont `provisional: true` : clans et raretés officiels à confirmer. Le bleu est un cadre de présentation ; ne pas importer “Rare” comme donnée métier validée. Le filtre de rareté officielle exclut les aperçus.
-
-### Automatique aujourd’hui
-
-Le renderer superpose cadre, textes et finition à partir des données. Les masques de fondu haut/bas/côtés sont communs à toutes les illustrations et suivent le cadrage et ses décalages. Ils ne touchent ni le cadre ni les textes. Les silhouettes ne sont pas masquées comme des portraits.
-
-### Encore manuel ou incomplet
-
-L’ajout des fichiers, la conversion WebP et les entrées de `demo.ts` ont été faits manuellement. Le choix de cadrage n’est **pas encore automatique** : `artLayout` propose portrait/full/cover, et Rus possède actuellement un `artOffsetY: -18` spécifique. Ne pas annoncer que l’exigence d’import automatique du CDC est déjà terminée.
-
-La silhouette actuelle est choisie par hash de l’id parmi **6 variantes codées** ; stable tant que l’id ne change pas, mais sans tirage initial stocké en DB. Le CDC demande un choix fixé puis persisté ; la bibliothèque définitive reste à fournir/valider.
-
-### Pipeline à construire
-
-1. Upload admin sécurisé : validation réelle du contenu, dimensions/poids, formats acceptés, stockage original séparé.
-2. Génération automatique de variantes optimisées et métadonnées (dimensions, transparence, orientation), en conservant l’original.
-3. Politique de cadrage par défaut couvrant portraits détourés, images opaques avec fond, formats larges et très verticaux. Prévoir un aperçu et une correction optionnelle persistée pour les compositions atypiques ; le chemin normal doit fonctionner sans réglage par personnage.
-4. Même rendu centralisé partout : album, détail, profil, révélation et couvertures d’édition adaptées. Aucun cadre “cuit” dans l’original.
-5. Publication manuelle après validation des données ; pas de publication automatique à l’upload.
-6. Tests de rendu : visage lisible, bords fondus, absence de chevauchement, finitions visibles sur fond opaque, inconnues anonymes, fonctionnement à 360 px et en réduction d’animations.
-
-## 7. Plan d’implémentation conseillé
-
-Chaque étape doit livrer une tranche réellement utilisable, avec tests, sans dégrader le travail graphique.
-
-### A — Fondations serveur et données
-
-- Initialiser le suivi Git et les environnements dev/staging/prod ; documenter les variables et migrations.
-- Provisionner Supabase Auth email/Discord, profils/pseudo unique, sessions, administrateur unique attribué côté serveur et RLS.
-- Compléter le modèle du CDC : catalogue/clans/éditions, instances et réservations, découvertes, soldes et ledger, boosters/crédits/ouvertures/règles versionnées, puis tables des autres modules.
-- Définir une couche transactionnelle : idempotency keys, contraintes uniques, verrouillage des ressources, journal et tests de concurrence. La clé de service ne doit jamais atteindre le navigateur.
-- Ne pas exécuter la migration d’amorçage seule comme si elle sécurisait la production.
-
-### B — Catalogue réel et générateur automatique
-
-- Réaliser le pipeline d’images ci-dessus, le CRUD admin, les symboles/silhouettes persistés, les éditions et leur publication.
-- Import initial Sheets avec mapping, aperçu, erreurs et dédoublonnage. Le contenu réel du fichier n’a pas été lu ; ne pas inventer de personnages ou colonnes.
-- Remplacer `DemoCard` par des modèles séparant catalogue, découverte historique et exemplaires possédés ; adapter le renderer sans le réécrire graphiquement.
-- Source serveur pour l’album, filtre d’édition, quantités par finition et actions verrouiller/recycler/vendre liées au vrai stock.
-- Ne pas envoyer les secrets des cartes inconnues au client : masquer dans le SVG ne protège pas une réponse API contenant leur identité.
-
-### C — Boucle de jeu complète
-
-- Crédits gratuits 06 h/18 h Europe/Paris, capacité 6, rattrapage hors connexion et unicité par créneau ; tests changements d’heure.
-- Boutique : 500 / 1 400 / 4 500 Deniers pour 1/3/10 boosters ; réserve achetée distincte.
-- Ouverture serveur : vérifier édition complète, débiter une fois, tirer, créer les 5 instances et découvertes, écrire l’historique avec règles appliquées, puis retourner le résultat à animer.
-- Définir reprise/réconciliation après erreur réseau ou rechargement. Ne jamais rejouer un tirage parce que l’animation est interrompue.
-- Brancher la scène existante sur ce résultat ; le verrou React actuel évite seulement des doubles clics locaux, il n’apporte aucune garantie serveur.
-- Recyclage et récompenses avec ledger et confirmation des finitions rares ; dernier exemplaire cessible, découverte conservée.
-
-### D — Échanges économiques et social
-
-- Marché achat immédiat, commission, réservations et achats concurrents.
-- Enchères avec Deniers bloqués, paliers, anti-sniping et tâche de clôture idempotente même sans visiteurs.
-- Échanges (10 cartes maximum par partie, 48 h, Deniers optionnels) ; cadeaux de cartes entre amis, acceptation obligatoire et restitution.
-- Blocage des transactions entre joueurs pendant les premières 24 h du compte.
-- Profil réel/vitrine 5 cartes, amis, souhaits publics, notifications internes, confidentialité, historiques et statistiques.
-
-### E — Progression et administration complète
-
-- 3 missions quotidiennes, 3 hebdomadaires, renouvellement Paris et 1 remplacement gratuit quotidien.
-- Succès visibles/secrets, classement historique, cosmétiques et événements ; pas de niveau/XP, pas de finition donnée hors booster.
-- Configuration économique versionnée, publication/activation des éditions, interventions motivées, audit et modération.
-- Notifications dans le site uniquement : pas de messagerie privée, mails, push ou bot Discord demandés.
-
-### F — Livraison exploitable
-
-- Finaliser PWA : icônes PNG 192/512 + maskable, enregistrement du SW et tests d’installation. Le SW actuel inclut `/` en cache ; revoir cela avant l’auth pour ne pas restituer des pages personnalisées d’un autre compte. Aucune écriture hors ligne.
-- Tests d’intégration/RLS/concurrence et parcours E2E du CDC §12 ; QA mobile, clavier, lecteur d’écran, contraste et performances des animations.
-- Hébergeur compatible Next full-stack, tâches planifiées fiables, monitoring et alertes, migrations/rollback et publication manuelle.
-- Sauvegardes chiffrées quotidiennes DB + objets + configuration hors site, rétention 30 jours, restauration testée sur un autre environnement. Rien de cela n’a été provisionné ici.
-- Droits d’usage des illustrations et pages légales/confidentialité avant ouverture publique.
-
-## 8. Règles à ne pas perdre pendant l’intégration
+## 7. Règles à ne pas perdre
 
 - Booster de 5 cartes, doublons possibles ; uniquement l’édition choisie, personnages uniformes dans la rareté.
 - Slot 5 : Rare 55 %, Très rare 37 %, Épique 6 %, Légendaire 1,9 %, Mythique 0,1 %.
@@ -239,41 +171,11 @@ Chaque étape doit livrer une tranche réellement utilisable, avec tests, sans d
 - Stockage UTC, calendriers métier Europe/Paris avec DST ; aucune heure du navigateur comme autorité.
 - Solde, propriété, réservation, ancienneté et autorisation contrôlés côté serveur à chaque opération.
 
-## 9. Points ouverts et dette identifiée
+## 8. Points ouverts
 
-- Validation finale des slots 1–4 ; montants missions/succès/connexion/découvertes et cosmétiques.
-- Catalogue Sheets réel, numérotation/édition/clans/raretés des illustrations ; bibliothèque définitive de symboles et silhouettes.
-- Expiration des cadeaux, annulations/quotas de marché, traitement des cartes rendues indisponibles ; voir CDC §13.
-- Fournisseur, budget effectif, sauvegardes et ordonnanceur à choisir ; ne pas promettre une exploitation conforme gratuite avant vérification.
-- CSS et SVG sont denses, avec overrides successifs : refactoriser progressivement en conservant des captures avant/après ; éviter de réécrire l’ensemble avant de connecter le jeu.
-- `drawPack` exige un RNG injecté mais ne vérifie pas explicitement sa valeur au moment de choisir l’index du personnage, contrairement à `drawWeighted` : renforcer ce contrat avant production. Les distributions sont encore des constantes.
-- Les tests cartes contrôlent surtout le markup SVG. Le fondu a été vérifié visuellement sur Rus et Norton ; pas de régression visuelle automatisée.
-- Les compteurs de réserve, les “connues” et le paquet sont fictifs. Les filtres/options ne persistent pas au rechargement. La comparaison de finition ne signifie pas possession.
-- Le README/DESIGN contenaient des prescriptions devenues obsolètes : ne pas réintroduire le numéro en tête, un badge noir, un cercle doré tournant, un effet de sang qui remonte ou un lien vers l’image entière.
-
-## 10. Première tâche concrète pour le repreneur
-
-Conserver la DA actuelle, poser l’auth/RLS et le catalogue persistant avec import d’illustrations automatique, puis réaliser **une ouverture serveur de bout en bout** : compte connecté → crédit disponible → débit atomique → cinq instances → découverte → historique → animation existante → album actualisé après rechargement. Cette tranche établira les fondations avant marché et progression.
-
-Critère de fin global : toutes les exigences du CDC et ses 13 scénarios d’acceptation satisfaits ; pas seulement les écrans visibles. Répertorier explicitement tout service externe ou choix métier encore nécessaire.
-- **Surveillance anti-triche** (admin › Surveillance, migration `20261021240000_admin_anomalies`) : `admin_anomalies(p_days)` lance 12 contrôles. Les 6 contrôles d'intégrité (solde négatif, solde ≠ journal, mise sans fonds bloqués, carte bloquée sans offre, unique en double, boosters ouverts en trop) ne devraient jamais remonter. Les 6 pistes de comportement (duo actif, prix aberrant, comptes neufs qui donnent, faux enchérisseur, gains rapides, rafale) sont à vérifier sur la fiche du joueur avant toute sanction. Un clic sur un joueur ouvre sa fiche.
-- **Aperçu des versions d'illustration** (admin › Personnages › Versions d'illustration) : un clic sur la vignette d'une version l'affiche sur la carte avec son cadrage. Choisir un fichier montre aussitôt l'aperçu avec le cadrage sélectionné, avant tout envoi.
-- **Deniers dans les échanges** (migration `20261021250000_trade_taxes`) : taxe `trade_tax_pct` (5 %) retenue sur les Deniers reçus dans un échange, et plafond `trade_weekly_deniers_cap` (2 000 Deniers reçus par échange sur 7 jours glissants, avant taxe, 0 = sans plafond). Les deux se règlent dans admin › Économie. Le plafond est vérifié à la proposition et à l'acceptation. Les cartes restent libres : les cadeaux et les échanges sans Deniers ne sont pas touchés. Objectif : empêcher les comptes secondaires de vider leurs Deniers vers un compte principal.
-- **Limites quotidiennes** (migration `20261022100000_daily_trade_limits`) : `trade_daily_limit` (5 échanges conclus par joueur et par jour, comptés pour les deux parties) et `gift_daily_limit` (5 cadeaux envoyés et 5 reçus par jour). La journée de jeu va de 6 h à 6 h, heure de Paris, et 0 = sans limite. Réglables dans admin › Économie. Le contrôle se fait par déclencheurs sur `trades` et `gifts`, à la proposition ou à l'envoi, puis à l'acceptation.
-- **Délai après réception** (migration `20261022110000_trade_cooldown`) : une carte reçue par échange ou cadeau ne peut plus être échangée ni offerte pendant `trade_cooldown_hours` (24 h, réglable dans Économie). La vente au marché reste possible. Ça bloque les « prêts » par allers-retours qui gonflaient les découvertes et les succès d'échange (repérés le 22/10 autour de Shaolon). Le contrôle se fait par déclencheurs sur `trade_items` et `gifts` ; la date de réception est `inventory_items.social_received_at`.
-- **Performances** (migration `20261022120000_performance`, aucune règle changée) :
-  - les lectures fréquentes n'écrivent ni ne verrouillent plus rien quand il n'y a rien à faire (récompenses des succès de collection, boosters gratuits, récompense du jour) ;
-  - `get_achievements` calcule la progression en une seule passe (`private.sync_achievement_states`) ;
-  - `get_market` ne clôture plus les enchères échues : il les masque, et la tâche planifiée les clôture chaque minute ;
-  - `pg_stat_statements` a été remis à zéro le 22/10 pour mesurer l'effet en conditions réelles.
-- **Marché amélioré** (migration `20261022130000_market_board`, fonction `get_market_board`) :
-  - **Prix fixe** : les annonces d'une même carte (même personnage, finition et version) sont regroupées en une tuile, avec le prix le plus bas, le nombre d'offres et la liste des 12 meilleurs prix.
-  - **Enchères** : onglet séparé, trié par défaut sur la fin la plus proche.
-  - **Filtres** : rareté, finition, clan, recherche, « non découvertes ». Tris au choix, et bouton « Voir plus » pour la suite.
-  - **Correctif** : les versions alternatives s'affichent enfin avec leur illustration au marché (`listing_json` passe par `card_json`).
-  - `get_market` reste en place pour les pages déjà ouvertes.
-- **Pseudonyme obligatoire pour les transactions** (migration `20261022140000_handle_required`) : `require_trader` refuse sans pseudonyme (`handle_required`). Un bandeau global (`HandleBanner`) invite à le choisir. Au marché, un vendeur sans pseudonyme s'affiche « joueur sans pseudo ». Au 22/10, 4 comptes n'en avaient pas, dont un avec 23 annonces ; ses annonces restent en ligne.
-- **Marché regroupé, correctifs** (migration `20261022150000_market_board_prices`) : chaque carte à prix fixe renvoie `max_price` (prix le plus haut de toutes ses offres, la liste n'en montre que 12) et `best` (offre la moins chère d'un autre joueur, même au-delà des 12). La page relit les entrées déjà déroulées depuis le début à chaque rechargement : plus de retour à 48 cartes après un achat, ni de doublon ou de carte sautée avec « Voir plus ».
-- **Lignes de versions alternatives** (migration `20261022160000_art_lines`, table `card_art_lines`) : une ligne regroupe les versions alternatives qui portent le même nom. Dans Admin → Économie → « Lignes de versions », chaque ligne peut être désactivée ou recevoir sa propre chance « 1 sur N » (vide = `alternate_art_odds`, 0 = jamais). Au tirage, `private.pick_alternate_art` tente chaque ligne du personnage avec sa chance, dans un ordre aléatoire. Une version seule se désactive toujours depuis la fiche du personnage (« Versions d'illustration »).
-- **Fin des prêts de cartes** (migration `20261022170000_no_card_return`) : un exemplaire ne peut pas revenir, pendant 30 jours, à un joueur qui l'a cédé par échange, cadeau ou vente au marché (`card_returning`). Le contrôle se fait par déclencheurs sur `trade_items`, `gifts`, `bids` et à l'achat à prix fixe (`listings`) ; il casse aussi les boucles A → B → C → A. `get_friend_cards` masque les cartes d'un ami qui reviendraient trop tôt. Le délai après réception passe à 72 h (réglages économiques, toujours modifiable). Raison : les succès de collection comptent les cartes découvertes une fois, et le délai de 24 h ne faisait que retarder le retour d'une carte prêtée.
-- **Rangement des succès personnalisés** (migration `20261022180000_achievement_edition`) : dans Admin → Succès, le champ « Rangement » place un succès personnalisé dans les succès généraux ou dans le set d'une édition (`admin_save_achievement` reçoit `p_edition_id`). Les succès automatiques (paliers, collection) gardent leur place.
+- **Set 2** : préparer un classement de saison (points remis à zéro chaque mois, récompense cosmétique du podium), car le classement actuel est plafonné (nombre fini de succès et de cartes).
+- **Série de connexions** (bonus croissant) : idée à étudier, pas décidée.
+- **Suivi des erreurs** côté joueurs : rien n'est remonté aujourd'hui quand une page plante sur un téléphone.
+- **Fichiers volumineux** : `globals.css` (~160 Ko) et `src/app/admin/page.tsx` (~57 Ko). Découper progressivement, par page ou par onglet, sans changer le rendu.
+- **Plan gratuit Supabase** : le premier appel après une période calme prend ~3 s (réveil du projet). Vérifier les quotas avant une forte affluence.
+- Slots 1–4 du tirage : proposition validée par l'usage, toujours réglable dans Admin › Économie (table de tirage versionnée).
