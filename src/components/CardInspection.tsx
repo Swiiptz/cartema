@@ -34,17 +34,20 @@ export function CardInspection({card,finishesSeen,characterId,onChanged,wishes,o
   setTimeout(()=>{d.classList.remove('closing');d.close();},230);
  };
  // Inclinaison de la carte qui suit le pointeur (souris uniquement).
+ // Inclinaison et reflet holographique : à la souris comme au doigt ; le reflet suit le pointeur.
  const tilt=(e:React.PointerEvent<HTMLDivElement>)=>{
-  if(e.pointerType!=='mouse')return;
-  const r=e.currentTarget.getBoundingClientRect();
-  e.currentTarget.style.setProperty('--rx',`${(0.5-(e.clientY-r.top)/r.height)*10}deg`);
-  e.currentTarget.style.setProperty('--ry',`${((e.clientX-r.left)/r.width-0.5)*14}deg`);
+  const el=e.currentTarget,r=el.getBoundingClientRect();
+  const x=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)),y=Math.min(1,Math.max(0,(e.clientY-r.top)/r.height));
+  el.style.setProperty('--rx',`${(0.5-y)*16}deg`);el.style.setProperty('--ry',`${(x-0.5)*20}deg`);
+  el.style.setProperty('--mx',`${x*100}%`);el.style.setProperty('--my',`${y*100}%`);el.style.setProperty('--holo','1');
  };
- const untilt=(e:React.PointerEvent<HTMLDivElement>)=>{e.currentTarget.style.setProperty('--rx','0deg');e.currentTarget.style.setProperty('--ry','0deg');};
+ const untilt=(e:React.PointerEvent<HTMLDivElement>)=>{const el=e.currentTarget;el.style.setProperty('--rx','0deg');el.style.setProperty('--ry','0deg');el.style.setProperty('--holo','0');};
+ const shownFinish=card.known?finish:card.finish;
+ const holo=card.unique?'unique':shownFinish==='Dorée'?'gold':shownFinish==='Sanglante'?'blood':card.rarity==='Légendaire'||card.rarity==='Mythique'?'rare':'std';
  return <><button className="inspect-card" aria-label={`Examiner ${card.known?card.name:'la carte inconnue'}`} onClick={()=>{setFinish(card.finish||'Standard');setOpen(true);dialog.current?.showModal();}}><TarotCard card={card}/><span className="inspect-hint"><Expand size={13}/> Examiner la carte</span></button>
  <dialog className="card-dialog" ref={dialog} aria-labelledby={title} onClose={e=>{if(e.target===e.currentTarget)setOpen(false);}} onCancel={e=>{if(e.target!==e.currentTarget)return;e.preventDefault();close();}} onClick={e=>{if(e.target===e.currentTarget)close();}}><div className="card-dialog-content">
   <button className="icon-button dialog-close" aria-label="Fermer le détail" onClick={close}><X size={20}/></button>
-  <div className="dialog-art" onPointerMove={tilt} onPointerLeave={untilt}><TarotCard key={`${finish}|${version?.label??''}`} card={{...card,finish:card.known?finish:card.finish,...(version?{illustration:version.art_path,artLayout:version.art_meta?.layout==='full'||version.art_meta?.layout==='cover'||version.art_meta?.layout==='fullart'?version.art_meta.layout:undefined,artOffsetY:Number(version.art_meta?.offsetY)||undefined}:{})}}/></div>
+  <div className="dialog-art" onPointerMove={tilt} onPointerLeave={untilt} onPointerUp={e=>{if(e.pointerType!=='mouse')untilt(e);}} onPointerCancel={untilt}><div className={`holo-wrap holo-${card.known?holo:'std'}`}><TarotCard key={`${finish}|${version?.label??''}`} card={{...card,finish:card.known?finish:card.finish,...(version?{illustration:version.art_path,artLayout:version.art_meta?.layout==='full'||version.art_meta?.layout==='cover'||version.art_meta?.layout==='fullart'?version.art_meta.layout:undefined,artOffsetY:Number(version.art_meta?.offsetY)||undefined}:{})}}/><span className="holo-sheen" aria-hidden="true"/><span className="holo-glare" aria-hidden="true"/></div></div>
   <div className="dialog-copy">
    <span className="eyebrow">Détail de la carte</span>
    <h2 id={title}>{card.known?card.name:'Identité voilée'}</h2>

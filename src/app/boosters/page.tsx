@@ -10,6 +10,7 @@ import {CountUp,Countdown,Sheet} from '@/components/ui';
 import {callRpc,openedToCard,revealOrder,GameError,type Opening,type PlayerEdition} from '@/lib/game';
 import {previewPack} from '@/data/demo';
 import {BoosterSkin} from '@/components/BoosterSkin';
+import {announceAchievements,type UnlockedAchievement} from '@/components/AchievementToasts';
 
 type Phase='sealed'|'opening'|'reveal';
 // Cartes qui méritent une révélation spectaculaire, et finitions à signaler.
@@ -30,6 +31,7 @@ function readPending():Pending|null{try{const raw=sessionStorage.getItem(PENDING
 function writePending(p:Pending|null){try{if(p)sessionStorage.setItem(PENDING_KEY,JSON.stringify(p));else sessionStorage.removeItem(PENDING_KEY);}catch{/* stockage facultatif */}}
 export default function Boosters(){
  const {configured,session,client,player,refreshPlayer}=useAuth();
+ const refreshPlayerRef=useRef(refreshPlayer);refreshPlayerRef.current=refreshPlayer;
  const live=Boolean(configured&&session&&client);
  // En ligne sans compte : le paquet reste visible, mais l'ouverture mène à la connexion (pas de tirage fictif).
  const visitor=configured&&!live;
@@ -82,6 +84,14 @@ export default function Boosters(){
  const pack:DemoCard[]=revealOrder(live?(opening?.cards.map(openedToCard)??[]):previewPack);
  const stacked=phase==='reveal'&&current<pack.length;
  const complete=phase==='reveal'&&!stacked&&revealed.length===pack.length;
+ // Succès en direct : une seule vérification par ouverture, une fois toutes les cartes révélées
+ // (jamais avant, pour ne rien dévoiler).
+ const announced=useRef<Opening|null>(null);
+ useEffect(()=>{
+  if(!complete||!live||!client||!opening||announced.current===opening)return;
+  announced.current=opening;
+  void callRpc<UnlockedAchievement[]>(client,'sync_my_achievements').then(list=>{if(list.length){announceAchievements(list);void refreshPlayerRef.current();}}).catch(()=>{});
+ },[complete,live,client,opening]);
  useEffect(()=>{if(stacked)activeCard.current?.focus({preventScroll:true});},[stacked,current]);
  useEffect(()=>()=>{timers.current.forEach(clearTimeout);void audio.current?.close();},[]);
  useEffect(()=>{if(live)setPending(readPending());},[live]);

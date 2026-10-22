@@ -123,6 +123,10 @@ Mise à jour : 22 octobre 2026 (soir). Commencer par l'état ci-dessous et par `
   - **Paliers pour la prochaine extension** : Visages 500 et Rituels 2 000 (palier 5, « Sang »), Éclats d'or 25 et Sang versé 10 (palier 4). Social et Négoce inchangés.
   - **Admin › Personnages** : vue par défaut « Toutes les éditions non archivées » (codes CAM-001…) ; **Contributions** : crédit de l'artiste (pseudo par défaut) appliqué en acceptant une illustration, officielle ou alternative.
   - **Révélation éternelle** : brume blanche, halo gris perle, cendres argentées qui montent (`eternal-*` dans `globals.css`).
+- **Améliorations d'interface** (22/10, migration `20261022340000_live_achievements`, test dans `progression`) :
+  - **Succès en direct** : `sync_my_achievements` débloque et renvoie seulement les succès obtenus par l'appel ; la page Boosters l'appelle une fois, quand toutes les cartes sont révélées (jamais avant), et `AchievementToasts` (dans `layout.tsx`) affiche une bannière dorée par succès (événement `cartema:achievements`). Une fiche ouverte (dialogue modal) passe au-dessus des bannières.
+  - **Inclinaison holographique** de la fiche d'une carte, à la souris et au doigt : reflet qui suit le pointeur, champagne (Dorée), rubis (Sanglante), irisé (Légendaire, Mythique), os et sang (unique), simple brillance sinon (`holo-*`). Désactivé si l'appareil réduit les animations.
+  - **Collection allégée** : plus d'« Examiner la carte » ni de « Dévoilée · ×N » sous les cartes (ligne seulement pour « Cédée » et « À découvrir ») ; petits textes passés à 11 px ; barres par rareté sans la carte unique.
   - Pistes suivantes proposées : assouplir les protections anti-prêt (délai de 72 h, 30 jours sans retour), devenues moins utiles avec cette règle ; suivi des erreurs côté joueurs ; classement de saison ; série de connexions.
 
 ## 1. Reprendre ici

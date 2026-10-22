@@ -1061,8 +1061,8 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 /* L'album ne peint pas les cartes hors écran (content-visibility) : laisser déborder la pastille et la pile. */
 .album-card-cell.stack-1,.album-card-cell.stack-2{overflow-clip-margin:14px}
 /* Pile : une ou deux cartes fantômes décalées derrière une carte en plusieurs exemplaires. */
-.album-card-cell.stack-1 .tarot-card:before,.album-card-cell.stack-2 .tarot-card:before,.album-card-cell.stack-2 .tarot-card:after{content:'';position:absolute;inset:0;z-index:-1;border-radius:10px;border:1px solid #c9a45c50;background:linear-gradient(160deg,#2a1b25,#130c12);transform:translate(5px,5px) rotate(1.4deg);transform-origin:50% 100%;pointer-events:none}
-.album-card-cell.stack-2 .tarot-card:after{z-index:-2;border-color:#c9a45c30;transform:translate(9px,8px) rotate(2.8deg)}
+.album-card-cell.stack-1>.inspect-card>.tarot-card:before,.album-card-cell.stack-2>.inspect-card>.tarot-card:before,.album-card-cell.stack-2>.inspect-card>.tarot-card:after{content:'';position:absolute;inset:0;z-index:-1;border-radius:10px;border:1px solid #c9a45c50;background:linear-gradient(160deg,#2a1b25,#130c12);transform:translate(5px,5px) rotate(1.4deg);transform-origin:50% 100%;pointer-events:none}
+.album-card-cell.stack-2>.inspect-card>.tarot-card:after{z-index:-2;border-color:#c9a45c30;transform:translate(9px,8px) rotate(2.8deg)}
 .album-owned{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:12px 0 6px;font:500 12px var(--ui);color:#d9c6a3}
 .album-owned b{font:600 15px var(--display);color:var(--gold2)}
 .album-owned small{font-size:10px;color:var(--muted)}
@@ -1170,3 +1170,40 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 @keyframes eternal-halo{0%{opacity:0;transform:scale(.4)}35%{opacity:1}100%{opacity:.55;transform:scale(1.25)}}
 @keyframes eternal-rise{0%{opacity:0;transform:translateY(0)}15%{opacity:.95}100%{opacity:0;transform:translateY(-78vh)}}
 @media(prefers-reduced-motion:reduce){.eternal-motes{display:none}.eternal-mist,.eternal-halo{opacity:.6}}
+/* Fiche d'une carte : inclinaison au doigt et reflet holographique qui suit le pointeur (22/10). */
+.dialog-art{touch-action:none;--mx:50%;--my:50%;--holo:0}
+.holo-wrap{position:relative;transform:rotateX(var(--rx)) rotateY(var(--ry));transition:transform .5s var(--ease-out);transform-style:preserve-3d}
+.holo-wrap>.tarot-card{filter:drop-shadow(0 22px 30px #000b);animation:finish-swap .5s var(--ease-out) backwards}
+.holo-sheen,.holo-glare{position:absolute;inset:1.5%;border-radius:12px;pointer-events:none;opacity:0;transition:opacity .45s var(--ease-out)}
+.holo-glare{background:radial-gradient(circle at var(--mx) var(--my),#ffffff55,#ffffff12 22%,transparent 48%);mix-blend-mode:overlay;opacity:calc(var(--holo) * .9)}
+.holo-sheen{background-size:260% 260%;background-position:var(--mx) var(--my);mix-blend-mode:color-dodge}
+.holo-std .holo-sheen{background-image:linear-gradient(115deg,transparent 35%,#ffffff22 48%,transparent 60%);opacity:calc(var(--holo) * .5)}
+.holo-gold .holo-sheen{background-image:repeating-linear-gradient(115deg,#f1d99b00 0%,#fff6dd55 6%,#e7c46a1a 11%,#f1d99b00 16%);mix-blend-mode:soft-light;opacity:calc(var(--holo) * .9)}
+.holo-blood .holo-sheen{background-image:repeating-linear-gradient(115deg,#b0162f00 0%,#ff6a8255 7%,#7a0c2033 12%,#b0162f00 17%);mix-blend-mode:screen;opacity:calc(var(--holo) * .6)}
+.holo-rare .holo-sheen{background-image:linear-gradient(115deg,#ff3d8a33 0%,#ffd76a33 18%,#5dffb033 36%,#4ac8ff33 54%,#b26bff33 72%,#ff3d8a33 90%);opacity:calc(var(--holo) * .7)}
+.holo-unique .holo-sheen{background-image:repeating-linear-gradient(115deg,#f3ecdf00 0%,#ffffff55 6%,#c4182f22 12%,#f3ecdf00 17%);opacity:calc(var(--holo) * .6)}
+@media(prefers-reduced-motion:reduce){.holo-wrap{transform:none}.holo-sheen,.holo-glare{display:none}}
+/* Collection allégée : l'indice « Examiner la carte » disparaît de la grille (le nom accessible reste). */
+.album-grid .inspect-hint{display:none}
+/* Petits textes plus lisibles sur téléphone (22/10). */
+.discovery-status{font-size:11px}
+.album-status-tabs button>span{font-size:11px;opacity:.75}
+.rarity-bars span{font-size:11px}
+.tab-count{font-size:11px}
+@media(max-width:560px){.rarity-bars span{font-size:10px}.album-toolbar .album-status-tabs.four button{font-size:12px}}
+/* Succès en direct : bannières dorées en haut de l'écran. */
+.ach-toasts{position:fixed;top:max(14px,env(safe-area-inset-top));left:50%;z-index:70;display:flex;flex-direction:column;gap:8px;width:min(420px,calc(100vw - 24px));transform:translateX(-50%);pointer-events:none}
+.ach-toast{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;padding:12px 12px 12px 14px;border-radius:16px;border:1px solid #c9a45caa;background:linear-gradient(135deg,#3a2430f2,#1a1118f2);box-shadow:0 14px 34px #000c,0 0 24px #c9a45c33;pointer-events:auto;animation:ach-toast-in .55s var(--ease-out) both,ach-toast-out .5s ease 4.7s forwards}
+.ach-toast-shine{position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,#fff3d044 48%,transparent 62%);transform:translateX(-100%);animation:ach-shine 1.4s .35s var(--ease-out)}
+.ach-toast-medal{flex-shrink:0;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff1c2,#c9a45c 55%,#7a5a22);color:#2a1a10;box-shadow:0 0 16px #e7c46a88;animation:ach-medal 1s var(--ease-out) both}
+.ach-toast-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;color:var(--text)}
+.ach-toast-body small{font:600 10px var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.ach-toast-body strong{font:600 17px/1.25 var(--display);color:#fff1d0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ach-toast-body em{font:500 12px var(--ui);font-style:normal;color:#e7d4a8}
+.ach-toast-close{flex-shrink:0;display:grid;place-items:center;width:30px;height:30px;border:0;border-radius:50%;background:none;color:var(--muted)}
+.ach-toast-close:hover{color:var(--gold2);background:#ffffff0d}
+@keyframes ach-toast-in{0%{opacity:0;transform:translateY(-16px) scale(.96)}100%{opacity:1;transform:none}}
+@keyframes ach-toast-out{to{opacity:0;transform:translateY(-10px)}}
+@keyframes ach-shine{to{transform:translateX(100%)}}
+@keyframes ach-medal{0%{transform:scale(.3) rotate(-30deg)}60%{transform:scale(1.15) rotate(6deg)}100%{transform:none}}
+@media(prefers-reduced-motion:reduce){.ach-toast{animation:none}.ach-toast-shine{display:none}}

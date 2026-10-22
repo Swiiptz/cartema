@@ -186,6 +186,17 @@ describe('succès de cartes : posséder au moment du déblocage (décision du 22
     await db.query(`update public.inventory_items set reserved_kind=null,reserved_ref=null,recycled_at=now() where owner_id=$1 and recycled_at is null`,[u]);
     expect((await ach(u,'set:CAM:rarity:Peu commun')).unlocked_at).not.toBeNull();
   });
+  it('sync_my_achievements débloque et renvoie seulement les nouveaux succès (fin de révélation)',async()=>{
+    const u=await player('direct');
+    await rpc(db,u,'sync_my_achievements'); // premier passage : « Soutien de la première heure » par exemple
+    expect(await rpc<any[]>(db,u,'sync_my_achievements')).toEqual([]);
+    await discover(u,`c.rarity='Commun'`);
+    const fresh=await rpc<any[]>(db,u,'sync_my_achievements');
+    expect(fresh.map(a=>a.code)).toContain('set:CAM:rarity:Commun');
+    expect(fresh.find(a=>a.code==='set:CAM:rarity:Commun')).toMatchObject({label:'Toutes les Communes',reward_deniers:expect.any(Number)});
+    expect(fresh.every((a:any)=>!a.secret||a.label)).toBe(true);
+    expect(await rpc<any[]>(db,u,'sync_my_achievements')).toEqual([]); // déjà annoncés
+  });
   it('ne nomme pas une carte manquante jamais découverte, ni au-delà de 5 manquantes',async()=>{
     const u=await player('explorateur');
     await discover(u,`c.rarity='Rare' and c.number=5`);
