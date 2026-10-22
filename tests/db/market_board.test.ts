@@ -66,6 +66,17 @@ describe('marché regroupé',()=>{
     expect((await board()).items.every((g:any)=>g.listings.every((l:any)=>l.listing_id!==l1))).toBe(true);
     await expectError(board({sort:'n_importe'}),/invalid_sort/);
   });
+  it('donne le prix maximum et l’offre à acheter au-delà des 12 meilleurs prix',async()=>{
+    const other=await player('vend_loin');const ch=await character('Commun',1);
+    for(let p=10;p<22;p++) await sell(viewer,ch,p); // les 12 moins chères sont au joueur
+    const target=await sell(other,ch,50);await sell(other,ch,70);
+    const g=(await board({rarity:'Commun'})).items.find((x:any)=>x.card.character_id===ch);
+    expect([g.offers,g.min_price,g.max_price,g.listings.length]).toEqual([14,10,70,12]);
+    expect(g.listings.every((l:any)=>l.mine)).toBe(true);
+    expect([g.best.listing_id,g.best.price,g.best.buyer_tax,g.best.seller,g.best.mine]).toEqual([target,50,2,'vend_loin',false]);
+    const solo=await character('Commun');await sell(viewer,solo,15);
+    expect((await board({rarity:'Commun'})).items.find((x:any)=>x.card.character_id===solo).best).toBeNull();
+  });
   it('pagine les entrées',async()=>{
     const all=await board({limit:120});
     const page=await board({limit:2,offset:1});

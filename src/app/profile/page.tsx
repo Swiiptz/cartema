@@ -47,13 +47,14 @@ export default function Profile(){
  if(!ready||(session&&!player))return <div className="page profile-page"><Skeleton style={{height:110}}/><Skeleton style={{height:200,marginTop:16}}/></div>;
  if(!session||!player)return <div className="page auth-screen"><section className="panel auth-panel"><span className="eyebrow">Le collectionneur</span><h1>Votre profil vous attend.</h1><p className="muted">Connectez-vous pour retrouver votre pseudonyme, vos Deniers et votre collection.</p><Link className="primary" href="/connexion/">Se connecter</Link></section></div>;
 
- async function run(label:string,action:()=>Promise<void>){
+ /** `onError` affiche l'erreur ailleurs qu'en bas de page (sous un champ, par exemple). */
+ async function run(label:string,action:()=>Promise<void>,onError:(message:string)=>void=setError){
   setBusy(true);setError(null);setNotice(null);
-  try{await action();setNotice(label);}catch(e){setError((e as Error).message);}finally{setBusy(false);}
+  try{await action();setNotice(label);}catch(e){onError((e as Error).message);}finally{setBusy(false);}
  }
  const handleIssue=checkHandle(handle);
  const saveHandle=(e:React.FormEvent)=>{e.preventDefault();if(handleIssue){setHandleError(handleIssue);return;}
-  setHandleError(null);void run('Pseudonyme enregistré.',async()=>{try{await callRpc(client!,'set_handle',{p_handle:handle.trim()});}catch(err){setHandleError((err as Error).message);throw err;}await refreshPlayer();setHandle('');});};
+  setHandleError(null);void run('Pseudonyme enregistré.',async()=>{await callRpc(client!,'set_handle',{p_handle:handle.trim()});await refreshPlayer();setHandle('');},setHandleError);};
  const handleField=(label:string,placeholder:string)=><><input aria-label={label} aria-invalid={!!(handleIssue||handleError)} aria-describedby="handle-help" value={handle} onChange={e=>{setHandle(e.target.value);setHandleError(null);}} minLength={3} maxLength={24} required placeholder={placeholder}/></>;
  const handleHelp=<p id="handle-help" className={handleIssue||handleError?'auth-error handle-help':'muted handle-help'} role={handleError?'alert':undefined}>{handleError??handleIssue??'3 à 24 caractères : lettres, chiffres, _ . - (sans espace).'}</p>;
  const savePrivacy=(visibility:string,showStats:boolean)=>void run('Confidentialité enregistrée.',async()=>{

@@ -59,7 +59,7 @@ export function listingToCard(l:Listing):DemoCard{return marketCard(l.card,l.fin
 export function marketCard(c:ListingCard,finish:Finish):DemoCard{return {variant:c.variant??undefined,credit:c.art_credit??undefined,id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
 /** Offre d'une carte regroupée au marché (prix fixe). */
 export type MarketOffer={listing_id:string;price:number;buyer_tax:number;seller:string|null;mine:boolean;created_at:string};
-export type MarketGroup={key:string;offers:number;min_price:number;discovered:boolean;finish:Finish;card:ListingCard;listings:MarketOffer[]};
+export type MarketGroup={max_price?:number;best?:MarketOffer|null;key:string;offers:number;min_price:number;discovered:boolean;finish:Finish;card:ListingCard;listings:MarketOffer[]};
 export type MarketBoard<T>={items:T[];total:number;clans:{id:string;name:string}[]};
 export type RecycleResult={operation_id?:string;total:number;count:number;balance:number;replayed:boolean};
 export type DuplicatePreview={count:number;total:number;by_rarity:Partial<Record<Rarity,number>>};

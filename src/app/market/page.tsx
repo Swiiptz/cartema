@@ -1,5 +1,5 @@
 'use client';
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import Link from 'next/link';
 import {Clock,Coins,Crown,Gavel,Layers,Search,Store,Tag,X} from 'lucide-react';
 import {TarotCard} from '@/components/Card';
@@ -10,6 +10,8 @@ import {ALL_RARITIES,type Finish,type Rarity} from '@/lib/draw';
 import {callRpc,listingToCard,marketCard,type Listing,type MarketBoard,type MarketGroup,type MarketOffer,type TradeStatus} from '@/lib/game';
 
 const PAGE=48;
+/** Maximum renvoyé par get_market_board en un appel. */
+const BATCH=120;
 const SORTS={fixed:[['recent','Plus récentes'],['price_asc','Prix croissant'],['price_desc','Prix décroissant'],['rarity','Rareté'],['offers','Plus d’offres']],
  auction:[['ending','Fin la plus proche'],['price_asc','Mise croissante'],['price_desc','Mise décroissante'],['rarity','Rareté'],['recent','Plus récentes']]} as const;
 type Kind=keyof typeof SORTS;
@@ -40,12 +42,27 @@ export default function Market(){
  const [busy,setBusy]=useState<string|null>(null);
  const [message,setMessage]=useState<{error?:string;notice?:string}>({});
 
- const boardArgs=useCallback((offset:number)=>({p_kind:kind,p_rarity:rarity||null,p_finish:finish||null,p_query:query.trim()||null,p_clan_id:clan||null,p_undiscovered:undiscovered,p_sort:sort||null,p_limit:PAGE,p_offset:offset}),[kind,rarity,finish,query,clan,undiscovered,sort]);
+ // Nombre d'entrées affichées : un rechargement (achat, fin d'enchère) garde tout ce qui a été déroulé.
+ const shown=useRef(PAGE);
+ const boardArgs=useCallback((offset:number,limit:number)=>({p_kind:kind,p_rarity:rarity||null,p_finish:finish||null,p_query:query.trim()||null,p_clan_id:clan||null,p_undiscovered:undiscovered,p_sort:sort||null,p_limit:limit,p_offset:offset}),[kind,rarity,finish,query,clan,undiscovered,sort]);
+ useEffect(()=>{shown.current=PAGE;},[boardArgs]);
+ /** Les `count` premières entrées, relues depuis le début : ni doublon ni trou si le marché a bougé entre deux pages. */
+ const fetchBoard=useCallback(async(count:number)=>{
+  const items:(MarketGroup|Listing)[]=[];let board:MarketBoard<MarketGroup|Listing>={items,total:0,clans:[]};
+  for(let offset=0;offset<count;){
+   const limit=Math.min(BATCH,count-offset);
+   const m=await callRpc<MarketBoard<MarketGroup|Listing>>(client!,'get_market_board',boardArgs(offset,limit));
+   board={...m,items};offset+=limit;
+   const seen=new Set(items.map(itemKey));items.push(...m.items.filter(x=>!seen.has(itemKey(x))));
+   if(m.items.length<limit)break;
+  }
+  return board;
+ },[client,boardArgs]);
  const load=useCallback(async()=>{
   if(!client)return;
   try{
    const [m,own,st,b]=await Promise.all([
-    callRpc<MarketBoard<MarketGroup|Listing>>(client,'get_market_board',boardArgs(0)),
+    fetchBoard(shown.current),
     callRpc<Listing[]>(client,'get_my_listings'),
     callRpc<TradeStatus>(client,'get_trade_status'),
     callRpc<Listing[]>(client,'get_my_bids')]);
@@ -54,11 +71,12 @@ export default function Market(){
    // L'offre ouverte suit les achats des autres joueurs.
    setOffersOf(o=>o&&((m.items as MarketGroup[]).find(g=>g.key===o.key)??null));
   }catch(e){setMessage({error:(e as Error).message});}
- },[client,kind,boardArgs]);
+ },[client,kind,fetchBoard]);
  async function loadMore(){
   if(!client)return;setMore(true);
-  try{const m=await callRpc<MarketBoard<MarketGroup|Listing>>(client,'get_market_board',boardArgs(kind==='fixed'?groups?.length??0:auctions?.length??0));
-   if(kind==='fixed')setGroups(g=>[...(g??[]),...(m.items as MarketGroup[])]);else setAuctions(a=>[...(a??[]),...(m.items as Listing[])]);setTotal(m.total);}
+  const count=(kind==='fixed'?groups?.length??0:auctions?.length??0)+PAGE;
+  try{const m=await fetchBoard(count);shown.current=count;
+   if(kind==='fixed')setGroups(m.items as MarketGroup[]);else setAuctions(m.items as Listing[]);setTotal(m.total);}
   catch(e){setMessage({error:(e as Error).message});}finally{setMore(false);}
  }
  const switchKind=(k:Kind)=>{if(k===kind)return;setKind(k);setSort('');setClan('');};
@@ -123,7 +141,7 @@ export default function Market(){
    {(kind==='fixed'?groups:auctions)&&<p className="market-count muted">{total===0?'Aucun résultat':`${total.toLocaleString('fr-FR')} ${kind==='fixed'?`carte${total>1?'s':''} en vente`:`enchère${total>1?'s':''} en cours`}`}</p>}
    {kind==='fixed'?(!groups?<div className="card-grid">{Array.from({length:8},(_,i)=><Skeleton key={i} className="skeleton-card"/>)}</div>
    :groups.length===0?<Empty/>
-   :<div className="card-grid market-grid" key={boardKey}>{groups.map((g,i)=>{const best=g.listings.find(o=>!o.mine);const afford=!!best&&(player?.balance??0)>=best.price+best.buyer_tax;return <article key={g.key} className="listing rise" style={{'--i':Math.min(i,12)} as React.CSSProperties}>
+   :<div className="card-grid market-grid" key={boardKey}>{groups.map((g,i)=>{const best=g.best===undefined?g.listings.find(o=>!o.mine):g.best;const afford=!!best&&(player?.balance??0)>=best.price+best.buyer_tax;return <article key={g.key} className="listing rise" style={{'--i':Math.min(i,12)} as React.CSSProperties}>
      <div className="listing-art">{!g.discovered&&<span className="listing-new">Nouveau</span>}{g.offers>1&&<span className="listing-offers"><Layers size={11}/> {g.offers} offres</span>}<TarotCard card={marketCard(g.card,g.finish)}/></div>
      <div className="listing-info"><strong className="listing-price"><Coins size={14}/> {g.offers>1&&<small>dès</small>}{g.min_price.toLocaleString('fr-FR')}</strong><span className="muted">{g.offers>1?(top(g)>g.min_price?`jusqu’à ${top(g).toLocaleString('fr-FR')}`:'même prix'):g.listings[0]?.mine?'Votre annonce':`par ${g.listings[0]?.seller??'joueur sans pseudo'}`}</span></div>
      <div className="listing-actions">
@@ -170,4 +188,5 @@ function Offer({o,disabled,busy,balance,onBuy}:{o:MarketOffer;disabled:boolean;b
 }
 
 /** Prix le plus haut parmi les offres affichées. */
-function top(g:MarketGroup){return g.listings.reduce((m,o)=>Math.max(m,o.price),g.min_price);}
+function top(g:MarketGroup){return g.max_price??g.listings.reduce((m,o)=>Math.max(m,o.price),g.min_price);}
+const itemKey=(x:MarketGroup|Listing)=>'key' in x?x.key:x.listing_id;
