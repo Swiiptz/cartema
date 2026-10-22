@@ -53,7 +53,8 @@ export function EconomyTab({client,act,reason}:{client:SupabaseClient;act:Act;re
  </div>;
 }
 
-type ArtLine={label:string;active:boolean;odds:number|null;arts:number;active_arts:number;characters:number;owned:number};
+type ArtLine={legacy?:boolean;label:string;active:boolean;odds:number|null;arts:number;active_arts:number;characters:number;owned:number;
+ cards?:{art_id:string;code:string;name:string;rarity:string;art_path:string;active:boolean;owned:number}[]};
 
 /** Lignes de versions alternatives (même nom de version) : activation et chance propre. */
 function ArtLines({client,act,reason}:{client:SupabaseClient;act:Act;reason:Reason}){
@@ -70,14 +71,18 @@ function ArtLines({client,act,reason}:{client:SupabaseClient;act:Act;reason:Reas
  }
  return <section className="panel admin-edition eco-section">
   <div className="section-header"><div><span className="eyebrow">Versions alternatives</span><h2>Lignes de versions</h2></div></div>
-  <p className="admin-hint">Une ligne regroupe les versions alternatives qui portent le même nom. Chaque ligne d’un personnage tiré est tentée avec sa chance ; laissez vide pour la chance globale ({data?chance(data.global_odds):'…'}), 0 pour jamais. Une version seule se désactive depuis la fiche du personnage.</p>
+  <p className="admin-hint">Une ligne regroupe les versions qui portent le même nom : versions alternatives, et anciennes illustrations officielles (« Illustration d’origine »…), qui tombent de la même façon. Chaque ligne d’un personnage tiré est tentée avec sa chance ; laissez vide pour la chance globale ({data?chance(data.global_odds):'…'}), 0 pour jamais. Une version seule se désactive depuis la fiche du personnage.</p>
   {!data?<Skeleton style={{height:120}}/>:data.lines.length===0?<p className="muted">Aucune version alternative pour l’instant.</p>
    :<ul className="arts-list">{data.lines.map(l=>{const raw=(odds[l.label]??'').replace(/\s/g,'');const bad=raw!==''&&!/^\d+$/.test(raw);const dirty=raw!==(l.odds===null?'':String(l.odds));
-    return <li key={l.label} className={l.active?'':'off'}>
-     <span><strong>{l.label}</strong><small>{l.active?`tirable · ${chance(l.odds??data.global_odds)}${l.odds===null?' (global)':''}`:'désactivée'} · {l.active_arts}/{l.arts} version{l.arts>1?'s':''} active{l.active_arts>1?'s':''} · {l.characters} personnage{l.characters>1?'s':''} · {l.owned} exemplaire{l.owned>1?'s':''}</small></span>
+    return <li key={l.label} className={`line-row ${l.active?'':'off'}`}>
+     <span><strong>{l.label}</strong>{l.legacy&&<em className="line-tag">anciennes officielles</em>}<small>{l.active?`tirable · ${chance(l.odds??data.global_odds)}${l.odds===null?' (global)':''}`:'désactivée'} · {l.active_arts}/{l.arts} version{l.arts>1?'s':''} active{l.active_arts>1?'s':''} · {l.characters} personnage{l.characters>1?'s':''} · {l.owned} exemplaire{l.owned>1?'s':''}</small></span>
      <span className="art-actions"><label className="auth-field"><span>1 sur N</span><input inputMode="numeric" aria-label={`Chance de ${l.label}`} placeholder={String(data.global_odds)} value={odds[l.label]??''} onChange={e=>setOdds(o=>({...o,[l.label]:e.target.value}))}/></label>
       <button type="button" className="primary ghost compact" disabled={bad||!dirty} onClick={()=>void save(l,l.active)}>Enregistrer</button>
       <button type="button" className="text-link" disabled={bad} onClick={()=>void save(l,!l.active)}>{l.active?'Désactiver':'Activer'}</button></span>
+     {l.cards&&l.cards.length>0&&<details className="line-cards"><summary>Voir les {l.cards.length} carte{l.cards.length>1?'s':''} de la ligne</summary>
+      <ul>{l.cards.map(c=><li key={c.art_id} className={c.active?'':'off'}><img src={c.art_path.startsWith('/')?`${process.env.NEXT_PUBLIC_BASE_PATH??''}${c.art_path}`:c.art_path} alt=""/>
+       <span><strong>{c.code} · {c.name}</strong><small>{c.rarity} · {c.active?'tirable':'version désactivée'} · {c.owned} exemplaire{c.owned>1?'s':''}</small></span></li>)}</ul>
+      <p className="admin-hint">Pour désactiver une seule de ces versions : fiche du personnage, « Versions d’illustration ».</p></details>}
     </li>;})}</ul>}
  </section>;
 }

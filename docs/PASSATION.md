@@ -68,6 +68,8 @@ Mise à jour : 22 octobre 2026. Le §0 est le journal de ce qui a été livré ;
 - **Tests à chaque push** (`.github/workflows/tests.yml`) : tests, types et build sur `main` et les pull requests.
 - **Succès conditionnels avec finition** (migration `20261022200000_achievement_finishes`, colonne `achievements.required_finishes`) : dans Admin › Succès, chaque personnage requis peut exiger « Dorée » ou « Sanglante » (ex. Varco en Dorée et Joséphine de Vilmot en Dorée) ; sinon la découverte suffit. La finition compte dès qu'elle a été obtenue une fois.
 - **Don de cartes en version alternative** (même migration) : dans la fiche d'un joueur, l'admin choisit la version d'illustration (officielle, alternative ou ancienne officielle) en plus de la finition (`admin_grant_card` reçoit `p_art_id`).
+- **Anciennes illustrations officielles tirables** (migration `20261022210000_legacy_art_toggle`, décision du 22/10) : une ancienne officielle (« Illustration d'origine », « Ancienne illustration 2 »…) se comporte comme une version alternative. Active par défaut (toutes les existantes ont été activées), elle peut tomber au tirage avec la chance de sa ligne ou la chance globale ; « Désactiver » (fiche du personnage) l'empêche de tomber, et les exemplaires possédés la gardent. Les lignes de versions les regroupent aussi par nom (étiquette « anciennes officielles »).
+- **Lignes de versions : cartes dépliables** (même migration, `admin_art_lines` renvoie `cards`) : chaque ligne d'Admin › Économie se déplie sur la liste de ses cartes (code, nom, rareté, version active ou non, exemplaires).
 - **Passation réécrite** (22/10) : les §1 à §3, §5, §6 et §8 décrivaient encore la démo d'avant Supabase.
 
 ## 1. Reprendre ici

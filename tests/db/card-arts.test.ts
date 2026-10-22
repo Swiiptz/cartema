@@ -51,6 +51,26 @@ describe('versions d’illustration',()=>{
   });
 });
 
+describe('anciennes illustrations officielles',()=>{
+  it('tombent comme des versions alternatives tant qu’elles sont actives (par défaut)',async()=>{
+    const u=await player('ancien_tirable');const c=await char(3); // sa version Paint est désactivée plus haut
+    await db.query(`update public.characters set art_path=$2 where id=$1`,[c,ART]);
+    const copy=await give(u,3);
+    await db.query(`update public.characters set art_path=$2 where id=$1`,[c,'/illustrations/CAM/v2.webp']);
+    const legacy=(await rpc<any[]>(db,admin,'admin_card_arts',[c])).find(a=>a.kind==='legacy');
+    expect(legacy).toMatchObject({active:true,owned:1}); // active par défaut
+    const pick=async()=>(await db.query<{a:string|null}>('select private.pick_alternate_art($1,1) a',[c])).rows[0].a;
+    expect(await pick()).toBe(legacy.id);
+    const {lines}=await rpc(db,admin,'admin_art_lines');
+    expect(lines.find((l:any)=>l.label===legacy.label)).toMatchObject({legacy:true,active:true});
+    await rpc(db,admin,'admin_set_card_art_active',[legacy.id,false,'Ne plus la faire tomber']);
+    expect(await pick()).toBeNull();
+    // L'exemplaire possédé la garde.
+    expect((await db.query<{art_id:string}>('select art_id from public.inventory_items where id=$1',[copy])).rows[0].art_id).toBe(legacy.id);
+    await rpc(db,admin,'admin_set_card_art_active',[legacy.id,true,'Retour']);
+    expect(await pick()).toBe(legacy.id);
+  });
+});
 describe('lignes de versions',()=>{
   const pick=async(c:string,global:number)=>(await db.query<{a:string|null}>('select private.pick_alternate_art($1,$2) a',[c,global])).rows[0].a;
   it('règle la chance et l’activation de toutes les versions du même nom',async()=>{
@@ -67,7 +87,9 @@ describe('lignes de versions',()=>{
     expect(await pick(c1,1)).toBeNull();
     expect(await pick(c7,1)).toBeNull();
     const {lines}=await rpc(db,admin,'admin_art_lines');
-    expect(lines.find((l:any)=>l.label==='Ligne Néon')).toMatchObject({active:false,odds:null,arts:2,active_arts:2,characters:2,owned:0});
+    const neon=lines.find((l:any)=>l.label==='Ligne Néon');
+    expect(neon).toMatchObject({active:false,odds:null,arts:2,active_arts:2,characters:2,owned:0});
+    expect(neon.cards.map((c:any)=>[c.code,c.active,c.owned])).toEqual([['CAM-001',true,0],['CAM-007',true,0]]);
     await rpc(db,admin,'admin_set_art_line',['Ligne Néon',true,null,'Reprise']);
     expect(await pick(c7,1)).not.toBeNull();
     await expectError(rpc(db,admin,'admin_set_art_line',['Ligne Néon',true,-1,'x']),/invalid_odds/);
