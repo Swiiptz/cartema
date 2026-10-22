@@ -37,11 +37,14 @@ export function formatDelay(ms:number){
 export function Countdown({to,onDone}:{to:string|null;onDone?:()=>void}){
  const [now,setNow]=useState(()=>Date.now());
  const target=to?Date.parse(to):NaN;
+ // onDone change à chaque rendu (fonction en ligne) : on garde la dernière dans une ref pour ne pas
+ // réarmer le minuteur, sinon une échéance déjà passée rappelait onDone chaque seconde.
+ const done=useRef(onDone);done.current=onDone;
  useEffect(()=>{
   if(!Number.isFinite(target))return;
-  const id=setInterval(()=>{const n=Date.now();setNow(n);if(n>=target){clearInterval(id);onDone?.();}},1000);
+  const id=setInterval(()=>{const n=Date.now();setNow(n);if(n>=target){clearInterval(id);done.current?.();}},1000);
   return()=>clearInterval(id);
- },[target,onDone]);
+ },[target]);
  if(!Number.isFinite(target))return null;
  return <time dateTime={to!}>{formatDelay(target-now)}</time>;
 }

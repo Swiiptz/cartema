@@ -1,6 +1,6 @@
 import type {Metadata,Viewport} from 'next';
 import Link from 'next/link';
-import {Cinzel,Cormorant_Garamond,Manrope} from 'next/font/google';
+import localFont from 'next/font/local';
 import {Moon} from 'lucide-react';
 import {Navigation} from '@/components/Navigation';
 import {HandleBanner} from '@/components/HandleBanner';
@@ -10,9 +10,22 @@ import {NotificationBell} from '@/components/NotificationBell';
 import {ServiceWorker} from '@/components/ServiceWorker';
 import {withBase} from '@/lib/paths';
 import './globals.css';
-const cinzel=Cinzel({subsets:['latin'],weight:['400','600','700'],variable:'--font-cinzel',display:'swap'});
-const cormorant=Cormorant_Garamond({subsets:['latin'],weight:['500','600'],style:['normal','italic'],variable:'--font-cormorant',display:'swap'});
-const manrope=Manrope({subsets:['latin'],weight:['400','500','600','700'],variable:'--font-manrope',display:'swap'});
+// Polices embarquées (paquets @fontsource, mêmes fichiers que Google Fonts) : le build ne dépend
+// plus d'un téléchargement chez Google, qui faisait parfois échouer le déploiement.
+const cinzel=localFont({variable:'--font-cinzel',display:'swap',src:[
+ {path:'../../node_modules/@fontsource/cinzel/files/cinzel-latin-400-normal.woff2',weight:'400',style:'normal'},
+ {path:'../../node_modules/@fontsource/cinzel/files/cinzel-latin-600-normal.woff2',weight:'600',style:'normal'},
+ {path:'../../node_modules/@fontsource/cinzel/files/cinzel-latin-700-normal.woff2',weight:'700',style:'normal'}]});
+const cormorant=localFont({variable:'--font-cormorant',display:'swap',src:[
+ {path:'../../node_modules/@fontsource/cormorant-garamond/files/cormorant-garamond-latin-500-normal.woff2',weight:'500',style:'normal'},
+ {path:'../../node_modules/@fontsource/cormorant-garamond/files/cormorant-garamond-latin-500-italic.woff2',weight:'500',style:'italic'},
+ {path:'../../node_modules/@fontsource/cormorant-garamond/files/cormorant-garamond-latin-600-normal.woff2',weight:'600',style:'normal'},
+ {path:'../../node_modules/@fontsource/cormorant-garamond/files/cormorant-garamond-latin-600-italic.woff2',weight:'600',style:'italic'}]});
+const manrope=localFont({variable:'--font-manrope',display:'swap',src:[
+ {path:'../../node_modules/@fontsource/manrope/files/manrope-latin-400-normal.woff2',weight:'400',style:'normal'},
+ {path:'../../node_modules/@fontsource/manrope/files/manrope-latin-500-normal.woff2',weight:'500',style:'normal'},
+ {path:'../../node_modules/@fontsource/manrope/files/manrope-latin-600-normal.woff2',weight:'600',style:'normal'},
+ {path:'../../node_modules/@fontsource/manrope/files/manrope-latin-700-normal.woff2',weight:'700',style:'normal'}]});
 export const metadata:Metadata={title:'Cartema',description:'Un rituel, cinq cartes. Découvrez le tarot gothique de la chronique Camarilla.',manifest:withBase('/manifest.webmanifest'),applicationName:'Cartema',
  icons:{icon:[{url:withBase('/icon.svg'),type:'image/svg+xml'},{url:withBase('/favicon-48.png'),sizes:'48x48',type:'image/png'}],apple:[{url:withBase('/apple-touch-icon.png'),sizes:'180x180'}]},
  // Écran d'accueil iOS : plein écran, barre d'état fondue dans le fond sombre.
