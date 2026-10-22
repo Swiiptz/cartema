@@ -241,10 +241,22 @@ describe('séries de succès à paliers',()=>{
     await discover(u,`c.number<=10`);
     const list=await rpc<any[]>(db,u,'get_achievements');
     const faces=list.filter(a=>a.series==='faces').sort((a,b)=>a.tier-b.tier);
-    expect(faces.map(a=>[a.code,a.tier])).toEqual([['faces_10',1],['faces_50',2],['faces_100',3],['faces_200',4]]);
+    expect(faces.map(a=>[a.code,a.tier])).toEqual([['faces_10',1],['faces_50',2],['faces_100',3],['faces_200',4],['faces_500',5]]);
     expect(faces[0].unlocked_at).not.toBeNull();expect(faces[1].unlocked_at).toBeNull();
     expect(list.find(a=>a.code==='gold_10')).toMatchObject({secret:false,series:'gold',tier:3});
-    expect(list.filter(a=>a.series==='packs')).toHaveLength(4);
+    expect(list.filter(a=>a.series==='packs')).toHaveLength(5);
+  });
+  it('prépare la prochaine extension : un palier de plus, sans toucher au social (22/10)',async()=>{
+    const u=await player('palier_haut');
+    const list=await rpc<any[]>(db,u,'get_achievements');
+    const top=(s:string)=>list.filter(a=>a.series===s).sort((a,b)=>b.tier-a.tier)[0];
+    expect(top('faces')).toMatchObject({code:'faces_500',tier:5,target:500});
+    expect(top('packs')).toMatchObject({code:'packs_2000',tier:5,target:2000});
+    expect(top('gold')).toMatchObject({code:'gold_25',tier:4,target:25});
+    expect(top('blood')).toMatchObject({code:'blood_10',tier:4,target:10});
+    expect(list.filter(a=>a.series==='friends')).toHaveLength(3);
+    expect(list.filter(a=>a.series==='trade')).toHaveLength(3);
+    expect(list.filter(a=>a.series==='merchant')).toHaveLength(3);
   });
 });
 

@@ -1,13 +1,14 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
-import {ArrowRight,BookOpen,Coins,Eye,Moon,Sparkles,Users} from 'lucide-react';
+import {ArrowRight,BookOpen,Coins,Eye,Lightbulb,Moon,Sparkles,Users} from 'lucide-react';
 import {TarotCard,palette} from '@/components/Card';
 import {BoosterSkin} from '@/components/BoosterSkin';
 import {useAuth} from '@/components/AuthProvider';
 import {CountUp,Countdown,Skeleton} from '@/components/ui';
 import {MissionList} from '@/components/MissionList';
 import {EventBanner} from '@/components/EventBanner';
+import {ContestTeaser} from '@/components/ContestTeaser';
 import {InstallCard} from '@/components/InstallCard';
 import {showcase} from '@/data/demo';
 import {ALL_RARITIES} from '@/lib/draw';
@@ -79,6 +80,7 @@ function Dashboard(){
    <span className="chip gold"><Coins size={15}/><CountUp value={player.balance}/> <small>Deniers</small></span>
   </header>
 
+  <ContestTeaser/>
   <InstallCard/>
   {(player.social_pending??0)>0&&<Link href="/amis/" className="social-alert rise"><Users size={16}/> <span><strong>{player.social_pending}</strong> invitation{player.social_pending!>1?'s':''}, cadeau{player.social_pending!>1?'x':''} ou échange{player.social_pending!>1?'s':''} en attente</span><ArrowRight size={14}/></Link>}
   <EventBanner/>
@@ -110,6 +112,8 @@ function Dashboard(){
     :last?<div className="last-row">{lastCards.map((c,i)=><div key={i} className="rise" style={{'--i':i} as React.CSSProperties}><TarotCard card={c}/></div>)}</div>
     :<p className="muted">Vos cartes apparaîtront ici après votre première ouverture.</p>}
   </section>
+
+  <Link href="/doleances/" className="panel ideas-invite rise" style={{'--i':5} as React.CSSProperties}><Lightbulb size={20}/><span><strong>Une idée, une carte rêvée, un souci ?</strong><small>Écrivez-nous dans la boîte à doléances : l’équipe lit tout et répond.</small></span><ArrowRight size={16}/></Link>
  </div>;
 }
 

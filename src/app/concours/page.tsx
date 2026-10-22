@@ -31,7 +31,7 @@ export default function Concours(){
 
  const load=useCallback(async()=>{
   if(!client)return;
-  try{const [c,r]=await Promise.all([callRpc<Contest|null>(client,'get_contest'),callRpc<ContestRank[]>(client,'get_contest_leaderboard')]);setContest(c);setRanking(r);
+  try{const [c,r]=await Promise.all([callRpc<Contest|null>(client,'get_contest'),callRpc<ContestRank[]>(client,'get_contest_leaderboard')]);setContest(c);setRanking(r);if(c?.upcoming)setTab('rules');
    setOpen(o=>o&&(c?.cards.find(x=>x.character_id===o.character_id)??null));}
   catch(e){setMessage({error:(e as Error).message});setContest(null);}
  },[client]);
@@ -53,13 +53,14 @@ export default function Concours(){
  return <div className="page contest-page">
   {askNode}
   <header className="market-head rise"><div><span className="eyebrow">Concours d’illustrations · {contest.edition}</span><h1>{contest.title}</h1>
-   <p className="muted contest-when">{contest.open?<><Clock size={13}/> Se termine dans <Countdown to={contest.ends_at} onDone={()=>void load()}/> · {dateFr(contest.ends_at)}</>:contest.rewarded?'Concours terminé : les récompenses ont été distribuées.':'Concours terminé : validation des dessins en cours.'}</p></div>
+   <p className="muted contest-when">{contest.upcoming?<><Clock size={13}/> Commence dans <Countdown to={contest.starts_at} onDone={()=>void load()}/> · {dateFr(contest.starts_at)}</>:contest.open?<><Clock size={13}/> Se termine dans <Countdown to={contest.ends_at} onDone={()=>void load()}/> · {dateFr(contest.ends_at)}</>:contest.rewarded?'Concours terminé : les récompenses ont été distribuées.':'Concours terminé : validation des dessins en cours.'}</p></div>
    <span className="chip gold"><Trophy size={15}/> {me?<>{me.points} pt{me.points>1?'s':''}<small> · {me.position}{me.position===1?'er':'e'}</small></>:<>0 pt<small> · {contest.my_entries} dessin{contest.my_entries>1?'s':''}</small></>}</span></header>
   <div className="segmented social-tabs" role="tablist">{([['cards','Cartes',Brush],['ranking','Classement',Trophy],['rules','Règles',ScrollText]] as const).map(([k,l,I])=><button key={k} role="tab" aria-selected={tab===k} onClick={()=>setTab(k)}><I size={15}/> {l}</button>)}</div>
   <div className="admin-toast" aria-live="polite">{message.error&&<p className="auth-error" role="alert">{message.error}<button className="icon-button" aria-label="Fermer" onClick={()=>setMessage({})}><X size={16}/></button></p>}{message.notice&&<p className="auth-notice">{message.notice}</p>}</div>
 
   <div key={tab} className="tab-panel">
-  {tab==='cards'&&<>
+  {tab==='cards'&&contest.upcoming&&<section className="panel album-empty"><Palette size={28}/><h2>Les cartes arrivent au lancement.</h2><p className="muted">Vous pourrez proposer vos dessins et voter dès le {dateFr(contest.starts_at)}. Préparez vos crayons : lisez les règles en attendant.</p><button className="primary ghost" onClick={()=>setTab('rules')}><ScrollText size={15}/> Lire les règles</button></section>}
+  {tab==='cards'&&!contest.upcoming&&<>
    {!player?.profile.handle&&<p className="trade-lock"><Palette size={15}/> Choisissez un <Link className="text-link" href="/profile/">pseudonyme</Link> pour proposer vos dessins.</p>}
    <div className="market-filters">
     <label className="search-field"><Search size={18}/><input aria-label="Rechercher une carte" placeholder="Nom, numéro ou clan…" value={query} onChange={e=>setQuery(e.target.value)}/></label>

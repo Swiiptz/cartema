@@ -42,6 +42,8 @@ function SubmissionItem({s,client,act,reason,catalog,onDone}:{s:Submission;clien
  // Une illustration acceptée pour une carte qui n'en avait pas rapporte 1 booster ; le reste est au choix.
  const [deniers,setDeniers]=useState('0');
  const [boosters,setBoosters]=useState(s.kind==='illustration'&&!s.art_path?'1':'0');
+ // Crédit de l'illustration appliquée : le pseudo de l'auteur par défaut.
+ const [credit,setCredit]=useState(s.author??'');
  const [busy,setBusy]=useState(false);
  const code=`${s.prefix}-${String(s.number).padStart(3,'0')}`;
  const card={id:code,name:s.name,clan:s.clan??'?',role:s.role_title,rarity:s.rarity,known:true,illustration:s.art_path??undefined,silhouette:silhouetteIndex(s.silhouette_key),artLayout:layout(s.art_meta),artOffsetY:Number(s.art_meta?.offsetY)||undefined};
@@ -50,7 +52,7 @@ function SubmissionItem({s,client,act,reason,catalog,onDone}:{s:Submission;clien
   return new File([blob],s.image_path!.split('/').pop()!,{type:blob.type||'image/png'});
  }
  async function decide(accept:boolean,apply?:'official'|'alternate'|'credit'){
-  const note=await reason(accept?`Accepter la proposition de ${s.author} pour ${s.name}${apply==='official'?' et remplacer l’illustration officielle':apply==='alternate'?' et l’ajouter en version alternative':apply==='credit'?` et créditer « ${s.credit_name} »`:''} ? Récompense : ${Number(deniers)||0} Deniers, ${Number(boosters)||0} booster(s). Note pour le joueur :`:`Refuser la proposition de ${s.author} : raison (envoyée au joueur) ?`,accept?'Accepter':'Refuser');
+  const note=await reason(accept?`Accepter la proposition de ${s.author} pour ${s.name}${apply==='official'?' et remplacer l’illustration officielle':apply==='alternate'?' et l’ajouter en version alternative':apply==='credit'?` et créditer « ${s.credit_name} »`:''} ? Récompense : ${Number(deniers)||0} Deniers, ${Number(boosters)||0} booster(s).${(apply==='official'||apply==='alternate')&&credit.trim()?` Crédit : « ${credit.trim()} ».`:''} Note pour le joueur :`:`Refuser la proposition de ${s.author} : raison (envoyée au joueur) ?`,accept?'Accepter':'Refuser');
   if(note===null)return;
   setBusy(true);
   const ok=await act(accept?'Proposition acceptée.':'Proposition refusée.',async c=>{
@@ -59,8 +61,11 @@ function SubmissionItem({s,client,act,reason,catalog,onDone}:{s:Submission;clien
     const ch=catalog.characters.find(x=>x.id===s.character_id);
     if(!ch)throw new Error('Personnage introuvable dans le catalogue.');
     const {path,meta}=await uploadIllustration(c,await imageFile(),{prefix:s.prefix,number:s.number});
-    if(apply==='official')await callRpc(c,'admin_save_character',{p_id:ch.id,p_edition_id:ch.edition_id,p_number:ch.number,p_name:ch.name,p_role_title:ch.role_title,p_clan_id:ch.clan_id,p_rarity:ch.rarity,p_art_path:path,p_art_meta:meta});
-    else await callRpc(c,'admin_add_card_art',{p_character_id:ch.id,p_art_path:path,p_art_meta:meta,p_label:`Version de ${s.author??'joueur'}`,p_reason:note});
+    if(apply==='official'){
+     await callRpc(c,'admin_save_character',{p_id:ch.id,p_edition_id:ch.edition_id,p_number:ch.number,p_name:ch.name,p_role_title:ch.role_title,p_clan_id:ch.clan_id,p_rarity:ch.rarity,p_art_path:path,p_art_meta:meta});
+     if(credit.trim())await callRpc(c,'admin_set_art_credit',{p_character_id:ch.id,p_art_id:null,p_credit:credit.trim(),p_reason:note});
+    }
+    else await callRpc(c,'admin_add_card_art',{p_character_id:ch.id,p_art_path:path,p_art_meta:meta,p_label:`Version de ${s.author??'joueur'}`,p_reason:note,p_credit:credit.trim()||null});
    }
    await callRpc(c,'admin_decide_submission',{p_id:s.id,p_accept:accept,p_reward_deniers:Number(deniers)||0,p_reward_boosters:Number(boosters)||0,p_note:note});
   });
@@ -79,7 +84,8 @@ function SubmissionItem({s,client,act,reason,catalog,onDone}:{s:Submission;clien
   </div>
   {s.status==='pending'?<>
    <div className="admin-row give-row"><label className="auth-field"><span>Deniers</span><input inputMode="numeric" value={deniers} onChange={e=>setDeniers(e.target.value.replace(/\D/g,''))}/></label>
-    <label className="auth-field"><span>Boosters</span><input inputMode="numeric" value={boosters} onChange={e=>setBoosters(e.target.value.replace(/\D/g,''))}/></label></div>
+    <label className="auth-field"><span>Boosters</span><input inputMode="numeric" value={boosters} onChange={e=>setBoosters(e.target.value.replace(/\D/g,''))}/></label>
+    {s.kind==='illustration'&&<label className="auth-field credit-field"><span>Crédit de l’artiste</span><input value={credit} maxLength={80} placeholder="Nom affiché sous la carte" onChange={e=>setCredit(e.target.value)}/></label>}</div>
    <div className="admin-actions">
     {s.kind==='illustration'&&<><button className="primary compact" disabled={busy||!image} onClick={()=>void decide(true,'official')}><Replace size={14}/> {s.art_path?'Remplacer l’officielle':'Appliquer'}</button>
      <button className="primary ghost compact" disabled={busy||!image} onClick={()=>void decide(true,'alternate')}><Layers size={14}/> Version alternative</button></>}

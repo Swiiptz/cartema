@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
-import {Award,BookOpen,Check,Coins,Eye,Layers3,Link2,LogOut,Pencil,ScrollText,Settings,Sparkles,Users} from 'lucide-react';
+import {Award,BookOpen,Check,Coins,Eye,Layers3,Lightbulb,Link2,LogOut,Pencil,ScrollText,Settings,Sparkles,Users} from 'lucide-react';
 import {TarotCard} from '@/components/Card';
 import {useAuth} from '@/components/AuthProvider';
 import {DiscordIcon} from '@/components/DiscordIcon';
@@ -101,7 +101,7 @@ export default function Profile(){
   {pub&&client&&<FeaturedEditor client={client} open={editingFeatured} current={pub.featured??[]} onClose={()=>setEditingFeatured(false)} onSaved={p=>{setPub(p);setEditingFeatured(false);setNotice('Succès mis en avant enregistrés.');}}/>}
   {pub&&client&&<ShowcaseEditor client={client} open={editing} current={pub.showcase??[]} onClose={()=>setEditing(false)} onSaved={p=>{setPub(p);setEditing(false);setNotice('Vitrine enregistrée.');}}/>}
 
-  <div className="profile-links rise" style={{'--i':5} as React.CSSProperties}><Link className="primary" href="/collection/"><BookOpen size={16}/> Ma collection</Link><Link className="primary ghost" href="/progression/"><Award size={16}/> Missions &amp; succès</Link><Link className="primary ghost" href="/historique/"><ScrollText size={16}/> Mon historique</Link><Link className="primary ghost" href="/amis/"><Users size={16}/> Amis &amp; échanges{(player.social_pending??0)>0&&<b className="tab-count">{player.social_pending}</b>}</Link></div>
+  <div className="profile-links rise" style={{'--i':5} as React.CSSProperties}><Link className="primary" href="/collection/"><BookOpen size={16}/> Ma collection</Link><Link className="primary ghost" href="/progression/"><Award size={16}/> Missions &amp; succès</Link><Link className="primary ghost" href="/historique/"><ScrollText size={16}/> Mon historique</Link><Link className="primary ghost" href="/doleances/"><Lightbulb size={16}/> Doléances &amp; idées</Link><Link className="primary ghost" href="/amis/"><Users size={16}/> Amis &amp; échanges{(player.social_pending??0)>0&&<b className="tab-count">{player.social_pending}</b>}</Link></div>
 
   <section className="panel settings-panel rise" style={{'--i':6} as React.CSSProperties} aria-labelledby="reglages">
    <h2 id="reglages"><Settings size={18}/> Paramètres du compte</h2>

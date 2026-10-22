@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useState} from 'react';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
-import {ArrowLeftRight,Award,Bell,CheckCheck,Coins,Gavel,Flag,Gift,Heart,Palette,UserPlus,Users} from 'lucide-react';
+import {ArrowLeftRight,Award,Bell,CheckCheck,Coins,Gavel,Flag,Gift,Heart,Lightbulb,Palette,UserPlus,Users} from 'lucide-react';
 import {useAuth} from './AuthProvider';
 import {Sheet,Skeleton} from './ui';
 import {callRpc,type AppNotification,type Notifications} from '@/lib/game';
@@ -40,6 +40,8 @@ export function describe(n:AppNotification):{text:string;icon:typeof Bell;href:s
   case 'contest_reward':{
    const r=[(p.deniers??0)>0&&`+${d(p.deniers)}`,(p.boosters??0)>0&&`+${p.boosters} booster${(p.boosters??0)>1?'s':''}`].filter(Boolean).join(' · ');
    return {text:`Concours « ${p.title} » : ${p.position}${p.position===1?'re':'e'} place${p.podium?', titre « Illustrateur de génie »':''}${r?` (${r})`:''}.`,icon:Palette,href:'/concours/'};}
+  case 'suggestion_received':return {text:`${p.from} envoie une doléance : « ${p.title} ».`,icon:Lightbulb,href:'/admin/'};
+  case 'suggestion_answered':return {text:`L’équipe a répondu à votre idée « ${p.title} »${p.status==='planned'?' : elle est prévue !':p.status==='done'?' : c’est fait !':p.status==='declined'?'.':'.'}${p.public?' Elle est ouverte au vote.':''}`,icon:Lightbulb,href:'/doleances/'};
   default:return {text:'Nouvelle activité.',icon:Bell,href:'/'};
  }
 }

@@ -20,6 +20,8 @@ export type PlayerState={
  missions_ready?:number;
  /** Concours d'illustrations ouvert (bannière du site). */
  contest?:{id:string;title:string;ends_at:string}|null;
+ /** Prochain concours, annoncé 14 jours avant son début (annonce de l'accueil). */
+ contest_next?:{id:string;title:string;starts_at:string;ends_at:string;edition:string|null}|null;
  /** Éditions ouvertes (prix, boosters achetés pour elles) puis annoncées « Soon » (nom et sachet seulement). */
  editions:PlayerEdition[];
 };
@@ -59,7 +61,7 @@ export const EVENT_METRICS:Record<string,string>={open_boosters:'Boosters ouvert
  market_list:'Mises en vente',auction_bid:'Enchères placées',trade_done:'Échanges conclus',gift_send:'Cartes offertes',daily_login:'Jours de connexion'};
 export type GameEvent={id:string;name:string;description:string;starts_at:string;ends_at:string;active:boolean;finish_multiplier:number;deniers_multiplier:number;bonus_boosters:number;free_interval_hours:number|null;claimed:boolean};
 export type NotificationPrefs={friends:boolean;social:boolean;market:boolean;achievements:boolean};
-export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{character?:string;title?:string;position?:number;deniers?:number;boosters?:number;podium?:boolean;event?:string;rank?:number;accepted?:boolean;kind?:string;note?:string|null;target?:string;category?:string;from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number}};
+export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{character?:string;title?:string;public?:boolean;position?:number;deniers?:number;boosters?:number;podium?:boolean;event?:string;rank?:number;accepted?:boolean;kind?:string;note?:string|null;target?:string;category?:string;from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number}};
 export type Notifications={items:AppNotification[];unread:number;prefs:NotificationPrefs};
 export type PublicProfile={verified?:boolean;featured:FeaturedAchievement[];profile_id:string;handle:string;title:string|null;created_at:string;relation:'self'|'friends'|'pending_out'|'pending_in'|'none';visible:boolean;settings:{visibility:'public'|'friends'|'private';show_stats:boolean}|null;showcase:SocialCard[]|null;stats:{faces:number;total_characters:number;achievements:number;gold:number;blood:number;position:number}|null;recent:{label:string;unlocked_at:string;tier:number|null}[]|null};
 export type Leaderboard={top:{position:number;handle:string;title:string|null;score:number;achievements:number;faces:number;me:boolean}[];me:{position:number;score:number;achievements:number;faces:number}|null;total_characters:number;total_achievements:number};
@@ -194,6 +196,9 @@ const messages:Record<string,string>={
  not_friends:'Réservé à vos amis.',
  gift_unavailable:'Ce cadeau n’est plus disponible.',
  rules_too_long:'Les règles sont trop longues (8 000 caractères au plus).',
+ invalid_suggestion:'Titre de 3 à 80 caractères, description de 2 000 caractères au plus.',
+ suggestion_limit:'Vous avez envoyé 5 doléances aujourd’hui. Revenez demain, après 6 h.',
+ own_suggestion:'On ne vote pas pour sa propre idée.',
  card_cooldown:'Carte reçue récemment : elle ne peut pas être échangée, offerte ni vendue avant 72 h.',
  card_returning:'Cette carte a appartenu à ce joueur il y a moins de 30 jours : elle ne peut pas encore lui revenir.',
  trade_daily_limit:'Limite d’échanges du jour atteinte (pour vous ou votre ami). Elle se renouvelle à 6 h.',
@@ -246,6 +251,13 @@ export function revealOrder<C extends {rarity:Rarity;finish?:string;unique?:bool
 export type ContestCard={character_id:string;code:string;number:number;name:string;clan:string|null;rarity:Rarity;discovered:boolean;card:SocialCard|null;entries:number;leader:string|null;mine:boolean;voted:boolean};
 export type ContestPlace={from:number;to:number;deniers:number;boosters:number};
 export type ContestRewards={places:ContestPlace[];others:{deniers:number;boosters:number}};
-export type Contest={id:string;title:string;starts_at:string;ends_at:string;open:boolean;rewarded:boolean;edition:string;rewards:ContestRewards;rules?:string|null;my_entries:number;my_points:number;cards:ContestCard[]};
+export type Contest={id:string;title:string;starts_at:string;ends_at:string;open:boolean;rewarded:boolean;edition:string;rewards:ContestRewards;rules?:string|null;upcoming?:boolean;my_entries:number;my_points:number;cards:ContestCard[]};
 export type ContestEntry={entry_id:string;image_path:string;author:string;votes:number;leading:boolean;mine:boolean;my_vote:boolean;selected:'main'|'alternate'|null;created_at:string};
 export type ContestRank={position:number;handle:string;leads:number;selected:number;real:number;points:number;me:boolean};
+
+/** Doléances (voir supabase/migrations/20261022330000_suggestions_tiers.sql). */
+export type SuggestionCategory='feature'|'card'|'bug'|'other';
+export type SuggestionStatus='new'|'planned'|'done'|'declined';
+export type Suggestion={id:string;category:SuggestionCategory;title:string;body:string;status:SuggestionStatus;public:boolean;reply:string|null;created_at:string;replied_at:string|null;mine:boolean;author:string|null;votes:number;my_vote:boolean};
+export const SUGGESTION_CATEGORIES:Record<SuggestionCategory,string>={feature:'Fonctionnalité',card:'Carte',bug:'Correction',other:'Autre'};
+export const SUGGESTION_STATUS:Record<SuggestionStatus,string>={new:'Reçue',planned:'Prévue',done:'Faite',declined:'Écartée'};

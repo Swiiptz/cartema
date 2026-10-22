@@ -103,6 +103,25 @@ describe('concours d’illustrations',()=>{
   });
 });
 
+describe('concours à venir',()=>{
+  it('s’annonce 14 jours avant : accueil et page Concours, sans cartes ni dessins avant le début',async()=>{
+    const fresh=await createDb();const ed=await seedEdition(fresh,{prefix:'CAM',perRarity:1});
+    const boss=await createUser(fresh);await fresh.query(`update public.profiles set role='admin' where id=$1`,[boss]);
+    const u=await createUser(fresh,{createdAt:'2026-01-01T00:00:00Z'});await rpc(fresh,u,'set_handle',['impatient']);
+    const day=86400e3;
+    await rpc(fresh,boss,'admin_save_contest',[null,'Concours lointain',ed,new Date(Date.now()+30*day).toISOString(),new Date(Date.now()+32*day).toISOString(),null,'Plus tard']);
+    expect((await rpc(fresh,u,'get_player_state')).contest_next).toBeNull(); // trop loin
+    await rpc(fresh,boss,'admin_save_contest',[null,'Concours rush',ed,new Date(Date.now()+2*day).toISOString(),new Date(Date.now()+4*day).toISOString(),null,'Bientôt']);
+    const st=await rpc(fresh,u,'get_player_state');
+    expect(st.contest).toBeNull();
+    expect(st.contest_next).toMatchObject({title:'Concours rush',edition:'Édition CAM'});
+    const c=await rpc(fresh,u,'get_contest');
+    expect(c).toMatchObject({title:'Concours rush',upcoming:true,open:false,cards:[]});
+    const {rows:[card]}=await fresh.query<{id:string}>(`select id from public.characters where edition_id=$1 and rarity='Rare'`,[ed]);
+    await expectError(rpc(fresh,u,'submit_contest_entry',[card.id,`${u}/x.webp`]),/contest_closed|not_found/);
+  },30000);
+});
+
 describe('édition éternelle',()=>{
   it('ajoute une sixième carte éternelle au God booster et aux éditions qui l’autorisent',async()=>{
     const {rows:[ed]}=await db.query<{id:string}>(`insert into public.editions (name,prefix,album_published) values ('Éternelle','ETER',true) returning id`);

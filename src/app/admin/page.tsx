@@ -11,6 +11,7 @@ import {StatsTab} from '@/components/admin/StatsTab';
 import {EconomyTab} from '@/components/admin/EconomyTab';
 import {PlayerCards,ReportsTab} from '@/components/admin/ModerationTabs';
 import {CardArtsPanel,ContributionsTab} from '@/components/admin/ContributionsTab';
+import {IdeasTab} from '@/components/admin/IdeasTab';
 import {EventContent} from '@/components/admin/EventContent';
 import {MonitorTab} from '@/components/admin/MonitorTab';
 import {EditionShop} from '@/components/admin/EditionShop';
@@ -20,7 +21,7 @@ import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,silhouetteIndex} from '@/lib/game';
 import {ACCEPTED_TYPES,ENGRAVED_CLANS,matchIllustrations,nextNumber,uploadIllustration,type AdminCatalog,type AdminCharacter,type AdminEdition,type CharacterStatus,type IllustrationMeta} from '@/lib/admin';
 
-type Tab='characters'|'editions'|'clans'|'achievements'|'players'|'events'|'stats'|'economy'|'reports'|'contributions'|'contest'|'monitor';
+type Tab='characters'|'editions'|'clans'|'achievements'|'players'|'events'|'stats'|'economy'|'reports'|'contributions'|'contest'|'monitor'|'ideas';
 const STATUS_LABEL:Record<CharacterStatus,string>={draft:'Brouillon',published:'Publiée',archived:'Archivée'};
 // jsonb ne conserve pas l'ordre des clés : comparaison indépendante de l'ordre.
 const canonical=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
@@ -66,9 +67,9 @@ export default function Admin(){
 
  return <AskContext.Provider value={ask}><div className="page admin-page">{askNode}
   <header className="admin-heading"><div><span className="eyebrow">Back-office</span><h1>Le cabinet de l’archiviste</h1></div><p className="muted">Chaque modification est enregistrée dans le journal d’administration.</p></header>
-  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['economy','Économie'],['players','Joueurs'],['contributions','Contributions'],['contest','Concours'],['reports','Signalements'],['monitor','Surveillance'],['stats','Statistiques']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
+  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['economy','Économie'],['players','Joueurs'],['contributions','Contributions'],['ideas','Doléances'],['contest','Concours'],['reports','Signalements'],['monitor','Surveillance'],['stats','Statistiques']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
   <div className="admin-toast" aria-live="polite">{error&&<p className="auth-error" role="alert">{error}<button className="icon-button" aria-label="Fermer" onClick={()=>setError(null)}><X size={16}/></button></p>}{notice&&<p className="auth-notice">{notice}<button className="icon-button" aria-label="Fermer" onClick={()=>setNotice(null)}><X size={16}/></button></p>}</div>
-  <div key={tab} className="tab-panel">{!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!} characters={catalog.characters}/>:tab==='stats'?<StatsTab client={client!}/>:tab==='economy'?<EconomyHost act={act} client={client!}/>:tab==='reports'?<ReportsHost act={act} client={client!}/>:tab==='monitor'?<MonitorTab client={client!} onOpenPlayer={id=>{setFocusPlayer(id);setTab('players');}}/>:tab==='contributions'?<ContributionsHost act={act} client={client!} catalog={catalog}/>:tab==='contest'?<ContestHost act={act} client={client!} catalog={catalog}/>:<PlayersTab act={act} client={client!} characters={catalog.characters} focus={focusPlayer}/>}</div>
+  <div key={tab} className="tab-panel">{!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!} characters={catalog.characters}/>:tab==='stats'?<StatsTab client={client!}/>:tab==='economy'?<EconomyHost act={act} client={client!}/>:tab==='reports'?<ReportsHost act={act} client={client!}/>:tab==='monitor'?<MonitorTab client={client!} onOpenPlayer={id=>{setFocusPlayer(id);setTab('players');}}/>:tab==='contributions'?<ContributionsHost act={act} client={client!} catalog={catalog}/>:tab==='contest'?<ContestHost act={act} client={client!} catalog={catalog}/>:tab==='ideas'?<IdeasHost act={act} client={client!}/>:<PlayersTab act={act} client={client!} characters={catalog.characters} focus={focusPlayer}/>}</div>
  </div></AskContext.Provider>;
 }
 
@@ -91,7 +92,12 @@ function previewCard(d:Draft,catalog:AdminCatalog,finish='Standard'):DemoCard{
 }
 
 function CharactersTab({catalog,act,client,onError}:{catalog:AdminCatalog;act:Act;client:SupabaseClient;onError:(m:string)=>void}){
- const [editionId,setEditionId]=useState([...catalog.editions].reverse().find(e=>!e.archived_at)?.id??catalog.editions[0]?.id??'');
+ // 'active' : toutes les éditions non archivées (vue par défaut).
+ const [editionId,setEditionId]=useState('active');
+ const lastActive=[...catalog.editions].reverse().find(e=>!e.archived_at)?.id??catalog.editions[0]?.id??'';
+ const archived=useMemo(()=>new Set(catalog.editions.filter(e=>e.archived_at).map(e=>e.id)),[catalog]);
+ const prefixOf=useMemo(()=>new Map(catalog.editions.map(e=>[e.id,e.prefix])),[catalog]);
+ const inScope=useCallback((c:AdminCharacter)=>editionId==='active'?!archived.has(c.edition_id):c.edition_id===editionId,[editionId,archived]);
  const [status,setStatus]=useState<CharacterStatus|'all'>('all');
  const [rarity,setRarity]=useState<Rarity|'all'>('all');
  const [clanId,setClanId]=useState<string>('all');
@@ -99,10 +105,10 @@ function CharactersTab({catalog,act,client,onError}:{catalog:AdminCatalog;act:Ac
  const [query,setQuery]=useState('');
  const [draft,setDraft]=useState<Draft|null>(null);
  const [bulk,setBulk]=useState(false);
- const list=useMemo(()=>{const q=query.trim().toLowerCase();return catalog.characters.filter(c=>c.edition_id===editionId&&(status==='all'||c.status===status)
+ const list=useMemo(()=>{const q=query.trim().toLowerCase();return catalog.characters.filter(c=>inScope(c)&&(status==='all'||c.status===status)
   &&(rarity==='all'||c.rarity===rarity)&&(clanId==='all'||(clanId==='none'?!c.clan_id:c.clan_id===clanId))
-  &&(art==='all'||(art==='missing'?!c.art_path:!!c.art_path))&&(!q||c.name.toLowerCase().includes(q)||String(c.number)===q));},[catalog,editionId,status,rarity,clanId,art,query]);
- const inEdition=catalog.characters.filter(c=>c.edition_id===editionId);
+  &&(art==='all'||(art==='missing'?!c.art_path:!!c.art_path))&&(!q||c.name.toLowerCase().includes(q)||String(c.number)===q));},[catalog,inScope,status,rarity,clanId,art,query]);
+ const inEdition=catalog.characters.filter(inScope);
  const missingArt=inEdition.filter(c=>!c.art_path&&c.status!=='archived').length;
  const filtered=status!=='all'||rarity!=='all'||clanId!=='all'||art!=='all'||!!query.trim();
  // Après rechargement du catalogue, l'éditeur reprend la version enregistrée.
@@ -112,20 +118,20 @@ function CharactersTab({catalog,act,client,onError}:{catalog:AdminCatalog;act:Ac
  const edition=catalog.editions.find(e=>e.id===editionId);
  return <div className="admin-characters">
   <div className="admin-toolbar">
-   <label><span>Édition</span><select value={editionId} onChange={e=>{setEditionId(e.target.value);setDraft(null);}}>{catalog.editions.map(e=><option key={e.id} value={e.id}>{e.name} ({e.prefix}){e.archived_at?' · archivée':''}</option>)}</select></label>
+   <label><span>Édition</span><select value={editionId} onChange={e=>{setEditionId(e.target.value);setDraft(null);}}><option value="active">Toutes les éditions non archivées</option>{catalog.editions.map(e=><option key={e.id} value={e.id}>{e.name} ({e.prefix}){e.archived_at?' · archivée':''}</option>)}</select></label>
    <label><span>État</span><select value={status} onChange={e=>setStatus(e.target.value as CharacterStatus|'all')}><option value="all">Tous</option><option value="draft">Brouillons</option><option value="published">Publiées</option><option value="archived">Archivées</option></select></label>
    <label><span>Rareté</span><select value={rarity} onChange={e=>setRarity(e.target.value as Rarity|'all')}><option value="all">Toutes</option>{ALL_RARITIES.map(r=><option key={r} value={r}>{r}</option>)}</select></label>
    <label><span>Clan</span><select value={clanId} onChange={e=>setClanId(e.target.value)}><option value="all">Tous</option><option value="none">Sans clan</option>{[...catalog.clans].sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
    <label><span>Illustration</span><select value={art} onChange={e=>setArt(e.target.value as 'all'|'missing'|'present')}><option value="all">Toutes</option><option value="missing">Sans illustration ({missingArt})</option><option value="present">Avec illustration</option></select></label>
    <label className="admin-search"><span>Recherche</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Nom ou numéro"/></label>
-   <button className="primary ghost" disabled={!!edition?.archived_at} onClick={()=>{setBulk(!bulk);setDraft(null);}}><Images size={16}/> Associer des illustrations</button>
-   <button className="primary" disabled={!!edition?.archived_at} onClick={()=>{setBulk(false);setDraft(emptyDraft(catalog,editionId));}}><Plus size={16}/> Nouveau personnage</button>
+   <button className="primary ghost" disabled={!edition||!!edition.archived_at} title={!edition?'Choisissez une édition':undefined} onClick={()=>{setBulk(!bulk);setDraft(null);}}><Images size={16}/> Associer des illustrations</button>
+   <button className="primary" disabled={!!edition?.archived_at} onClick={()=>{setBulk(false);setDraft(emptyDraft(catalog,edition?.id??lastActive));}}><Plus size={16}/> Nouveau personnage</button>
   </div>
   {bulk&&edition&&<BulkIllustrations key={editionId} prefix={edition.prefix} characters={catalog.characters.filter(c=>c.edition_id===editionId)} act={act} client={client} onClose={()=>setBulk(false)}/>}
   <p className="admin-hint admin-count">{list.length} personnage{list.length>1?'s':''}{filtered?` sur ${inEdition.length}`:''}{filtered&&<button className="text-link" onClick={()=>{setStatus('all');setRarity('all');setClanId('all');setArt('all');setQuery('');}}>Effacer les filtres</button>}</p>
   <div className={`admin-split ${draft?'editing':''}`}>
    <ul className="admin-card-list" aria-label="Personnages de l’édition">
-    {list.map(c=><li key={c.id}><button className={draft?.id===c.id?'on':''} onClick={()=>setDraft(toDraft(c))}><span className="admin-card-thumb"><TarotCard card={previewCard(toDraft(c),catalog)}/></span><span className="admin-card-meta"><strong>{c.number}. {c.name}</strong><span style={{color:c.is_unique?'#f3ecdf':palette[c.rarity]}}>{c.is_unique?'Carte unique':c.rarity}</span><span className={`status-chip ${c.status}`}>{STATUS_LABEL[c.status]}</span></span></button></li>)}
+    {list.map(c=><li key={c.id}><button className={draft?.id===c.id?'on':''} onClick={()=>setDraft(toDraft(c))}><span className="admin-card-thumb"><TarotCard card={previewCard(toDraft(c),catalog)}/></span><span className="admin-card-meta"><strong>{editionId==='active'?`${prefixOf.get(c.edition_id)}-${String(c.number).padStart(3,'0')}`:c.number}. {c.name}</strong><span style={{color:c.is_unique?'#f3ecdf':palette[c.rarity]}}>{c.is_unique?'Carte unique':c.rarity}</span><span className={`status-chip ${c.status}`}>{STATUS_LABEL[c.status]}</span></span></button></li>)}
     {!list.length&&<li className="muted admin-list-empty">Aucun personnage pour ce filtre.</li>}
    </ul>
    {draft&&<CharacterEditor key={draft.id??'new'} draft={draft} setDraft={setDraft} catalog={catalog} act={act} client={client} onError={onError}/>}
@@ -527,6 +533,11 @@ function ReportsHost({act,client}:{act:Act;client:SupabaseClient}){
 function ContestHost({act,client,catalog}:{act:Act;client:SupabaseClient;catalog:AdminCatalog}){
  const reason=useReason();const ask=useContext(AskContext);
  return <ContestTab act={act} client={client} reason={reason} ask={ask} catalog={catalog}/>;
+}
+
+function IdeasHost({act,client}:{act:Act;client:SupabaseClient}){
+ const reason=useReason();
+ return <IdeasTab act={act} client={client} reason={reason}/>;
 }
 
 function ContributionsHost({act,client,catalog}:{act:Act;client:SupabaseClient;catalog:AdminCatalog}){

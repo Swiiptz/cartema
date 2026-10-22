@@ -1,0 +1,46 @@
+import {describe,it,expect,beforeAll} from 'vitest';
+import {createDb,rpc,createUser,expectError,type Db} from './harness';
+
+let db:Db;let admin:string;
+beforeAll(async()=>{
+  db=await createDb();
+  admin=await createUser(db);await rpc(db,admin,'set_handle',['gardien']);
+  await db.query(`update public.profiles set role='admin' where id=$1`,[admin]);
+},30000);
+async function player(h:string){const id=await createUser(db,{createdAt:'2026-01-01T00:00:00Z'});await rpc(db,id,'set_handle',[h]);return id;}
+const send=(u:string,title='Un mode tournoi',category='feature')=>rpc<string>(db,u,'submit_suggestion',[category,title,'Des tournois du samedi soir.']);
+
+describe('doléances',()=>{
+  it('privées par défaut : seul l’auteur et l’admin les voient, l’admin est prévenu',async()=>{
+    const a=await player('idee_a');const b=await player('idee_b');
+    const id=await send(a);
+    const mine=await rpc(db,a,'get_suggestions');
+    expect(mine.mine).toHaveLength(1);
+    expect(mine.mine[0]).toMatchObject({id,status:'new',public:false,category:'feature',title:'Un mode tournoi'});
+    expect((await rpc(db,b,'get_suggestions')).public.some((s:any)=>s.id===id)).toBe(false);
+    expect((await rpc(db,admin,'get_notifications')).items.some((n:any)=>n.kind==='suggestion_received')).toBe(true);
+    await expectError(rpc(db,b,'admin_suggestions',[null]),/forbidden/);
+  });
+  it('l’admin répond, rend publique ; les joueurs votent une fois, jamais pour la leur',async()=>{
+    const a=await player('idee_c');const b=await player('idee_d');const c=await player('idee_e');
+    const id=await send(a,'Une vitrine animée');
+    await expectError(rpc(db,b,'vote_suggestion',[id,true]),/not_found/); // encore privée
+    await rpc(db,admin,'admin_answer_suggestion',[id,'planned',true,'Bonne idée, prévue pour le set 2.','Tri']);
+    expect((await rpc(db,a,'get_notifications')).items[0]).toMatchObject({kind:'suggestion_answered',payload:{title:'Une vitrine animée',status:'planned'}});
+    await rpc(db,b,'vote_suggestion',[id,true]);await rpc(db,c,'vote_suggestion',[id,true]);
+    await rpc(db,b,'vote_suggestion',[id,true]); // idempotent
+    await expectError(rpc(db,a,'vote_suggestion',[id,true]),/own_suggestion/);
+    const pub=(await rpc(db,b,'get_suggestions')).public.find((s:any)=>s.id===id);
+    expect(pub).toMatchObject({votes:2,my_vote:true,status:'planned',reply:'Bonne idée, prévue pour le set 2.',author:'idee_c'});
+    await rpc(db,c,'vote_suggestion',[id,false]);
+    expect((await rpc(db,c,'get_suggestions')).public.find((s:any)=>s.id===id)).toMatchObject({votes:1,my_vote:false});
+    expect((await rpc<any[]>(db,admin,'admin_suggestions',[null])).find(s=>s.id===id)).toMatchObject({votes:1,author:'idee_c',public:true});
+  });
+  it('contrôle le contenu et limite à 5 doléances par jour',async()=>{
+    const u=await player('idee_f');
+    await expectError(send(u,'ab'),/invalid_suggestion/);
+    await expectError(send(u,'Titre correct','farce'),/invalid_suggestion/);
+    for(let i=0;i<5;i++)await send(u,`Idée numéro ${i}`,'card');
+    await expectError(send(u,'Une de trop'),/suggestion_limit/);
+  });
+});
