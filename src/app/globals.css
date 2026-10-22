@@ -914,3 +914,8 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .listing-actions{display:flex;gap:6px}.listing-actions .primary{flex:1;width:auto;min-width:0}
 .offers-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:52px;padding:0 10px;border-radius:999px;border:1px solid #c9a45c66;background:#1d131bcc;color:var(--gold2);font:600 13px var(--ui);cursor:pointer;transition:background .2s,border-color .2s,transform .2s var(--ease-out)}
 .offers-btn:hover{background:#2a1b26;border-color:var(--gold)}.offers-btn:active{transform:scale(.96)}.offers-btn svg{color:var(--gold)}
+
+/* Pseudonyme manquant */
+.handle-banner{display:flex;align-items:center;gap:10px;max-width:1100px;margin:0 auto 12px;padding:10px 14px;border-radius:12px;border:1px solid #c9a45c66;background:#1d131bcc;font:400 14px var(--ui)}
+.handle-banner svg{color:var(--gold);flex:none}.handle-banner span{flex:1}.handle-banner .primary{flex:none}
+@media(max-width:600px){.handle-banner{flex-wrap:wrap;margin:0 12px 12px}.handle-banner .primary{width:100%}}

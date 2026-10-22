@@ -53,7 +53,7 @@ export type AppNotification={id:string;kind:string;created_at:string;read:boolea
 export type Notifications={items:AppNotification[];unread:number;prefs:NotificationPrefs};
 export type PublicProfile={verified?:boolean;featured:FeaturedAchievement[];profile_id:string;handle:string;title:string|null;created_at:string;relation:'self'|'friends'|'pending_out'|'pending_in'|'none';visible:boolean;settings:{visibility:'public'|'friends'|'private';show_stats:boolean}|null;showcase:SocialCard[]|null;stats:{faces:number;total_characters:number;achievements:number;gold:number;blood:number;position:number}|null;recent:{label:string;unlocked_at:string;tier:number|null}[]|null};
 export type Leaderboard={top:{position:number;handle:string;title:string|null;score:number;achievements:number;faces:number;me:boolean}[];me:{position:number;score:number;achievements:number;faces:number}|null;total_characters:number;total_achievements:number};
-export type TradeStatus={verified?:boolean;allowed:boolean;blocked:boolean;available_at:string|null;commission_pct:number;trade_tax_pct?:number;trade_cap?:number;trade_received_week?:number;trade_daily_limit?:number;trades_today?:number;gift_daily_limit?:number;gifts_sent_today?:number;gifts_received_today?:number};
+export type TradeStatus={handle_missing?:boolean;verified?:boolean;allowed:boolean;blocked:boolean;available_at:string|null;commission_pct:number;trade_tax_pct?:number;trade_cap?:number;trade_received_week?:number;trade_daily_limit?:number;trades_today?:number;gift_daily_limit?:number;gifts_sent_today?:number;gifts_received_today?:number};
 export function listingToCard(l:Listing):DemoCard{return marketCard(l.card,l.finish);}
 /** Carte du marché (annonce ou entrée regroupée), avec sa version d'illustration. */
 export function marketCard(c:ListingCard,finish:Finish):DemoCard{return {variant:c.variant??undefined,credit:c.art_credit??undefined,id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
@@ -127,6 +127,7 @@ const messages:Record<string,string>={
  unique_indestructible:'Une carte unique ne peut pas être recyclée.',
  recycled_item:'Cette carte a déjà été recyclée.',
  account_too_new:'Les échanges entre joueurs s’ouvrent 24 h après la création du compte.',
+ handle_required:'Choisissez d’abord un pseudonyme dans votre profil : il s’affiche auprès des autres joueurs.',
  transactions_blocked:'Les échanges sont suspendus sur ce compte.',
  invalid_price:'Prix invalide : un nombre entier de Deniers, au moins 1.',
  listing_unavailable:'Cette annonce n’est plus disponible.',

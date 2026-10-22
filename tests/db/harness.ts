@@ -35,10 +35,12 @@ export async function rpc<T=any>(db:Db,userId:string|null,fn:string,args:unknown
   return rows[0].r;
 }
 
-export async function createUser(db:Db,{createdAt}:{createdAt?:string}={}){
+export async function createUser(db:Db,{createdAt,handle}:{createdAt?:string;handle?:boolean}={}){
   const id=randomUUID();
   await db.query('insert into auth.users (id,email) values ($1,$2)',[id,`${id}@test.local`]);
   if(createdAt) await db.query('update public.profiles set created_at=$2 where id=$1',[id,createdAt]);
+  // Pseudonyme requis pour les transactions entre joueurs.
+  if(handle) await db.query('update public.profiles set handle=$2 where id=$1',[id,`j_${id.slice(0,8)}`]);
   return id;
 }
 

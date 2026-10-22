@@ -272,3 +272,4 @@ Critère de fin global : toutes les exigences du CDC et ses 13 scénarios d’ac
   - **Filtres** : rareté, finition, clan, recherche, « non découvertes ». Tris au choix, et bouton « Voir plus » pour la suite.
   - **Correctif** : les versions alternatives s'affichent enfin avec leur illustration au marché (`listing_json` passe par `card_json`).
   - `get_market` reste en place pour les pages déjà ouvertes.
+- **Pseudonyme obligatoire pour les transactions** (migration `20261022140000_handle_required`) : `require_trader` refuse sans pseudonyme (`handle_required`). Un bandeau global (`HandleBanner`) invite à le choisir. Au marché, un vendeur sans pseudonyme s'affiche « joueur sans pseudo ». Au 22/10, 4 comptes n'en avaient pas, dont un avec 23 annonces ; ses annonces restent en ligne.

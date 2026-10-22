@@ -106,7 +106,7 @@ export default function Market(){
  return <div className="page market-page">
   {askNode}
   <header className="market-head rise"><div><span className="eyebrow">Marché</span><h1>L’hôtel des ventes</h1></div>{player&&<span className="chip gold"><Coins size={15}/><CountUp value={player.balance}/><small>Deniers</small></span>}</header>
-  {status&&!status.allowed&&<p className="trade-lock rise"><Clock size={15}/> {status.blocked?'Les échanges sont suspendus sur ce compte.':<>Les achats et ventes entre joueurs s’ouvrent le {status.available_at?dateFr(status.available_at):'…'} (24 h après la création du compte). <Link className="text-link" href="/profile/">Liez votre compte Discord</Link> pour les débloquer tout de suite.</>}</p>}
+  {status&&!status.allowed&&<p className="trade-lock rise"><Clock size={15}/> {status.handle_missing?<>Choisissez un <Link className="text-link" href="/profile/">pseudonyme</Link> pour acheter et vendre.</>:status.blocked?'Les échanges sont suspendus sur ce compte.':<>Les achats et ventes entre joueurs s’ouvrent le {status.available_at?dateFr(status.available_at):'…'} (24 h après la création du compte). <Link className="text-link" href="/profile/">Liez votre compte Discord</Link> pour les débloquer tout de suite.</>}</p>}
   <div className="segmented market-tabs" role="tablist"><button role="tab" aria-selected={tab==='buy'} onClick={()=>setTab('buy')}><Store size={15}/> Acheter</button><button role="tab" aria-selected={tab==='mine'} onClick={()=>setTab('mine')}><Tag size={15}/> Mes ventes{activeMine.length>0&&<b className="tab-count">{activeMine.length}</b>}</button></div>
   <div className="admin-toast" aria-live="polite">{message.error&&<p className="auth-error" role="alert">{message.error}<button className="icon-button" aria-label="Fermer" onClick={()=>setMessage({})}><X size={16}/></button></p>}{message.notice&&<p className="auth-notice">{message.notice}</p>}</div>
 
@@ -125,7 +125,7 @@ export default function Market(){
    :groups.length===0?<Empty/>
    :<div className="card-grid market-grid" key={boardKey}>{groups.map((g,i)=>{const best=g.listings.find(o=>!o.mine);const afford=!!best&&(player?.balance??0)>=best.price+best.buyer_tax;return <article key={g.key} className="listing rise" style={{'--i':Math.min(i,12)} as React.CSSProperties}>
      <div className="listing-art">{!g.discovered&&<span className="listing-new">Nouveau</span>}{g.offers>1&&<span className="listing-offers"><Layers size={11}/> {g.offers} offres</span>}<TarotCard card={marketCard(g.card,g.finish)}/></div>
-     <div className="listing-info"><strong className="listing-price"><Coins size={14}/> {g.offers>1&&<small>dès</small>}{g.min_price.toLocaleString('fr-FR')}</strong><span className="muted">{g.offers>1?(top(g)>g.min_price?`jusqu’à ${top(g).toLocaleString('fr-FR')}`:'même prix'):g.listings[0]?.mine?'Votre annonce':`par ${g.listings[0]?.seller??'—'}`}</span></div>
+     <div className="listing-info"><strong className="listing-price"><Coins size={14}/> {g.offers>1&&<small>dès</small>}{g.min_price.toLocaleString('fr-FR')}</strong><span className="muted">{g.offers>1?(top(g)>g.min_price?`jusqu’à ${top(g).toLocaleString('fr-FR')}`:'même prix'):g.listings[0]?.mine?'Votre annonce':`par ${g.listings[0]?.seller??'joueur sans pseudo'}`}</span></div>
      <div className="listing-actions">
       {best?<button className="primary compact" disabled={!!busy||!status?.allowed||!afford} onClick={()=>void buy({...best,name:g.card.name,finish:g.finish})}>{busy===best.listing_id?'Achat…':!afford?'Fonds insuffisants':`Acheter · ${best.price.toLocaleString('fr-FR')}`}</button>
        :<button className="primary ghost compact" onClick={()=>setTab('mine')}>Votre annonce</button>}
@@ -138,7 +138,7 @@ export default function Market(){
      <div className="listing-art">{!l.discovered&&!l.mine&&<span className="listing-new">Nouveau</span>}<span className="listing-auction"><Gavel size={11}/> Enchère</span><TarotCard card={listingToCard(l)}/></div>
      <div className="listing-info auction-info">
       <strong className="listing-price"><Coins size={14}/> {(l.current_bid??l.price).toLocaleString('fr-FR')}</strong>
-      <span className="muted">{l.bid_count?`${l.bid_count} mise${l.bid_count>1?'s':''}`:'départ'} · {l.mine?'votre enchère':l.seller??'—'}</span>
+      <span className="muted">{l.bid_count?`${l.bid_count} mise${l.bid_count>1?'s':''}`:'départ'} · {l.mine?'votre enchère':l.seller??'joueur sans pseudo'}</span>
       <span className="auction-timer"><Clock size={12}/> <Countdown to={l.ends_at} onDone={()=>void load()}/></span>
      </div>
      {l.mine?<button className="primary ghost compact" disabled={busy===l.listing_id||l.bid_count>0} onClick={()=>void cancel(l)}>{l.bid_count>0?'Mises en cours':'Retirer'}</button>
@@ -156,7 +156,7 @@ export default function Market(){
    <section className="market-section"><h2>Mes mises</h2>{!bids?<Skeleton style={{height:80}}/>:bids.length===0?<p className="muted">Vous n’avez misé sur aucune enchère récemment.</p>
     :<ul className="market-history">{bids.map(l=><li key={l.listing_id}><span className="history-name">{l.card.name}<small>{l.status==='active'?<>fin dans <Countdown to={l.ends_at} onDone={()=>void load()}/></>:l.closed_at?dateFr(l.closed_at):''}</small></span><span className={`history-kind ${l.leading||l.won?'sold':'cancelled'}`}>{l.status==='active'?(l.leading?'Vous menez':'Dépassé'):l.won?'Remportée':'Perdue'}</span><strong>{(l.current_bid??l.price).toLocaleString('fr-FR')}</strong></li>)}</ul>}</section>
    <section className="market-section"><h2>Historique</h2>{!mine?<Skeleton style={{height:120}}/>:history.length===0?<p className="muted">Aucune vente ni achat pour l’instant.</p>
-    :<ul className="market-history">{history.map(l=><li key={l.listing_id}><span className="history-name">{l.card.name}<small>{l.finish!=='Standard'?`${l.finish} · `:''}{l.closed_at?dateFr(l.closed_at):''}</small></span><span className={`history-kind ${l.status}`}>{l.status==='cancelled'?'Retirée':l.status==='expired'?'Sans enchère':l.mine?`Vendue à ${l.buyer??'—'}`:`Achetée à ${l.seller??'—'}`}</span><strong className={l.status==='sold'?(l.mine?'gain':'loss'):''}>{l.status==='sold'?(l.mine?`+${((l.current_bid??l.price)-Math.floor((l.current_bid??l.price)*5/100)).toLocaleString('fr-FR')}`:`−${(l.current_bid??l.price).toLocaleString('fr-FR')}`):'—'}</strong></li>)}</ul>}</section>
+    :<ul className="market-history">{history.map(l=><li key={l.listing_id}><span className="history-name">{l.card.name}<small>{l.finish!=='Standard'?`${l.finish} · `:''}{l.closed_at?dateFr(l.closed_at):''}</small></span><span className={`history-kind ${l.status}`}>{l.status==='cancelled'?'Retirée':l.status==='expired'?'Sans enchère':l.mine?`Vendue à ${l.buyer??'joueur sans pseudo'}`:`Achetée à ${l.seller??'joueur sans pseudo'}`}</span><strong className={l.status==='sold'?(l.mine?'gain':'loss'):''}>{l.status==='sold'?(l.mine?`+${((l.current_bid??l.price)-Math.floor((l.current_bid??l.price)*5/100)).toLocaleString('fr-FR')}`:`−${(l.current_bid??l.price).toLocaleString('fr-FR')}`):'—'}</strong></li>)}</ul>}</section>
   </>}
  </div>;
 }
@@ -165,7 +165,7 @@ function Empty(){return <div className="album-empty"><Store size={28}/><h2>Aucun
 
 function Offer({o,disabled,busy,balance,onBuy}:{o:MarketOffer;disabled:boolean;busy:boolean;balance:number;onBuy:()=>void}){
  const afford=balance>=o.price+o.buyer_tax;
- return <li><span className="offer-seller">{o.mine?'Votre annonce':o.seller??'—'}<small>{dateFr(o.created_at)}</small></span><strong className="listing-price"><Coins size={13}/> {o.price.toLocaleString('fr-FR')}</strong>
+ return <li><span className="offer-seller">{o.mine?'Votre annonce':o.seller??'Joueur sans pseudo'}<small>{dateFr(o.created_at)}</small></span><strong className="listing-price"><Coins size={13}/> {o.price.toLocaleString('fr-FR')}</strong>
   {o.mine?<span className="muted">—</span>:<button className="primary compact" disabled={disabled||!afford} onClick={onBuy}>{busy?'Achat…':afford?'Acheter':'Fonds insuffisants'}</button>}</li>;
 }
 

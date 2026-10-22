@@ -12,7 +12,7 @@ async function give(user:string,rarity='Rare',finish='Standard'){
   return {instance:i.id,character:c.id};
 }
 async function balance(user:string){return Number((await db.query<{b:string}>('select balance b from public.wallets where owner_id=$1',[user])).rows[0].b);}
-async function veteran(){return createUser(db,{createdAt:OLD});}
+async function veteran(){return createUser(db,{createdAt:OLD,handle:true});}
 
 describe('marché à prix fixe',()=>{
   it('vend une carte : commission de 5 % arrondie à l’inférieur, transfert et découverte',async()=>{
@@ -61,7 +61,7 @@ describe('marché à prix fixe',()=>{
     expect(await rpc(db,seller,'recycle_cards',[[instance],randomUUID()])).toMatchObject({count:1});
   });
   it('bloque les transactions pendant les 24 premières heures',async()=>{
-    const fresh=await createUser(db);const seller=await veteran();
+    const fresh=await createUser(db,{handle:true});const seller=await veteran();
     await credit(db,fresh,500);
     const {instance}=await give(fresh);
     await expectError(rpc(db,fresh,'create_listing',[instance,10,randomUUID()]),/account_too_new/);
@@ -84,7 +84,7 @@ describe('marché à prix fixe',()=>{
 
 describe('compte vérifié par Discord',()=>{
   it('lève le délai de 24 h pour un compte lié à Discord',async()=>{
-    const fresh=await createUser(db);
+    const fresh=await createUser(db,{handle:true});
     let st=await rpc(db,fresh,'get_trade_status');
     expect(st).toMatchObject({allowed:false,verified:false});
     await db.query(`insert into auth.identities (user_id,provider) values ($1,'discord')`,[fresh]);

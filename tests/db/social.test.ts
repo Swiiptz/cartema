@@ -202,3 +202,17 @@ describe('délai après réception',()=>{
     await rpc(db,a.id,'send_gift',[b.id,other,randomUUID()]);
   });
 });
+
+describe('pseudonyme obligatoire',()=>{
+  it('refuse vente, achat et échange sans pseudonyme',async()=>{
+    const nameless=await createUser(db,{createdAt:OLD});await credit(db,nameless,500);
+    const seller=await player();
+    await expectError(rpc(db,nameless,'create_listing',[await give(nameless),20,randomUUID()]),/handle_required/);
+    const l=await rpc(db,seller.id,'create_listing',[await give(seller.id),20,randomUUID()]);
+    await expectError(rpc(db,nameless,'buy_listing',[l.listing_id]),/handle_required/);
+    const st=await rpc(db,nameless,'get_trade_status');
+    expect([st.allowed,st.handle_missing]).toEqual([false,true]);
+    await rpc(db,nameless,'set_handle',['enfin_nomme']);
+    await rpc(db,nameless,'buy_listing',[l.listing_id]);
+  });
+});

@@ -12,7 +12,7 @@ async function give(user:string){
   return i.id;
 }
 const balance=async(u:string)=>Number((await db.query<{b:string}>('select balance b from public.wallets where owner_id=$1',[u])).rows[0].b);
-const veteran=()=>createUser(db,{createdAt:OLD});
+const veteran=()=>createUser(db,{createdAt:OLD,handle:true});
 const bid=(u:string,l:string,amount:number)=>rpc(db,u,'place_bid',[l,amount,randomUUID()]);
 const expire=(l:string)=>db.query(`update public.listings set ends_at=now()-interval '1 second' where id=$1`,[l]);
 const close=()=>db.query<{n:number}>('select private.close_expired_auctions() n').then(r=>Number(r.rows[0].n));
