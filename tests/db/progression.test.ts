@@ -108,6 +108,18 @@ describe('succès',()=>{
     await expectError(rpc(db,admin,'admin_grant_achievement',[code,'heros_gn','encore']),/already_granted/);
     await expectError(rpc(db,u,'admin_grant_achievement',[code,'heros_gn','triche']),/forbidden/);
   });
+  it('range un succès personnalisé dans un set ou dans les succès généraux',async()=>{
+    const admin=(await db.query<{id:string}>(`select id from public.profiles where role='admin'`)).rows[0].id; // un seul admin
+    const {rows:[ch]}=await db.query<{id:string}>('select id from public.characters where edition_id=$1 limit 1',[edition]);
+    const args=(code:string|null,ed:string|null)=>[code,'Gardien du set','Visible dans le set.',false,0,0,null,[ch.id],ed];
+    const code=await rpc<string>(db,admin,'admin_save_achievement',args(null,edition));
+    const find=async()=>(await rpc<any[]>(db,admin,'admin_custom_achievements')).find(a=>a.code===code);
+    expect(await find()).toMatchObject({edition_id:edition,edition:expect.any(String)});
+    expect((await rpc<any[]>(db,admin,'get_achievements')).find(a=>a.code===code)).toMatchObject({edition_prefix:'CAM'});
+    await rpc(db,admin,'admin_save_achievement',args(code,null));
+    expect(await find()).toMatchObject({edition_id:null,edition:null});
+    await expectError(rpc(db,admin,'admin_save_achievement',args(code,randomUUID())),/not_found/);
+  });
 });
 
 describe('classement',()=>{
