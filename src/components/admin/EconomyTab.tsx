@@ -38,7 +38,7 @@ const FIELDS:[keyof Settings,string,string][]=[
  ['trade_daily_limit','Échanges par jour','Échanges conclus par joueur et par jour, renouvelés à 6 h (0 = sans limite)'],
  ['gift_daily_limit','Cadeaux par jour','Cadeaux envoyés et cadeaux reçus par joueur et par jour (0 = sans limite)'],
  ['trade_weekly_deniers_cap','Plafond des échanges','Deniers qu’un joueur peut recevoir par échange sur 7 jours (0 = sans plafond)'],
- ['alternate_art_odds','Versions alternatives','chance « 1 sur N » par carte tirée (0 = jamais)'],
+ ['alternate_art_odds','Versions alternatives','chance « 1 sur N » par carte tirée, pour les lignes sans chance propre (0 = jamais)'],
 ];
 
 export function EconomyTab({client,act,reason}:{client:SupabaseClient;act:Act;reason:Reason}){
@@ -49,7 +49,37 @@ export function EconomyTab({client,act,reason}:{client:SupabaseClient;act:Act;re
  return <div className="admin-economy">
   <SettingsForm key={`s${eco.settings.version}`} eco={eco} act={act} reason={reason} onSaved={load}/>
   <RulesetForm key={`r${eco.ruleset.version}`} eco={eco} act={act} reason={reason} onSaved={load}/>
+  <ArtLines key={`a${eco.settings.version}`} client={client} act={act} reason={reason}/>
  </div>;
+}
+
+type ArtLine={label:string;active:boolean;odds:number|null;arts:number;active_arts:number;characters:number;owned:number};
+
+/** Lignes de versions alternatives (même nom de version) : activation et chance propre. */
+function ArtLines({client,act,reason}:{client:SupabaseClient;act:Act;reason:Reason}){
+ const [data,setData]=useState<{global_odds:number;lines:ArtLine[]}|null>(null);
+ const [odds,setOdds]=useState<Record<string,string>>({});
+ const load=useCallback(async()=>{const d=await callRpc<{global_odds:number;lines:ArtLine[]}>(client,'admin_art_lines');setData(d);setOdds(Object.fromEntries(d.lines.map(l=>[l.label,l.odds===null?'':String(l.odds)])));},[client]);
+ useEffect(()=>{void load().catch(()=>{});},[load]);
+ const chance=(n:number)=>n>0?`1 sur ${n.toLocaleString('fr-FR')}`:'jamais';
+ async function save(l:ArtLine,active:boolean){
+  const raw=(odds[l.label]??'').replace(/\s/g,'');const value=raw===''?null:Number(raw);
+  const r=await reason(`« ${l.label} » : ${active?`tombe avec une chance de ${chance(value??data!.global_odds)}${value===null?' (réglage global)':''}`:'ne tombe plus (les exemplaires possédés la gardent)'}.`,'Appliquer');
+  if(r===null)return;
+  if(await act('Ligne de versions enregistrée.',c=>callRpc(c,'admin_set_art_line',{p_label:l.label,p_active:active,p_odds:value,p_reason:r})))await load();
+ }
+ return <section className="panel admin-edition eco-section">
+  <div className="section-header"><div><span className="eyebrow">Versions alternatives</span><h2>Lignes de versions</h2></div></div>
+  <p className="admin-hint">Une ligne regroupe les versions alternatives qui portent le même nom. Chaque ligne d’un personnage tiré est tentée avec sa chance ; laissez vide pour la chance globale ({data?chance(data.global_odds):'…'}), 0 pour jamais. Une version seule se désactive depuis la fiche du personnage.</p>
+  {!data?<Skeleton style={{height:120}}/>:data.lines.length===0?<p className="muted">Aucune version alternative pour l’instant.</p>
+   :<ul className="arts-list">{data.lines.map(l=>{const raw=(odds[l.label]??'').replace(/\s/g,'');const bad=raw!==''&&!/^\d+$/.test(raw);const dirty=raw!==(l.odds===null?'':String(l.odds));
+    return <li key={l.label} className={l.active?'':'off'}>
+     <span><strong>{l.label}</strong><small>{l.active?`tirable · ${chance(l.odds??data.global_odds)}${l.odds===null?' (global)':''}`:'désactivée'} · {l.active_arts}/{l.arts} version{l.arts>1?'s':''} active{l.active_arts>1?'s':''} · {l.characters} personnage{l.characters>1?'s':''} · {l.owned} exemplaire{l.owned>1?'s':''}</small></span>
+     <span className="art-actions"><label className="auth-field"><span>1 sur N</span><input inputMode="numeric" aria-label={`Chance de ${l.label}`} placeholder={String(data.global_odds)} value={odds[l.label]??''} onChange={e=>setOdds(o=>({...o,[l.label]:e.target.value}))}/></label>
+      <button type="button" className="primary ghost compact" disabled={bad||!dirty} onClick={()=>void save(l,l.active)}>Enregistrer</button>
+      <button type="button" className="text-link" disabled={bad} onClick={()=>void save(l,!l.active)}>{l.active?'Désactiver':'Activer'}</button></span>
+    </li>;})}</ul>}
+ </section>;
 }
 
 function SettingsForm({eco,act,reason,onSaved}:{eco:Economy;act:Act;reason:Reason;onSaved:()=>Promise<void>}){

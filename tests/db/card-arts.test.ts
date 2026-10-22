@@ -51,6 +51,31 @@ describe('versions d’illustration',()=>{
   });
 });
 
+describe('lignes de versions',()=>{
+  const pick=async(c:string,global:number)=>(await db.query<{a:string|null}>('select private.pick_alternate_art($1,$2) a',[c,global])).rows[0].a;
+  it('règle la chance et l’activation de toutes les versions du même nom',async()=>{
+    const c1=await char(1),c7=await char(7);
+    const a1=await rpc<string>(db,admin,'admin_add_card_art',[c1,PAINT,{},'Ligne Néon','Test']);
+    await rpc(db,admin,'admin_add_card_art',[c7,PAINT,{},'Ligne Néon','Test']);
+    expect(await pick(c1,1)).toBe(a1);   // sans réglage : chance globale
+    expect(await pick(c1,0)).toBeNull();
+    await rpc(db,admin,'admin_set_art_line',['Ligne Néon',true,1,'Toujours']);
+    expect(await pick(c1,0)).toBe(a1);   // chance propre, même si la globale est à 0
+    await rpc(db,admin,'admin_set_art_line',['Ligne Néon',true,0,'Jamais']);
+    expect(await pick(c1,1)).toBeNull();
+    await rpc(db,admin,'admin_set_art_line',['Ligne Néon',false,null,'Pause']);
+    expect(await pick(c1,1)).toBeNull();
+    expect(await pick(c7,1)).toBeNull();
+    const {lines}=await rpc(db,admin,'admin_art_lines');
+    expect(lines.find((l:any)=>l.label==='Ligne Néon')).toMatchObject({active:false,odds:null,arts:2,active_arts:2,characters:2,owned:0});
+    await rpc(db,admin,'admin_set_art_line',['Ligne Néon',true,null,'Reprise']);
+    expect(await pick(c7,1)).not.toBeNull();
+    await expectError(rpc(db,admin,'admin_set_art_line',['Ligne Néon',true,-1,'x']),/invalid_odds/);
+    await expectError(rpc(db,admin,'admin_set_art_line',['Inconnue',true,null,'x']),/not_found/);
+    await expectError(rpc(db,await player('curieux_ligne'),'admin_art_lines'),/./);
+  });
+});
+
 describe('contributions des joueurs',()=>{
   it('propose une illustration, l’admin accepte avec récompense, l’auteur est prévenu',async()=>{
     const u=await player('artiste');const c=await char(4);
