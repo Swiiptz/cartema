@@ -1223,3 +1223,11 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 .contest-rules ol>li.plain{counter-increment:none;margin-left:0;padding-left:0}
 .contest-rules ol>li.plain:before{display:none}
 @media(max-width:560px){.contest-rules{padding:18px 16px}.contest-rules ol>li{padding-left:42px;font-size:14px}.contest-rules ol>li:before{width:28px;height:28px;font-size:12px}}
+/* Fiche d'une carte, grand écran : la carte en haut, et visible quand on fait défiler les informations. */
+@media(min-width:601px){.card-dialog-content>.dialog-art{align-self:start;position:sticky;top:0}.card-dialog-content>.dialog-copy{align-self:start}}
+/* Collection : bouton « Recherchées » (liste de souhaits). */
+.filter-toggle.wish-filter{color:#ffb3bf;border-color:#e0405f55}
+.filter-toggle.wish-filter svg{fill:currentColor}
+.filter-toggle.wish-filter.on{border-color:#e0405f;background:#e0405f1f;color:#ffd0d8}
+.filter-toggle.wish-filter b{background:#e0405f;color:#fff}
+@media(max-width:560px){.filter-toggle.wish-filter>span{display:none}}
