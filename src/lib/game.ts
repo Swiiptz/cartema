@@ -258,6 +258,6 @@ export type ContestRank={position:number;handle:string;leads:number;selected:num
 /** Doléances (voir supabase/migrations/20261022330000_suggestions_tiers.sql). */
 export type SuggestionCategory='feature'|'card'|'bug'|'other';
 export type SuggestionStatus='new'|'planned'|'done'|'declined';
-export type Suggestion={id:string;category:SuggestionCategory;title:string;body:string;status:SuggestionStatus;public:boolean;reply:string|null;created_at:string;replied_at:string|null;mine:boolean;author:string|null;votes:number;my_vote:boolean};
+export type Suggestion={id:string;category:SuggestionCategory;title:string;body:string;status:SuggestionStatus;public:boolean;reply:string|null;created_at:string;replied_at:string|null;mine:boolean;author:string|null;votes:number;my_vote:boolean;image_path?:string|null};
 export const SUGGESTION_CATEGORIES:Record<SuggestionCategory,string>={feature:'Fonctionnalité',card:'Carte',bug:'Correction',other:'Autre'};
 export const SUGGESTION_STATUS:Record<SuggestionStatus,string>={new:'Reçue',planned:'Prévue',done:'Faite',declined:'Écartée'};

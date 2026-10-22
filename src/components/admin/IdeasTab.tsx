@@ -3,6 +3,7 @@ import {useCallback,useEffect,useState} from 'react';
 import {Flame,Save,Users} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {Skeleton} from '@/components/ui';
+import {useSignedSubmission} from '@/lib/signed';
 import {callRpc,SUGGESTION_CATEGORIES,SUGGESTION_STATUS,type Suggestion,type SuggestionStatus} from '@/lib/game';
 
 type Act=(label:string,action:(c:SupabaseClient)=>Promise<unknown>)=>Promise<boolean>;
@@ -18,11 +19,12 @@ export function IdeasTab({client,act,reason}:{client:SupabaseClient;act:Act;reas
  return <div className="admin-reports">
   <div className="stats-filter" role="radiogroup" aria-label="Doléances affichées">{([['new','Reçues'],['planned','Prévues'],['done','Faites'],['declined','Écartées'],['all','Toutes']] as const).map(([v,l])=><button key={v} role="radio" aria-checked={status===v} className={status===v?'on':''} onClick={()=>setStatus(v)}>{l}</button>)}</div>
   {!list?<Skeleton style={{height:200}}/>:list.length===0?<p className="muted">Aucune doléance ici.</p>
-   :<ul className="report-list">{list.map(s=><IdeaAdmin key={s.id} s={s} act={act} reason={reason} onDone={load}/>)}</ul>}
+   :<ul className="report-list">{list.map(s=><IdeaAdmin key={s.id} s={s} client={client} act={act} reason={reason} onDone={load}/>)}</ul>}
  </div>;
 }
 
-function IdeaAdmin({s,act,reason,onDone}:{s:Suggestion;act:Act;reason:Reason;onDone:()=>void}){
+function IdeaAdmin({s,client,act,reason,onDone}:{s:Suggestion;client:SupabaseClient;act:Act;reason:Reason;onDone:()=>void}){
+ const image=useSignedSubmission(client,s.image_path);
  const [st,setSt]=useState<SuggestionStatus>(s.status==='new'?'planned':s.status);
  const [pub,setPub]=useState(s.public);
  const [reply,setReply]=useState(s.reply??'');
@@ -37,6 +39,7 @@ function IdeaAdmin({s,act,reason,onDone}:{s:Suggestion;act:Act;reason:Reason;onD
  return <li className={`panel report-item idea-admin status-${s.status}`}>
   <div className="report-head"><span className="status-chip">{SUGGESTION_CATEGORIES[s.category]}</span><strong>{s.title}</strong><small>{when(s.created_at)} · par {s.author??'—'}{s.public&&<> · <Flame size={11}/> {s.votes}</>}</small></div>
   {s.body?<p className="report-message">{s.body}</p>:<p className="muted">Sans détails.</p>}
+  {s.image_path&&(image?<a className="idea-image" href={image} target="_blank" rel="noreferrer"><img src={image} alt={`Image jointe à « ${s.title} »`}/></a>:<span className="idea-image loading" aria-hidden="true"/>)}
   <div className="idea-admin-fields">
    <label className="auth-field"><span>Statut</span><select value={st} onChange={e=>setSt(e.target.value as SuggestionStatus)}>{(Object.keys(SUGGESTION_STATUS) as SuggestionStatus[]).map(k=><option key={k} value={k}>{SUGGESTION_STATUS[k]}</option>)}</select></label>
    <label className="admin-check"><input type="checkbox" checked={pub} onChange={e=>setPub(e.target.checked)}/> <Users size={13}/> Publique, ouverte au vote</label>

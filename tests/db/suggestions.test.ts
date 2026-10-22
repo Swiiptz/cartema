@@ -36,6 +36,19 @@ describe('doléances',()=>{
     expect((await rpc(db,c,'get_suggestions')).public.find((s:any)=>s.id===id)).toMatchObject({votes:1,my_vote:false});
     expect((await rpc<any[]>(db,admin,'admin_suggestions',[null])).find(s=>s.id===id)).toMatchObject({votes:1,author:'idee_c',public:true});
   });
+  it('une demande de personnage peut joindre une illustration, visible seulement par l’auteur et l’admin',async()=>{
+    const a=await player('idee_art');const b=await player('idee_voisin');
+    const path=`${a}/perso.webp`;
+    const id=await rpc<string>(db,a,'submit_suggestion',['card','Une carte pour Malyen jeune','Voici mon dessin.',path]);
+    expect((await rpc(db,a,'get_suggestions')).mine[0]).toMatchObject({id,image_path:path});
+    await expectError(rpc(db,a,'submit_suggestion',['card','Image d’un autre','',`${b}/vol.webp`]),/invalid_suggestion/);
+    await expectError(rpc(db,a,'submit_suggestion',['card','Chemin piégé','',`${a}/../x.webp`]),/invalid_suggestion/);
+    await rpc(db,admin,'admin_answer_suggestion',[id,'planned',true,'Superbe !','Tri']);
+    expect((await rpc<any[]>(db,admin,'admin_suggestions',[null])).find(s=>s.id===id).image_path).toBe(path);
+    expect((await rpc(db,b,'get_suggestions')).public.find((s:any)=>s.id===id).image_path).toBeNull(); // publique, mais l'image reste privée
+    // Sans image : l'ancien appel à 3 paramètres marche toujours (site déjà en ligne).
+    expect(await rpc<string>(db,a,'submit_suggestion',['feature','Sans image','Rien à joindre.'])).toBeTruthy();
+  });
   it('contrôle le contenu et limite à 5 doléances par jour',async()=>{
     const u=await player('idee_f');
     await expectError(send(u,'ab'),/invalid_suggestion/);

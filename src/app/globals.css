@@ -1231,3 +1231,18 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 .filter-toggle.wish-filter.on{border-color:#e0405f;background:#e0405f1f;color:#ffd0d8}
 .filter-toggle.wish-filter b{background:#e0405f;color:#fff}
 @media(max-width:560px){.filter-toggle.wish-filter>span{display:none}}
+/* Doléances : image jointe (illustration d'une demande de personnage, capture d'écran). */
+.idea-upload{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.idea-file{position:relative;flex:1 1 280px;display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px dashed #c9a45c66;border-radius:12px;background:#c9a45c08;color:var(--gold2);cursor:pointer;transition:background .2s,border-color .2s}
+.idea-file:hover{background:#c9a45c12;border-color:#c9a45caa}
+.idea-file span{display:flex;flex-direction:column;gap:2px}
+.idea-file strong{font:600 14px var(--ui);color:#f0e0c0}
+.idea-file small{font:400 12px var(--ui);color:var(--muted)}
+.idea-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.idea-preview{position:relative;width:86px;aspect-ratio:2/3;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#0d090f}
+.idea-preview img{width:100%;height:100%;object-fit:cover;display:block}
+.idea-preview .icon-button{position:absolute;top:4px;right:4px;min-width:28px;min-height:28px;width:28px;height:28px;border-radius:50%;background:#0d090fcc}
+.idea-image{display:block;width:120px;aspect-ratio:2/3;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#0d090f}
+.idea-image img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s var(--ease-out)}
+.idea-image:hover img{transform:scale(1.04)}
+.idea-image.loading{background:linear-gradient(90deg,#1a1118,#241720,#1a1118);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
