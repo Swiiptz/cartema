@@ -72,7 +72,7 @@ function Picker({title,cards,selected,onToggle}:{title:string;cards:SocialCard[]
   <div className="picker-head"><h3>{title}</h3><span className="muted">{selected.length}/{MAX}</span></div>
   {cards&&cards.length>8&&<input className="picker-search" placeholder="Filtrer par nom…" value={query} onChange={e=>setQuery(e.target.value)}/>}
   {!cards?<div className="picker-grid">{Array.from({length:4},(_,i)=><Skeleton key={i} className="skeleton-card"/>)}</div>
-   :cards.length===0?<p className="muted">Aucune carte disponible (les cartes verrouillées, en vente, engagées ou reçues il y a moins de 24 h n’apparaissent pas).</p>
+   :cards.length===0?<p className="muted">Aucune carte disponible (les cartes verrouillées, en vente, engagées ou reçues il y a moins de 72 h n’apparaissent pas).</p>
    :<div className="picker-grid">{list.map(c=>{const on=selected.includes(c.instance_id!);return <button key={c.instance_id} className={`picker-card ${on?'on':''}`} aria-pressed={on} aria-label={`${c.name}${c.finish!=='Standard'?`, ${c.finish}`:''}`} onClick={()=>onToggle(c.instance_id!)}><TarotCard card={socialToCard(c)}/></button>;})}</div>}
  </section>;
 }

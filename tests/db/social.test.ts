@@ -48,7 +48,9 @@ describe('cadeaux',()=>{
     expect(await owner(card)).toEqual({owner_id:b.id,reserved_kind:null});
     await expectError(rpc(db,b.id,'respond_gift',[gift_id,true]),/gift_unavailable/);
     await expectError(rpc(db,b.id,'send_gift',[a.id,card,randomUUID()]),/card_cooldown/); // reçue à l'instant
-    await db.query(`update public.inventory_items set social_received_at=now()-interval '25 hours' where id=$1`,[card]);
+    await db.query(`update public.inventory_items set social_received_at=now()-interval '73 hours' where id=$1`,[card]);
+    await expectError(rpc(db,b.id,'send_gift',[a.id,card,randomUUID()]),/card_returning/); // a l'a cédée il y a moins de 30 jours
+    await db.query(`update public.gifts set closed_at=now()-interval '31 days' where id=$1`,[gift_id]);
     const back=await rpc(db,b.id,'send_gift',[a.id,card,randomUUID()]);
     await rpc(db,a.id,'respond_gift',[back.gift_id,false]);
     expect(await owner(card)).toEqual({owner_id:b.id,reserved_kind:null});
@@ -184,7 +186,7 @@ describe('limites quotidiennes',()=>{
 });
 
 describe('délai après réception',()=>{
-  it('empêche de rendre une carte reçue avant 24 h, sauf au marché',async()=>{
+  it('empêche de redonner une carte reçue avant 72 h, sauf au marché',async()=>{
     const a=await player();const b=await player();const c=await player();await befriend(a,b);await befriend(b,c);
     const card=await give(a.id);const other=await give(b.id);
     const t=await rpc(db,a.id,'propose_trade',[b.id,[card],[other],0,0,randomUUID(),null]);
@@ -199,7 +201,45 @@ describe('délai après réception',()=>{
     await rpc(db,b.id,'create_listing',[card,50,randomUUID()]); // la vente reste possible
     // Passé le délai, la carte redevient libre.
     await db.query(`update public.inventory_items set social_received_at=now()-interval '25 hours' where id=$1`,[other]);
-    await rpc(db,a.id,'send_gift',[b.id,other,randomUUID()]);
+    await befriend(a,c);
+    await expectError(rpc(db,a.id,'send_gift',[c.id,other,randomUUID()]),/card_cooldown/); // 72 h désormais
+    await db.query(`update public.inventory_items set social_received_at=now()-interval '73 hours' where id=$1`,[other]);
+    await rpc(db,a.id,'send_gift',[c.id,other,randomUUID()]);
+  });
+});
+
+describe('fin des prêts',()=>{
+  const age=(i:string)=>db.query(`update public.inventory_items set social_received_at=now()-interval '73 hours' where id=$1`,[i]);
+  it('une carte ne revient pas avant 30 jours à qui l’a cédée, même par un troisième ami',async()=>{
+    const a=await player();const b=await player();const c=await player();
+    await befriend(a,b);await befriend(b,c);await befriend(c,a);
+    const card=await give(a.id);
+    const t=await rpc(db,a.id,'propose_trade',[b.id,[card],[],0,0,randomUUID(),null]);
+    await rpc(db,b.id,'respond_trade',[t.trade_id,true]);await age(card);
+    // B ne peut ni la rendre ni se la faire redemander par A.
+    await expectError(rpc(db,b.id,'propose_trade',[a.id,[card],[],0,0,randomUUID(),null]),/card_returning/);
+    await expectError(rpc(db,a.id,'propose_trade',[b.id,[],[card],0,0,randomUUID(),null]),/card_returning/);
+    await expectError(rpc(db,b.id,'send_gift',[a.id,card,randomUUID()]),/card_returning/);
+    expect((await rpc(db,a.id,'get_friend_cards',[b.id])).some((x:any)=>x.instance_id===card)).toBe(false);
+    // Boucle A → B → C → A : bloquée aussi.
+    const g=await rpc(db,b.id,'send_gift',[c.id,card,randomUUID()]);await rpc(db,c.id,'respond_gift',[g.gift_id,true]);await age(card);
+    await expectError(rpc(db,c.id,'send_gift',[a.id,card,randomUUID()]),/card_returning/);
+    await expectError(rpc(db,c.id,'send_gift',[b.id,card,randomUUID()]),/card_returning/);
+    // Passé 30 jours, plus de blocage.
+    await db.query(`update public.trades set closed_at=now()-interval '31 days' where id=$1`,[t.trade_id]);
+    await rpc(db,c.id,'send_gift',[a.id,card,randomUUID()]);
+  });
+  it('bloque aussi le rachat au marché et les mises',async()=>{
+    const a=await player();const b=await player();await credit(db,a.id,1000);await credit(db,b.id,1000);
+    const card=await give(a.id);
+    const l=await rpc(db,a.id,'create_listing',[card,5,randomUUID()]);
+    await rpc(db,b.id,'buy_listing',[l.listing_id]);
+    const back=await rpc(db,b.id,'create_listing',[card,5,randomUUID()]);
+    await expectError(rpc(db,a.id,'buy_listing',[back.listing_id]),/card_returning/);
+    expect((await owner(card)).owner_id).toBe(b.id);
+    await rpc(db,b.id,'cancel_listing',[back.listing_id]);
+    const auction=await rpc(db,b.id,'create_auction',[card,5,24,randomUUID()]);
+    await expectError(rpc(db,a.id,'place_bid',[auction.listing_id,5,randomUUID()]),/card_returning/);
   });
 });
 
