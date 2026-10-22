@@ -1,6 +1,32 @@
 # CARTEMA — État des lieux et passation
 
-Mise à jour : 22 octobre 2026. Le §0 est le journal de ce qui a été livré ; les sections suivantes décrivent l'état actuel.
+Mise à jour : 22 octobre 2026 (soir). Commencer par l'état ci-dessous et par `CLAUDE.md` (consignes de travail). Le §0 est le journal de ce qui a été livré ; les sections suivantes décrivent l'état actuel.
+
+## État au 22 octobre 2026 (soir) — à lire en premier
+
+**Production.** Base Supabase `grlpysqlabwylexinbrl` : les 56 migrations sont appliquées, la dernière est `20261022270000_eternal_edition`. Site : le déploiement du commit `7753bdd` (concours et édition éternelle) a été lancé pendant un incident GitHub Actions. Vérifier dans l'onglet Actions qu'il a réussi, sinon relancer « Déployer sur GitHub Pages ».
+
+**Livré le 22/10** (détail au §0, une ligne par livraison avec sa migration) :
+- marché : cartes regroupées, prix de référence, Mes ventes et Mes mises allégés ;
+- échanges : fin des prêts (pas de retour avant 30 jours, délai de 72 h), échanges guidés par les listes de souhaits, loupe sur les cartes ;
+- versions d'illustration : lignes de versions avec leur chance et la liste de leurs cartes, anciennes officielles tirables comme des alternatives ;
+- succès : rangement (généraux ou set d'une édition), conditions avec finition ; l'admin peut donner une carte en version alternative ;
+- éditions en préparation invisibles des joueurs (test `tests/db/hidden-edition.test.ts`) ;
+- page Boosters : carrousel par édition, prix et réserve par édition, annonce « Soon », sachet ANE (dorure gravée de montagnes), God booster ;
+- concours d'illustrations (`/concours/`, Admin › Concours) et édition Éternelle ETER (sixième carte) ;
+- correctifs : boucle du compte à rebours, polices embarquées, code d'édition dans le sélecteur.
+
+**Ce que l'admin (Swiiptz) n'a pas encore fait** :
+1. Créer l'édition **ANE** (album et boosters fermés). Dans « Boutique et annonce » : sachet « Alpes de Savoie », cocher « Annoncer Soon ».
+2. Créer le **concours du week-end** (Admin › Concours › Nouveau concours, édition Camarilla).
+3. Décider de la chance du **God booster** : 1 sur 1 000 depuis le 22/10, réglable à 0 dans Admin › Économie.
+4. Après le concours : valider les dessins, distribuer les récompenses, créer l'édition **ETER** (cocher « Édition éternelle »), puis y ajouter la carte du gagnant et la lui donner depuis sa fiche joueur.
+
+**Jamais vus à l'écran avec un vrai compte** (vérifiés seulement par les tests SQL et le build) : page Concours, animation du God booster, boutique et réserve par édition, révélation d'une sixième carte éternelle. Les regarder dès qu'ils sont en ligne.
+
+**Incident du 22/10, 11 h 43 – 12 h 17.** La base (taille « nano ») a saturé. Cause : le composant `Countdown` relançait chaque seconde le rechargement de la page marché après la fin d'une enchère. En plus, `get_my_listings` et `get_my_bids` clôturaient toutes les enchères du jeu à chaque appel. Les deux sont corrigés, mais la leçon tient : voir les règles React et base de données de `CLAUDE.md`. Si `statement timeout` réapparaît dans les logs Postgres, chercher d'abord une boucle côté site.
+
+**Pistes décidées mais pas commencées** : classement de saison pour le set 2 ; série de connexions (à étudier, pas décidée).
 
 ## 0. Avancement depuis la passation
 
