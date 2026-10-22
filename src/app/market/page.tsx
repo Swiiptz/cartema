@@ -1,14 +1,14 @@
 'use client';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import Link from 'next/link';
-import {Clock,Coins,Crown,Gavel,Layers,Search,Store,Tag,X} from 'lucide-react';
-import {TarotCard} from '@/components/Card';
+import {Clock,Coins,Crown,Gavel,Heart,Layers,Search,Store,Tag,X} from 'lucide-react';
+import {TarotCard,palette} from '@/components/Card';
 import {useAuth} from '@/components/AuthProvider';
 import {useAsk} from '@/components/AskDialog';
 import {CountUp,Countdown,Sheet,Skeleton} from '@/components/ui';
 import {ALL_RARITIES,type Finish,type Rarity} from '@/lib/draw';
 import {PriceHints} from '@/components/PriceHints';
-import {callRpc,listingToCard,marketCard,type CardPrices,type Listing,type MarketBoard,type MarketGroup,type MarketOffer,type TradeStatus} from '@/lib/game';
+import {callRpc,listingToCard,marketCard,type CardPrices,type Listing,type MarketBoard,type MarketGroup,type MarketOffer,type TradeStatus,type WishItem,type Wishlist} from '@/lib/game';
 
 const PAGE=48;
 /** Maximum renvoyé par get_market_board en un appel. */
@@ -45,7 +45,8 @@ export default function Market(){
  const [status,setStatus]=useState<TradeStatus|null>(null);
  const [rarity,setRarity]=useState<Rarity|''>('');
  const [finish,setFinish]=useState<Finish|''>('');
- const [query,setQuery]=useState('');
+ // ?q= : recherche ouverte depuis un succès (« Il vous manque … »).
+ const [query,setQuery]=useState(()=>typeof window==='undefined'?'':new URLSearchParams(window.location.search).get('q')??'');
  const [busy,setBusy]=useState<string|null>(null);
  const [message,setMessage]=useState<{error?:string;notice?:string}>({});
 
@@ -139,6 +140,16 @@ export default function Market(){
   finally{setBusy(null);}
  }
 
+ // Mes souhaits en vente : chargés seulement à l'ouverture du bouton, pour ne pas alourdir chaque visite.
+ const [wishOpen,setWishOpen]=useState(false);
+ const [wishesOnSale,setWishesOnSale]=useState<WishItem[]|null>(null);
+ async function toggleWishes(){
+  const open=!wishOpen;setWishOpen(open);
+  if(!open||wishesOnSale||!client)return;
+  try{const w=await callRpc<Wishlist>(client,'get_wishlist',{p_handle:null});setWishesOnSale(w.items.filter(i=>(i.on_market??0)>0).sort((a,b)=>(a.best_price??Infinity)-(b.best_price??Infinity)));}
+  catch(e){setWishOpen(false);setMessage({error:(e as Error).message});}
+ }
+
  const boardKey=`${kind}|${rarity}|${finish}|${query}|${clan}|${sort}|${undiscovered}`;
  const activeMine=useMemo(()=>mine?.filter(l=>l.status==='active'&&l.mine)??[],[mine]);
  const history=useMemo(()=>mine?.filter(l=>l.status!=='active')??[],[mine]);
@@ -156,6 +167,13 @@ export default function Market(){
 
   {tab==='buy'?<>
    <div className="segmented market-kind" role="tablist" aria-label="Type de vente"><button role="tab" aria-selected={kind==='fixed'} onClick={()=>switchKind('fixed')}><Tag size={14}/> Prix fixe</button><button role="tab" aria-selected={kind==='auction'} onClick={()=>switchKind('auction')}><Gavel size={14}/> Enchères</button></div>
+   <div className="wish-market">
+    <button className={`wish-market-toggle ${wishOpen?'on':''}`} aria-expanded={wishOpen} onClick={()=>void toggleWishes()}><Heart size={14}/> Mes souhaits en vente{!!wishesOnSale?.length&&<b>{wishesOnSale.length}</b>}</button>
+    {wishOpen&&(!wishesOnSale?<Skeleton style={{height:36}}/>:wishesOnSale.length===0?<p className="muted wish-market-empty">Aucune carte de votre liste de souhaits n’est en vente pour l’instant. <Link className="text-link" href="/profile/">Gérer mes souhaits</Link></p>
+     :<ul className="wish-market-list">{wishesOnSale.map(w=><li key={`${w.code}|${w.finish??''}`}><button style={{'--rc':palette[w.rarity as Rarity]??'var(--gold)'} as React.CSSProperties} onClick={()=>{if(kind!=='fixed')switchKind('fixed');setFinish((w.finish as Finish|null)??'');setQuery(w.known&&w.name?w.name:w.code);}}>
+      <span className="wish-market-name">{w.known&&w.name?w.name:`${w.code} · inconnue`}{w.finish&&<em>{w.finish}</em>}</span>
+      <span className="wish-market-price"><Coins size={12}/>{w.best_price!=null?`dès ${w.best_price.toLocaleString('fr-FR')}`:'en vente'}{(w.on_market??0)>1&&<small> · {w.on_market} offres</small>}</span></button></li>)}</ul>)}
+   </div>
    <div className="market-filters">
     <label className="search-field"><Search size={18}/><input aria-label="Rechercher un personnage" placeholder="Rechercher…" value={query} onChange={e=>setQuery(e.target.value)}/></label>
     <select aria-label="Rareté" value={rarity} onChange={e=>setRarity(e.target.value as Rarity|'')}><option value="">Toutes raretés</option>{ALL_RARITIES.map(r=><option key={r}>{r}</option>)}</select>

@@ -1054,3 +1054,50 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .contest-rules li.plain{list-style:none;margin-left:-20px}
 @media(max-width:560px){.contest-info-grid{grid-template-columns:1fr}.contest-fieldset{padding:12px}.contest-rewards-row{grid-template-columns:1fr 1fr 1fr 40px}.contest-rewards-row.head span:first-child,.contest-range-label{grid-column:1/-1}.contest-rewards-row.others{grid-template-columns:1fr 1fr 40px}.contest-range{grid-column:1/-1}}
 .epic-reveal.epic-eternelle .epic-banner strong{background:linear-gradient(90deg,#d8ecff,#f6ecd2,#d8ecff);-webkit-background-clip:text;background-clip:text;color:transparent}
+/* Mise à jour du 22/10 : collection (doublons, possédées par rareté), succès de cartes possédées, souhaits au marché. */
+.album-toolbar .album-status-tabs{grid-template-columns:repeat(var(--n,3),1fr)}
+.album-toolbar .album-status-tabs .tab-indicator{width:calc((100% - 6px)/var(--n,3))}
+.copies-badge{position:absolute;top:-7px;left:-7px;z-index:3;min-width:28px;height:24px;padding:0 8px;display:grid;place-items:center;border-radius:999px;background:linear-gradient(160deg,#4a2e3b,#1b1118);border:1px solid #c9a45caa;color:var(--gold2);font:700 11px var(--ui);letter-spacing:.02em;box-shadow:0 3px 10px #000a,0 0 0 3px #0d090f;pointer-events:none}
+/* L'album ne peint pas les cartes hors écran (content-visibility) : laisser déborder la pastille et la pile. */
+.album-card-cell.stack-1,.album-card-cell.stack-2{overflow-clip-margin:14px}
+/* Pile : une ou deux cartes fantômes décalées derrière une carte en plusieurs exemplaires. */
+.album-card-cell.stack-1 .tarot-card:before,.album-card-cell.stack-2 .tarot-card:before,.album-card-cell.stack-2 .tarot-card:after{content:'';position:absolute;inset:0;z-index:-1;border-radius:10px;border:1px solid #c9a45c50;background:linear-gradient(160deg,#2a1b25,#130c12);transform:translate(5px,5px) rotate(1.4deg);transform-origin:50% 100%;pointer-events:none}
+.album-card-cell.stack-2 .tarot-card:after{z-index:-2;border-color:#c9a45c30;transform:translate(9px,8px) rotate(2.8deg)}
+.album-owned{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:12px 0 6px;font:500 12px var(--ui);color:#d9c6a3}
+.album-owned b{font:600 15px var(--display);color:var(--gold2)}
+.album-owned small{font-size:10px;color:var(--muted)}
+.rarity-bars{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.rarity-bars li{display:flex;flex-direction:column;gap:4px;min-width:0}
+.rarity-bars i{position:relative;display:block;height:4px;border-radius:4px;background:#ffffff0d;overflow:hidden}
+.rarity-bars i:after{content:'';position:absolute;inset:0;width:var(--v);background:var(--rc);border-radius:inherit;transition:width .6s var(--ease-out)}
+.rarity-bars li.full i{box-shadow:0 0 8px var(--rc)}
+.rarity-bars span{font:600 10px var(--ui);color:#cdbfa9;text-align:center;font-variant-numeric:tabular-nums}
+.rarity-bars small{font-weight:400;color:var(--muted)}
+.dupes-banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0 14px;padding:12px 14px;border:1px solid #c9a45c40;border-radius:12px;background:linear-gradient(120deg,#2a1a24,#170f15);color:var(--gold2)}
+.dupes-banner p{flex:1 1 220px;margin:0;font:400 13px/1.45 var(--ui);color:#d9c6a3}
+.dupes-banner strong{color:var(--gold2)}
+.ach-owned{font-style:normal;font-weight:400;color:var(--muted)}
+.ach-missing{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:6px;font:500 11px var(--ui);color:var(--muted)}
+.ach-missing>span{margin-right:2px}
+.ach-missing-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;border:1px solid #c9a45c40;background:#c9a45c0d;color:var(--gold2);font:500 11px var(--ui);transition:background .2s,border-color .2s}
+a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
+.ach-missing-chip.unknown{border-style:dashed;color:var(--muted);background:none}
+.wish-market{display:flex;flex-direction:column;gap:10px;margin:10px 0 4px}
+.wish-market-toggle{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid #e0405f55;background:#e0405f0d;color:#ffb3bf;font:600 12px var(--ui);transition:background .2s,border-color .2s}
+.wish-market-toggle svg{fill:currentColor}
+.wish-market-toggle.on,.wish-market-toggle:hover{background:#e0405f1f;border-color:#e0405f99}
+.wish-market-toggle b{min-width:20px;height:20px;padding:0 6px;display:grid;place-items:center;border-radius:999px;background:#e0405f;color:#fff;font-size:11px}
+.wish-market-empty{margin:0;font-size:13px}
+.wish-market-list{list-style:none;margin:0;padding:0 0 4px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:thin}
+.wish-market-list button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:150px;padding:9px 12px;border-radius:12px;border:1px solid var(--line);border-left:3px solid var(--rc);background:linear-gradient(160deg,#21151d,#140d14);color:var(--text);text-align:left;transition:transform .2s var(--ease-out),border-color .2s}
+.wish-market-list button:hover{transform:translateY(-2px);border-color:#c9a45c66}
+.wish-market-name{font:600 13px/1.25 var(--display);color:#efe2c8;white-space:nowrap}
+.wish-market-name em{margin-left:6px;font:500 10px var(--ui);font-style:normal;color:var(--gold)}
+.wish-market-price{display:inline-flex;align-items:center;gap:4px;font:600 11px var(--ui);color:var(--gold2)}
+.wish-market-price small{font-weight:400;color:var(--muted)}
+/* Sur téléphone, l'encart de progression est une grille : possédées et barres sur toute la largeur. */
+.album-progress .album-owned,.album-progress .rarity-bars{grid-column:1/-1}
+.album-progress .album-owned{margin-top:4px}
+/* Quatre onglets sur téléphone : nombre sous le libellé. */
+@media(max-width:700px){.album-toolbar .album-status-tabs.four button{flex-direction:column;gap:0;padding:5px 2px;min-height:48px;font-size:11px;line-height:1.2}}
+@media(max-width:560px){.rarity-bars{gap:3px}.rarity-bars span{font-size:9px}.copies-badge{min-width:24px;height:20px;font-size:10px}}

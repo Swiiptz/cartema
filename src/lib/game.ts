@@ -45,7 +45,11 @@ export function socialToCard(c:SocialCard):DemoCard{return {credit:c.art_credit?
 export type Mission={assignment_id:string;kind:'daily'|'weekly';label:string;target:number;reward:number;progress:number;claimed:boolean;ends_at:string;replaceable?:boolean};
 export type MissionBonus={boosters:number;claimed:boolean};
 export type Missions={daily:Mission[];weekly:Mission[];replacement_available:boolean;daily_reset:string;weekly_reset:string;daily_bonus?:MissionBonus;weekly_bonus?:MissionBonus};
-export type Achievement={code:string;secret:boolean;category:'collection'|'general'|'custom';label:string|null;description?:string|null;title?:string|null;edition?:string|null;edition_prefix?:string|null;rarity?:Rarity|null;reward_deniers?:number;reward_boosters?:number;progress?:number;target?:number;unlocked_at:string|null;reason?:string|null;conditional?:boolean;series?:string|null;series_label?:string|null;tier?:number|null};
+export type Achievement={code:string;secret:boolean;category:'collection'|'general'|'custom';label:string|null;description?:string|null;title?:string|null;edition?:string|null;edition_prefix?:string|null;rarity?:Rarity|null;reward_deniers?:number;reward_boosters?:number;progress?:number;target?:number;unlocked_at:string|null;reason?:string|null;conditional?:boolean;series?:string|null;series_label?:string|null;tier?:number|null;
+ /** Succès de cartes : compte les cartes possédées (pas seulement découvertes). */
+ owned_rule?:boolean;
+ /** Set à 5 cartes ou moins du but : cartes manquantes (nom seulement si découverte). */
+ missing?:{name:string|null;code:string}[]};
 export type FeaturedAchievement={code:string;label:string;description:string|null;title:string|null;tier:number|null;series_label:string|null;rarity:Rarity|null;category:string;unlocked_at:string};
 export type WishItem={code:string;number:number;rarity:string;finish:string|null;silhouette_key:string|null;known:boolean;character_id?:string;name?:string;role_title?:string;clan?:string|null;art_path?:string|null;art_meta?:ArtMeta|null;owned?:number;on_market?:number;best_price?:number|null;friends?:string[]};
 export type Wishlist={visible:boolean;items:WishItem[]};

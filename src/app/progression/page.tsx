@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
-import {Award,ChevronDown,Clock,Crown,Info,Lock,Medal,ScrollText,Trophy,X} from 'lucide-react';
+import {Award,ChevronDown,Clock,Crown,Info,Lock,Medal,ScrollText,Search,Trophy,X} from 'lucide-react';
 import {useAuth} from '@/components/AuthProvider';
 import {useAsk} from '@/components/AskDialog';
 import {Countdown,Skeleton} from '@/components/ui';
@@ -63,7 +63,7 @@ export default function Progression(){
   {tab==='achievements'&&(!achievements?<Skeleton style={{height:300}}/>:<Achievements list={achievements} unlocked={unlockedCount} currentTitle={player?.profile.title??null} busy={busy} onTitle={code=>void run(async()=>{const t=await callRpc<string|null>(client!,'set_title',{p_code:code});return t?`Vous portez désormais le titre « ${t} ».`:'Titre retiré.';})}/>)}
 
   {tab==='ranking'&&(!board?<Skeleton style={{height:300}}/>:<section className="social-section">
-   <p className="muted">Classement par nombre de succès obtenus, puis par personnages découverts en cas d’égalité. Les succès sont définitifs et une carte cédée reste découverte.</p>
+   <p className="muted">Classement par nombre de succès obtenus, puis par personnages découverts en cas d’égalité. Les succès sont définitifs et une carte cédée reste découverte. Pour un succès de cartes (clan, rareté, édition, groupe de personnages), il faut posséder les cartes au moment de l’obtenir.</p>
    <ol className="ranking">{board.top.map((r,i)=><li key={`${r.handle}-${i}`} className={`rise ${r.me?'me':''} top-${r.position}`} style={{'--i':Math.min(i,15)} as React.CSSProperties}>
     <span className="rank-pos">{r.position<=3?<Crown size={16}/>:r.position}</span>
     <Link className="person-name" href={`/joueur/?h=${encodeURIComponent(r.handle)}`}>{r.handle}{r.title&&<small className="rank-title">{r.title}</small>}</Link>
@@ -151,7 +151,11 @@ function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievemen
    {info===a.code&&<p className="ach-bubble" role="note">{a.description}{a.reason&&<span className="ach-reason">Décerné : {a.reason}</span>}</p>}
    {hidden?<small className="muted">Continuez à jouer pour le révéler.</small>
     :done?<small className="ach-date">Obtenu le {new Date(a.unlocked_at!).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}{a.title?` · titre « ${a.title} »`:''}</small>
-    :<div className="ach-progress"><div className="meter"><i style={{'--v':`${a.target?Math.min(100,(a.progress??0)/a.target*100):0}%`} as React.CSSProperties}/></div><small>{a.progress??0}/{a.target}</small></div>}
+    :<div className="ach-progress"><div className="meter"><i style={{'--v':`${a.target?Math.min(100,(a.progress??0)/a.target*100):0}%`} as React.CSSProperties}/></div><small>{a.progress??0}/{a.target}{a.owned_rule&&<em className="ach-owned"> possédées</em>}</small></div>}
+   {!done&&!hidden&&a.missing&&a.missing.length>0&&<div className="ach-missing"><span>Il vous manque</span>
+    {a.missing.map(m=>m.name
+     ?<Link key={m.code} className="ach-missing-chip" href={`/market/?q=${encodeURIComponent(m.name)}`} title={`Chercher ${m.name} au marché`}><Search size={11}/>{m.name}</Link>
+     :<span key={m.code} className="ach-missing-chip unknown" title="Carte jamais découverte">{m.code} · inconnue</span>)}</div>}
    {!hidden&&((a.reward_deniers??0)>0||(a.reward_boosters??0)>0)&&<small className="ach-reward">{(a.reward_deniers??0)>0&&`+${a.reward_deniers} Deniers`}{(a.reward_boosters??0)>0&&` · +${a.reward_boosters} booster${(a.reward_boosters??0)>1?'s':''}`}</small>}
   </div>
  </li>;};

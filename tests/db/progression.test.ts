@@ -8,8 +8,14 @@ beforeAll(async()=>{db=await createDb();edition=await seedEdition(db,{prefix:'CA
 const iso=(d:Date)=>d.toISOString();
 async function period(kind:string,at:string){const {rows:[r]}=await db.query<{period_start:Date;period_end:Date}>('select * from private.mission_period($1,$2)',[kind,at]);return [iso(r.period_start),iso(r.period_end)];}
 async function player(handle:string,createdAt?:string){const id=await createUser(db,createdAt?{createdAt}:{});await rpc(db,id,'set_handle',[handle]);return id;}
-async function discover(user:string,where:string,params:unknown[]=[]){
+/** Découverte seule : la carte a été vue une fois, sans être possédée. */
+async function see(user:string,where:string,params:unknown[]=[]){
   await db.query(`insert into public.discoveries (owner_id,character_id) select $1,id from public.characters c where c.edition_id=$2 and ${where} on conflict do nothing`,[user,edition,...params]);
+}
+/** Découvre et possède un exemplaire, comme après un booster. */
+async function discover(user:string,where:string,params:unknown[]=[],finish='Standard'){
+  await see(user,where,params);
+  await db.query(`insert into public.inventory_items (owner_id,character_id,finish) select $1,id,$${3+params.length} from public.characters c where c.edition_id=$2 and ${where}`,[user,edition,...params,finish]);
 }
 
 describe('périodes des missions (Europe/Paris)',()=>{
@@ -158,6 +164,46 @@ describe('succès conditionnels personnalisés',()=>{
   });
 });
 
+describe('succès de cartes : posséder au moment du déblocage (décision du 22/10)',()=>{
+  const ach=async(u:string,code:string)=>(await rpc<any[]>(db,u,'get_achievements')).find(a=>a.code===code);
+  it('une carte vue une fois ne compte plus : il faut l’avoir, et le succès reste acquis ensuite',async()=>{
+    const u=await player('possedant');
+    await see(u,`c.rarity='Peu commun'`); // les deux Peu communes vues, aucune possédée
+    expect(await ach(u,'set:CAM:rarity:Peu commun')).toMatchObject({progress:0,target:2,owned_rule:true,unlocked_at:null});
+    // Il manque les deux : leurs noms sont connus puisqu'elles ont été découvertes.
+    expect((await ach(u,'set:CAM:rarity:Peu commun')).missing.map((m:any)=>m.name).sort()).toEqual(['Perso CAM 3','Perso CAM 4']);
+    await discover(u,`c.number=3`);
+    // Un exemplaire en vente compte toujours : il est encore au joueur.
+    await db.query(`update public.inventory_items set reserved_kind='listing',reserved_ref=gen_random_uuid() where owner_id=$1`,[u]);
+    expect(await ach(u,'set:CAM:rarity:Peu commun')).toMatchObject({progress:1,missing:[{name:'Perso CAM 4',code:'CAM-004'}]});
+    // Un exemplaire recyclé ou retiré ne compte pas.
+    await discover(u,`c.number=4`);
+    await db.query(`update public.inventory_items set recycled_at=now() where owner_id=$1 and character_id=(select id from public.characters where edition_id=$2 and number=4)`,[u,edition]);
+    expect(await ach(u,'set:CAM:rarity:Peu commun')).toMatchObject({progress:1,unlocked_at:null});
+    await discover(u,`c.number=4`);
+    expect((await ach(u,'set:CAM:rarity:Peu commun')).unlocked_at).not.toBeNull();
+    // Débloqué : revendre ou recycler ensuite ne le retire pas.
+    await db.query(`update public.inventory_items set reserved_kind=null,reserved_ref=null,recycled_at=now() where owner_id=$1 and recycled_at is null`,[u]);
+    expect((await ach(u,'set:CAM:rarity:Peu commun')).unlocked_at).not.toBeNull();
+  });
+  it('ne nomme pas une carte manquante jamais découverte, ni au-delà de 5 manquantes',async()=>{
+    const u=await player('explorateur');
+    await discover(u,`c.rarity='Rare' and c.number=5`);
+    expect((await ach(u,'set:CAM:rarity:Rare')).missing).toEqual([{name:null,code:'CAM-006'}]);
+    expect((await ach(u,'set:CAM:all')).missing).toBeUndefined(); // 13 manquantes : pas de liste
+  });
+  it('les groupes de personnages exigent aussi de posséder les cartes',async()=>{
+    const admin=(await db.query<{id:string}>(`select id from public.profiles where role='admin'`)).rows[0].id;
+    const {rows:chars}=await db.query<{id:string}>(`select id from public.characters where edition_id=$1 and number in (9,10)`,[edition]);
+    const code=await rpc<string>(db,admin,'admin_save_achievement',[null,'Les jumeaux','Réunir les jumeaux.',false,0,0,null,chars.map(c=>c.id)]);
+    const u=await player('jumeaux');
+    await see(u,`c.number in (9,10)`);
+    expect(await ach(u,code)).toMatchObject({progress:0,unlocked_at:null,owned_rule:true});
+    await discover(u,`c.number in (9,10)`);
+    expect((await ach(u,code)).unlocked_at).not.toBeNull();
+  });
+});
+
 describe('succès conditionnels avec finition',()=>{
   it('exige la finition choisie pour certains personnages, la simple découverte pour les autres',async()=>{
     const admin=(await db.query<{id:string}>(`select id from public.profiles where role='admin'`)).rows[0].id;
@@ -166,10 +212,11 @@ describe('succès conditionnels avec finition',()=>{
     expect((await rpc<any[]>(db,admin,'admin_custom_achievements')).find(x=>x.code===code).characters.map((c:any)=>c.finish)).toEqual(['Dorée',null]);
     const u=await player('dore_duo');
     const state=async()=>(await rpc<any[]>(db,u,'get_achievements')).find(x=>x.code===code);
-    await db.query(`insert into public.discoveries (owner_id,character_id) values ($1,$2),($1,$3)`,[u,a.id,b.id]);
-    await db.query(`insert into public.finish_discoveries (owner_id,character_id,finish) values ($1,$2,'Standard'),($1,$3,'Standard')`,[u,a.id,b.id]);
-    expect(await state()).toMatchObject({progress:1,target:2,unlocked_at:null}); // a découvert, mais pas en Dorée
+    await discover(u,`c.number in (7,8)`);
+    expect(await state()).toMatchObject({progress:1,target:2,unlocked_at:null}); // possédé, mais pas en Dorée
     await db.query(`insert into public.finish_discoveries (owner_id,character_id,finish) values ($1,$2,'Dorée')`,[u,a.id]);
+    expect(await state()).toMatchObject({progress:1,unlocked_at:null}); // une Dorée vue une fois ne suffit plus
+    await discover(u,`c.number=7`,[],'Dorée');
     expect((await state()).unlocked_at).not.toBeNull();
     await expectError(rpc(db,admin,'admin_save_achievement',[code,'Duo doré','',false,0,0,null,[a.id,b.id],null,{[a.id]:'Argentée'}]),/invalid_finish/);
   });
