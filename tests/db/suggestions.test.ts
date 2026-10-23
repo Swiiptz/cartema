@@ -11,6 +11,24 @@ async function player(h:string){const id=await createUser(db,{createdAt:'2026-01
 const send=(u:string,title='Un mode tournoi',category='feature')=>rpc<string>(db,u,'submit_suggestion',[category,title,'Des tournois du samedi soir.']);
 
 describe('doléances',()=>{
+  it('l’admin peut masquer une doléance pour lui seul, sans prévenir l’auteur ni changer son statut (23/10)',async()=>{
+    const a=await player('idee_masquee');
+    const id=await send(a,'Une idée en double');
+    const notifs=async()=>(await rpc(db,a,'get_notifications')).items.length;
+    const before=await notifs();
+    await rpc(db,admin,'admin_hide_suggestion',[id,true]);
+    expect((await rpc<any[]>(db,admin,'admin_suggestions',['new'])).some(s=>s.id===id)).toBe(false);
+    expect((await rpc<any[]>(db,admin,'admin_suggestions',[null])).some(s=>s.id===id)).toBe(false);
+    expect((await rpc<any[]>(db,admin,'admin_suggestions',['hidden'])).find(s=>s.id===id)).toMatchObject({status:'new'});
+    // Pour l'auteur, rien ne change.
+    const mine=(await rpc(db,a,'get_suggestions')).mine.find((s:any)=>s.id===id);
+    expect(mine).toMatchObject({status:'new'});
+    expect(JSON.stringify(mine)).not.toMatch(/hidden/);
+    expect(await notifs()).toBe(before);
+    await expectError(rpc(db,a,'admin_hide_suggestion',[id,true]),/forbidden|admin/);
+    await rpc(db,admin,'admin_hide_suggestion',[id,false]);
+    expect((await rpc<any[]>(db,admin,'admin_suggestions',['new'])).some(s=>s.id===id)).toBe(true);
+  });
   it('privées par défaut : seul l’auteur et l’admin les voient, l’admin est prévenu',async()=>{
     const a=await player('idee_a');const b=await player('idee_b');
     const id=await send(a);

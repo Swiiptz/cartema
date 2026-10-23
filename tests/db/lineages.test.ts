@@ -73,3 +73,30 @@ describe('lignées de clan',()=>{
     expect((await lineage(u)).unlocked_at).toBeNull();
   });
 });
+
+describe('camps (Team Apo, Team Gwen)',()=>{
+  it('se gagnent avec les cartes requises sans la carte interdite, et se perdent dès qu’on obtient l’interdite (23/10)',async()=>{
+    const id=async(ed:string,n:number)=>(await db.query<{id:string}>('select id from public.characters where edition_id=$1 and number=$2',[ed,n])).rows[0].id;
+    const apo=await id(cam,3),isa=await id(cam,4),gwen=await id(cam,5);
+    await db.query(`insert into public.achievements (code,label,description,category,metric,target,required_characters,excluded_characters,title,reward_deniers,sort,edition_id)
+                    values ('chronicle:team-test','Le parti de test','Apo et Isabeau, sans Gwen.','custom','faction',1,$1,$2,'Team Test',100,600,$3)`,[[apo,isa],[gwen],cam]);
+    const u=await player('camp_apo');const other=await player('camp_autre');
+    const team=async()=>(await rpc<any[]>(db,u,'get_achievements')).find(a=>a.code==='chronicle:team-test');
+    expect(await team()).toMatchObject({description:'Apo et Isabeau, sans Gwen.',unlocked_at:null}); // condition visible avant
+    await give(u,cam,3);await give(u,cam,4);
+    expect(await team()).toMatchObject({lineage:true,faction:true,progress:2,target:2});
+    expect((await team()).unlocked_at).not.toBeNull();
+    expect(await rpc(db,u,'set_title',['chronicle:team-test'])).toBe('Team Test');
+    // Obtenir Gwen fait perdre le camp tout de suite.
+    const g=await give(u,cam,5);
+    expect(await title(u)).toBeNull();
+    const lost=await team();
+    expect(lost.unlocked_at).toBeNull();expect(lost.progress).toBe(1);
+    // S'en séparer le rend à la passe suivante.
+    await db.query('update public.inventory_items set owner_id=$2 where id=$1',[g,other]);
+    expect((await team()).unlocked_at).not.toBeNull();
+    // Une carte requise qui part : perdu aussi.
+    await db.query(`update public.inventory_items set owner_id=$2 where owner_id=$1 and character_id=$3`,[u,other,isa]);
+    expect((await team()).unlocked_at).toBeNull();
+  });
+});

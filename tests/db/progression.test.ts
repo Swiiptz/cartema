@@ -317,13 +317,17 @@ describe('Narcisse',()=>{
 });
 
 describe('succès secrets de la chronique',()=>{
-  it('récompense les comptes du premier mois seulement',async()=>{
-    const early=await player('pionnier');
-    const late=await player('retardataire','2026-12-01 12:00+01');
-    const mine=(await rpc<any[]>(db,early,'get_achievements')).find(a=>a.code==='chronicle:early');
-    expect(mine).toMatchObject({label:'Soutien de la première heure',description:'Avoir rejoint Cartema durant son premier mois.'});
+  it('« Soutien de la première heure » ne s’obtient plus : gardé par ceux qui l’ont, invisible pour les autres (23/10)',async()=>{
+    const holder=await player('pionnier');
+    await db.query(`insert into public.achievement_unlocks (owner_id,code) values ($1,'chronicle:early')`,[holder]);
+    const mine=(await rpc<any[]>(db,holder,'get_achievements')).find(a=>a.code==='chronicle:early');
+    expect(mine).toMatchObject({label:'Soutien de la première heure',title:'Soutien de la première heure'});
     expect(mine.unlocked_at).not.toBeNull();
-    expect((await rpc<any[]>(db,late,'get_achievements')).find(a=>a.code==='chronicle:early')).toEqual({code:'chronicle:early',secret:true,category:'custom',label:null,unlocked_at:null,edition:null,edition_prefix:null});
+    expect(await rpc(db,holder,'set_title',['chronicle:early'])).toBe('Soutien de la première heure');
+    // Compte du premier mois qui ne l'avait pas encore : il ne l'obtient plus et ne le voit pas.
+    const early=await player('pionnier_tardif');
+    expect((await rpc<any[]>(db,early,'get_achievements')).find(a=>a.code==='chronicle:early')).toBeUndefined();
+    expect((await db.query('select 1 from public.achievement_unlocks where owner_id=$1 and code=$2',[early,'chronicle:early'])).rows).toHaveLength(0);
   });
   it('se débloque en recyclant une fois chaque carte du jeu',async()=>{
     const u=await player('broyeur_total');
@@ -342,6 +346,6 @@ describe('succès secrets de la chronique',()=>{
     expect((await rpc<any[]>(db,u,'get_achievements')).find(a=>a.code==='chronicle:actually')).toMatchObject({secret:true,label:null});
     await rpc(db,admin,'admin_grant_achievement',['chronicle:actually','pinailleur','Erreur de clan sur une carte']);
     expect((await rpc<any[]>(db,u,'get_achievements')).find(a=>a.code==='chronicle:actually')).toMatchObject({label:'Actually 🤓',title:'Actually 🤓'});
-    await expectError(rpc(db,admin,'admin_grant_achievement',['chronicle:early','pinailleur','x']),/conditional_achievement/);
+    await expectError(rpc(db,admin,'admin_grant_achievement',['chronicle:recycle-all','pinailleur','x']),/conditional_achievement/);
   });
 });

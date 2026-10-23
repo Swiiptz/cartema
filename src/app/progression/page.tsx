@@ -168,9 +168,9 @@ function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievemen
    {hidden?<small className="muted">Continuez à jouer pour le révéler.</small>
     :done?<small className="ach-date">{a.lineage?'Détenue depuis le':'Obtenu le'} {new Date(a.unlocked_at!).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}{a.title?` · titre « ${a.title} »`:''}</small>
     :<div className="ach-progress"><div className="meter"><i style={{'--v':`${a.target?Math.min(100,(a.progress??0)/a.target*100):0}%`} as React.CSSProperties}/></div><small>{a.progress??0}/{a.target}{a.owned_rule&&<em className="ach-owned"> possédées</em>}</small></div>}
-   {a.lineage&&<small className="ach-lineage-note">{done?'Se perd si un membre du clan quitte votre collection.'
-    :a.lost_at?`Perdue le ${new Date(a.lost_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})} : reprenez les membres manquants pour retrouver ${a.title?`le titre « ${a.title} »`:'la lignée'}.`
-    :a.title?`Titre « ${a.title} », tant que le clan reste complet.`:null}</small>}
+   {a.lineage&&<small className="ach-lineage-note">{done?(a.faction?'Se perd si une carte requise quitte votre collection, ou si vous obtenez la carte interdite.':'Se perd si un membre du clan quitte votre collection.')
+    :a.lost_at?`Perdu le ${new Date(a.lost_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})} : ${a.faction?'remplissez de nouveau la condition':'reprenez les membres manquants'} pour retrouver ${a.title?`le titre « ${a.title} »`:a.faction?'ce camp':'la lignée'}.`
+    :a.title?`Titre « ${a.title} », ${a.faction?'tant que la condition reste remplie':'tant que le clan reste complet'}.`:null}</small>}
    {!done&&!hidden&&a.missing&&a.missing.length>0&&<div className="ach-missing"><span>Il vous manque</span>
     {a.missing.filter(m=>m.name).map(m=><Link key={m.code} className="ach-missing-chip" href={`/market/?q=${encodeURIComponent(m.name!)}`} title={`Chercher ${m.name} au marché`}><Search size={11}/>{m.name}</Link>)}
     {/* Les cartes jamais découvertes restent anonymes, regroupées en une pastille. */}

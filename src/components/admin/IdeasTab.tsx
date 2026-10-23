@@ -1,6 +1,6 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
-import {Flame,Save,Users} from 'lucide-react';
+import {Eye,EyeOff,Flame,Save,Users} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {Skeleton} from '@/components/ui';
 import {useSignedSubmission} from '@/lib/signed';
@@ -12,18 +12,18 @@ const when=(d:string)=>new Date(d).toLocaleString('fr-FR',{day:'numeric',month:'
 
 /** Doléances des joueurs : réponse, statut, publication pour le vote. */
 export function IdeasTab({client,act,reason}:{client:SupabaseClient;act:Act;reason:Reason}){
- const [status,setStatus]=useState<SuggestionStatus|'all'>('new');
+ const [status,setStatus]=useState<SuggestionStatus|'all'|'hidden'>('new');
  const [list,setList]=useState<Suggestion[]|null>(null);
  const load=useCallback(async()=>{setList(await callRpc<Suggestion[]>(client,'admin_suggestions',{p_status:status==='all'?null:status}).catch(()=>[]));},[client,status]);
  useEffect(()=>{setList(null);void load();},[load]);
  return <div className="admin-reports">
-  <div className="stats-filter" role="radiogroup" aria-label="Doléances affichées">{([['new','Reçues'],['planned','Prévues'],['done','Faites'],['declined','Écartées'],['all','Toutes']] as const).map(([v,l])=><button key={v} role="radio" aria-checked={status===v} className={status===v?'on':''} onClick={()=>setStatus(v)}>{l}</button>)}</div>
+  <div className="stats-filter" role="radiogroup" aria-label="Doléances affichées">{([['new','Reçues'],['planned','Prévues'],['done','Faites'],['declined','Écartées'],['all','Toutes'],['hidden','Masquées']] as const).map(([v,l])=><button key={v} role="radio" aria-checked={status===v} className={status===v?'on':''} onClick={()=>setStatus(v)}>{l}</button>)}</div>
   {!list?<Skeleton style={{height:200}}/>:list.length===0?<p className="muted">Aucune doléance ici.</p>
-   :<ul className="report-list">{list.map(s=><IdeaAdmin key={s.id} s={s} client={client} act={act} reason={reason} onDone={load}/>)}</ul>}
+   :<ul className="report-list">{list.map(s=><IdeaAdmin key={s.id} s={s} hidden={status==='hidden'} client={client} act={act} reason={reason} onDone={load}/>)}</ul>}
  </div>;
 }
 
-function IdeaAdmin({s,client,act,reason,onDone}:{s:Suggestion;client:SupabaseClient;act:Act;reason:Reason;onDone:()=>void}){
+function IdeaAdmin({s,hidden,client,act,reason,onDone}:{s:Suggestion;hidden:boolean;client:SupabaseClient;act:Act;reason:Reason;onDone:()=>void}){
  const image=useSignedSubmission(client,s.image_path);
  const [st,setSt]=useState<SuggestionStatus>(s.status==='new'?'planned':s.status);
  const [pub,setPub]=useState(s.public);
@@ -36,6 +36,12 @@ function IdeaAdmin({s,client,act,reason,onDone}:{s:Suggestion;client:SupabaseCli
   const ok=await act('Doléance mise à jour.',c=>callRpc(c,'admin_answer_suggestion',{p_id:s.id,p_status:st,p_public:pub,p_reply:reply,p_reason:r}));
   setBusy(false);if(ok)onDone();
  }
+ // Masquer : pour l'admin seulement, sans prévenir l'auteur ni changer le statut.
+ async function toggleHidden(){
+  setBusy(true);
+  const ok=await act(hidden?'Doléance réaffichée.':'Doléance masquée (l’auteur n’est pas prévenu).',c=>callRpc(c,'admin_hide_suggestion',{p_id:s.id,p_hidden:!hidden}));
+  setBusy(false);if(ok)onDone();
+ }
  return <li className={`panel report-item idea-admin status-${s.status}`}>
   <div className="report-head"><span className="status-chip">{SUGGESTION_CATEGORIES[s.category]}</span><strong>{s.title}</strong><small>{when(s.created_at)} · par {s.author??'—'}{s.public&&<> · <Flame size={11}/> {s.votes}</>}</small></div>
   {s.body?<p className="report-message">{s.body}</p>:<p className="muted">Sans détails.</p>}
@@ -45,6 +51,6 @@ function IdeaAdmin({s,client,act,reason,onDone}:{s:Suggestion;client:SupabaseCli
    <label className="admin-check"><input type="checkbox" checked={pub} onChange={e=>setPub(e.target.checked)}/> <Users size={13}/> Publique, ouverte au vote</label>
   </div>
   <label className="auth-field"><span>Réponse au joueur <small>visible par l’auteur, et par tous si publique</small></span><textarea rows={3} maxLength={1000} value={reply} placeholder="Merci ! Voici ce qu’on en pense…" onChange={e=>setReply(e.target.value)}/></label>
-  <div className="admin-actions"><button className="primary compact" disabled={busy||!changed} onClick={()=>void save()}><Save size={14}/> Enregistrer</button></div>
+  <div className="admin-actions"><button className="primary compact" disabled={busy||!changed} onClick={()=>void save()}><Save size={14}/> Enregistrer</button><button className="primary ghost compact" disabled={busy} onClick={()=>void toggleHidden()} title="Visible pour vous seul : l’auteur n’est pas prévenu">{hidden?<><Eye size={14}/> Réafficher</>:<><EyeOff size={14}/> Masquer</>}</button></div>
  </li>;
 }
