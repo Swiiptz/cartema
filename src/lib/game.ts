@@ -14,6 +14,10 @@ export type PlayerState={
  booster_offers:Record<string,number>;
  /** Deniers du bonus quotidien crédités par cet appel (0 si déjà reçu aujourd'hui). */
  daily_reward?:number;
+ /** Série de connexions : jours d'affilée, meilleure série, booster tous les `every` jours (0 = aucun). */
+ streak?:{current:number;best:number;every:number;count:number;next_bonus_in:number|null};
+ /** Boosters de série crédités par cet appel (palier atteint aujourd'hui). */
+ streak_reward?:number;
  /** Invitations d'amis, cadeaux et échanges reçus en attente de réponse. */
  social_pending?:number;
  /** Missions accomplies dont la récompense n'est pas encore réclamée. */
@@ -65,7 +69,7 @@ export const EVENT_METRICS:Record<string,string>={open_boosters:'Boosters ouvert
  market_list:'Mises en vente',auction_bid:'Enchères placées',trade_done:'Échanges conclus',gift_send:'Cartes offertes',daily_login:'Jours de connexion'};
 export type GameEvent={id:string;name:string;description:string;starts_at:string;ends_at:string;active:boolean;finish_multiplier:number;deniers_multiplier:number;bonus_boosters:number;free_interval_hours:number|null;claimed:boolean};
 export type NotificationPrefs={friends:boolean;social:boolean;market:boolean;achievements:boolean};
-export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{character?:string;title?:string;public?:boolean;position?:number;deniers?:number;boosters?:number;podium?:boolean;event?:string;rank?:number;accepted?:boolean;kind?:string;note?:string|null;target?:string;category?:string;from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number}};
+export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{character?:string;title?:string;public?:boolean;position?:number;deniers?:number;boosters?:number;podium?:boolean;event?:string;rank?:number;accepted?:boolean;kind?:string;note?:string|null;target?:string;category?:string;from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number;quantity?:number;version?:string|null}};
 export type Notifications={items:AppNotification[];unread:number;prefs:NotificationPrefs};
 export type PublicProfile={verified?:boolean;featured:FeaturedAchievement[];profile_id:string;handle:string;title:string|null;created_at:string;relation:'self'|'friends'|'pending_out'|'pending_in'|'none';visible:boolean;settings:{visibility:'public'|'friends'|'private';show_stats:boolean}|null;showcase:SocialCard[]|null;stats:{faces:number;total_characters:number;achievements:number;gold:number;blood:number;position:number}|null;recent:{label:string;unlocked_at:string;tier:number|null}[]|null};
 export type Leaderboard={top:{position:number;handle:string;title:string|null;score:number;achievements:number;faces:number;me:boolean}[];me:{position:number;score:number;achievements:number;faces:number}|null;total_characters:number;total_achievements:number};
@@ -78,7 +82,7 @@ export type MarketOffer={listing_id:string;price:number;buyer_tax:number;seller:
 export type MarketGroup={max_price?:number;best?:MarketOffer|null;key:string;offers:number;min_price:number;discovered:boolean;finish:Finish;card:ListingCard;listings:MarketOffer[]};
 /** Prix de référence d'une carte : 10 dernières ventes sur 90 jours, moyenne, dernière, offre la moins chère d'un autre joueur. */
 export type CardPrices={sales:{price:number;kind:'fixed'|'auction';closed_at:string}[];average:number|null;last:number|null;lowest:number|null};
-export type MarketBoard<T>={items:T[];total:number;clans:{id:string;name:string}[]};
+export type MarketBoard<T>={items:T[];total:number;clans:{id:string;name:string;listings?:number}[]};
 export type RecycleResult={operation_id?:string;total:number;count:number;balance:number;replayed:boolean};
 export type DuplicatePreview={count:number;total:number;by_rarity:Partial<Record<Rarity,number>>};
 
@@ -257,7 +261,11 @@ export type ContestCard={character_id:string;code:string;number:number;name:stri
  priority?:boolean};
 export type ContestPlace={from:number;to:number;deniers:number;boosters:number};
 export type ContestRewards={places:ContestPlace[];others:{deniers:number;boosters:number}};
-export type Contest={id:string;title:string;starts_at:string;ends_at:string;open:boolean;rewarded:boolean;edition:string;rewards:ContestRewards;rules?:string|null;upcoming?:boolean;priority_multiplier?:number;my_entries:number;my_points:number;cards:ContestCard[]};
+/** Galerie : concours clos, dessins retenus (carte rendue avec l'illustration) et podium une fois distribué. */
+export type ContestGalleryItem={entry_id:string;character:string;code:string;rarity:Rarity;author:string|null;kind:'main'|'alternate';line_label:string|null;real_drawing:boolean;image_path:string;card:SocialCard};
+export type ContestGallery={id:string;title:string;edition:string;starts_at:string;ends_at:string;final:boolean;entries:number;artists:number;
+ podium:{place:number;handle:string;points:number;selected:number;leads:number}[];selected:ContestGalleryItem[]};
+export type Contest={id:string;title:string;starts_at:string;ends_at:string;open:boolean;rewarded:boolean;edition:string;rewards:ContestRewards;rules?:string|null;upcoming?:boolean;priority_multiplier?:number;allow_mythic?:boolean;my_entries:number;my_points:number;cards:ContestCard[]};
 export type ContestEntry={entry_id:string;image_path:string;author:string;votes:number;leading:boolean;mine:boolean;my_vote:boolean;selected:'main'|'alternate'|null;created_at:string};
 export type ContestRank={position:number;handle:string;leads:number;selected:number;real:number;points:number;me:boolean};
 

@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
-import {ArrowRight,BookOpen,Coins,Eye,Lightbulb,Moon,Sparkles,Users} from 'lucide-react';
+import {ArrowRight,BookOpen,Coins,Eye,Flame,Lightbulb,Moon,Sparkles,Users} from 'lucide-react';
 import {TarotCard,palette} from '@/components/Card';
 import {BoosterSkin} from '@/components/BoosterSkin';
 import {useAuth} from '@/components/AuthProvider';
@@ -77,7 +77,10 @@ function Dashboard(){
  return <div className="page dash">
   <header className="dash-head rise">
    <div><span className="eyebrow">{hour>=5&&hour<18?'Bonjour':'Bonsoir'}</span><h1>{player.profile.handle??'Collectionneur'}</h1></div>
-   <span className="chip gold"><Coins size={15}/><CountUp value={player.balance}/> <small>Deniers</small></span>
+   <div className="dash-chips">
+    {player.streak&&player.streak.current>0&&<span className="chip streak-chip" title={`Meilleure série : ${player.streak.best} jour${player.streak.best>1?'s':''}`}><Flame size={15}/>{player.streak.current} <small>jour{player.streak.current>1?'s':''} d’affilée{player.streak.next_bonus_in?` · booster dans ${player.streak.next_bonus_in} j`:''}</small></span>}
+    <span className="chip gold"><Coins size={15}/><CountUp value={player.balance}/> <small>Deniers</small></span>
+   </div>
   </header>
 
   <ContestTeaser/>

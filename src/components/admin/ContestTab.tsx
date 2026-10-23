@@ -12,7 +12,7 @@ import {defaultContestRulesText} from '@/lib/contest';
 type Act=(label:string,action:(c:SupabaseClient)=>Promise<unknown>)=>Promise<boolean>;
 type Reason=(message:string,confirmLabel?:string)=>Promise<string|null>;
 type Ask=(o:AskOptions)=>Promise<string|null>;
-type AdminContest={id:string;title:string;edition_id:string;starts_at:string;ends_at:string;rewards:ContestRewards;rewarded_at:string|null;rules:string|null;open:boolean;entries:number;reports:number};
+type AdminContest={id:string;title:string;edition_id:string;starts_at:string;ends_at:string;rewards:ContestRewards;rewarded_at:string|null;rules:string|null;open:boolean;entries:number;reports:number;allow_mythic?:boolean};
 type Entry={entry_id:string;character_id:string;code:string;name:string;rarity:string;prefix:string;number:number;author:string;image_path:string;created_at:string;votes:number;leading:boolean;hidden:boolean;hidden_reason:string|null;reports:string[];selected:'main'|'alternate'|null;line_label:string|null;real_drawing:boolean;granted:boolean};
 
 const DEFAULT_REWARDS:ContestRewards={places:[{from:1,to:1,deniers:3000,boosters:10},{from:2,to:2,deniers:2000,boosters:6},{from:3,to:3,deniers:1500,boosters:4},{from:4,to:10,deniers:500,boosters:2}],others:{deniers:200,boosters:1}};
@@ -49,6 +49,7 @@ function ContestForm({contest,catalog,act,reason,onDone}:{contest:AdminContest|n
  const [places,setPlaces]=useState<ContestPlace[]>(contest?.rewards.places??DEFAULT_REWARDS.places);
  const [others,setOthers]=useState(contest?.rewards.others??DEFAULT_REWARDS.others);
  const [rules,setRules]=useState(contest?.rules??'');
+ const [allowMythic,setAllowMythic]=useState(!!contest?.allow_mythic);
  const num=(v:string)=>Math.max(0,Number(v.replace(/\D/g,''))||0);
  const setPlace=(i:number,k:keyof ContestPlace,v:string)=>setPlaces(p=>p.map((x,j)=>j===i?{...x,[k]:num(v)}:x));
  const editionName=editions.find(e=>e.id===edition)?.name??'';
@@ -58,7 +59,7 @@ function ContestForm({contest,catalog,act,reason,onDone}:{contest:AdminContest|n
   const r=await reason(`${contest?'Modifier':'Créer'} « ${title} » : du ${when(new Date(start).toISOString())} au ${when(new Date(end).toISOString())}.`);
   if(r===null)return;
   let id:string|undefined;
-  if(await act(contest?'Concours mis à jour.':'Concours créé.',async c=>{id=await callRpc<string>(c,'admin_save_contest',{p_id:contest?.id??null,p_title:title,p_edition_id:edition,p_starts_at:new Date(start).toISOString(),p_ends_at:new Date(end).toISOString(),p_rewards:{places,others},p_reason:r,p_rules:rules});}))onDone(id);
+  if(await act(contest?'Concours mis à jour.':'Concours créé.',async c=>{id=await callRpc<string>(c,'admin_save_contest',{p_id:contest?.id??null,p_title:title,p_edition_id:edition,p_starts_at:new Date(start).toISOString(),p_ends_at:new Date(end).toISOString(),p_rewards:{places,others},p_reason:r,p_rules:rules,p_allow_mythic:allowMythic});}))onDone(id);
  }
  return <section className="panel contest-form">
   <header className="contest-form-head"><span className="eyebrow">{contest?'Modifier le concours':'Nouveau concours'}</span><button className="icon-button" aria-label="Fermer" onClick={()=>onDone()}><X size={16}/></button></header>
@@ -70,6 +71,7 @@ function ContestForm({contest,catalog,act,reason,onDone}:{contest:AdminContest|n
     <label className="auth-field"><span>Début</span><input type="datetime-local" value={start} onChange={e=>setStart(e.target.value)}/></label>
     <label className="auth-field"><span>Fin</span><input type="datetime-local" value={end} onChange={e=>setEnd(e.target.value)}/></label>
    </div>
+   <label className="contest-check"><input type="checkbox" checked={allowMythic} onChange={e=>setAllowMythic(e.target.checked)}/> <span>Mythiques admises <small>(jamais la carte unique ; un dessin retenu offre la carte en Standard)</small></span></label>
    {badDates&&<p className="contest-error">La fin doit venir après le début.</p>}
   </fieldset>
   <fieldset className="contest-fieldset">
@@ -96,7 +98,7 @@ function ContestForm({contest,catalog,act,reason,onDone}:{contest:AdminContest|n
    <legend>Règles</legend>
    <p className="admin-hint">Affichées dans l’onglet Règles du concours, entre les dates et les récompenses (calculées à part). Une ligne qui commence par « - » devient une règle, et « Titre. » en tête est mis en valeur. Vide : règles par défaut du site.</p>
    <textarea className="contest-rules-input" rows={10} value={rules} maxLength={8000} placeholder={'- Thème. Les vampires au clair de lune.\n- Format. Dessin vertical, sans texte.'} onChange={e=>setRules(e.target.value)}/>
-   <div className="contest-rules-tools"><button className="text-link" onClick={()=>setRules(defaultContestRulesText(editionName))}><ScrollText size={13}/> Partir des règles par défaut</button>{rules&&<button className="text-link" onClick={()=>setRules('')}>Vider</button>}<small>{rules.length.toLocaleString('fr-FR')} / 8 000</small></div>
+   <div className="contest-rules-tools"><button className="text-link" onClick={()=>setRules(defaultContestRulesText(editionName,allowMythic))}><ScrollText size={13}/> Partir des règles par défaut</button>{rules&&<button className="text-link" onClick={()=>setRules('')}>Vider</button>}<small>{rules.length.toLocaleString('fr-FR')} / 8 000</small></div>
   </fieldset>
   <div className="admin-actions"><button className="primary" disabled={bad} onClick={()=>void save()}><Save size={15}/> Enregistrer</button><button className="text-link" onClick={()=>onDone()}>Annuler</button></div>
  </section>;

@@ -46,6 +46,26 @@ describe('concours d’illustrations',()=>{
     await save('   ');
     expect((await rpc(db,u,'get_contest')).rules).toBeNull();
   });
+  it('Mythiques admises sur option du concours, jamais la carte unique (23/10)',async()=>{
+    const u=await player('dessine_mythe');
+    const c0=await rpc(db,u,'get_contest');
+    expect(c0.allow_mythic).toBe(false);
+    const save=(on:boolean|null)=>rpc(db,admin,'admin_save_contest',[contest,c0.title,cam,c0.starts_at,c0.ends_at,null,'Mythiques',null,on]);
+    await save(true);
+    const c1=await rpc(db,u,'get_contest');
+    expect(c1.allow_mythic).toBe(true);
+    expect(c1.cards.map((x:any)=>x.rarity)).toContain('Mythique');
+    expect(c1.cards).toHaveLength(7);
+    const myth=await card('Mythique');
+    const e=await submit(u,myth);
+    expect(e).toBeTruthy();
+    await save(null); // non précisé : inchangé
+    expect((await rpc(db,u,'get_contest')).allow_mythic).toBe(true);
+    await save(false);
+    expect((await rpc(db,u,'get_contest')).cards).toHaveLength(6);
+    await expectError(submit(u,myth),/not_found|invalid/);
+    await db.query('delete from public.contest_entries where id=$1',[e]);
+  });
   it('un dessin et un vote par carte, point à l’auteur en tête, premier arrivé à égalité',async()=>{
     const a=await player('peintre_a'),b=await player('peintre_b'),v1=await player('votant_1'),v2=await player('votant_2'),v3=await player('votant_3');
     const c=await card('Commun');
@@ -111,6 +131,13 @@ describe('concours d’illustrations',()=>{
     await rpc(db,admin,'admin_decide_contest_entry',[er,'alternate','Ligne Concours',false,'/illustrations/CAM/concours-rare.webp',{},'Belle version']);
     const {rows:[inst]}=await db.query<{finish:string;label:string}>(`select i.finish,a.label from public.inventory_items i join public.card_arts a on a.id=i.art_id where i.owner_id=$1`,[q]);
     expect(inst).toEqual({finish:'Sanglante',label:'Ligne Concours'});
+    // Galerie : dessins retenus visibles dès les choix faits, podium seulement après la distribution.
+    const g0=(await rpc<any[]>(db,w,'get_contest_gallery')).find(x=>x.id===contest);
+    expect(g0).toMatchObject({title:'Concours d’automne',final:false,podium:[]});
+    expect(g0.selected.map((s:any)=>[s.author,s.kind])).toEqual(expect.arrayContaining([['artiste_or','main'],['artiste_argent','alternate']]));
+    expect(g0.selected.find((s:any)=>s.kind==='main').card).toMatchObject({art_path:'/illustrations/CAM/concours.webp'});
+    expect(g0.selected.find((s:any)=>s.kind==='alternate')).toMatchObject({line_label:'Ligne Concours'});
+    expect(g0.selected.find((s:any)=>s.kind==='alternate').card).toMatchObject({variant:'Ligne Concours'});
     const r=await board();
     expect(r.artiste_or).toBe(3);         // en tête + retenu + vrai dessin
     expect(r.artiste_argent).toBe(1);     // retenu seulement
@@ -122,6 +149,18 @@ describe('concours d’illustrations',()=>{
     expect((await rpc<any[]>(db,p,'get_achievements')).find(a=>a.code===`contest:${contest}`)).toMatchObject({title:'Illustrateur de génie'});
     expect(await rpc(db,p,'set_title',[`contest:${contest}`])).toBe('Illustrateur de génie');
     await expectError(rpc(db,admin,'admin_reward_contest',[contest,'Encore']),/already_granted/);
+    const g1=(await rpc<any[]>(db,w,'get_contest_gallery')).find(x=>x.id===contest);
+    expect(g1.final).toBe(true);
+    expect(g1.podium[0]).toMatchObject({place:1,handle:'artiste_or',points:3});
+  });
+});
+
+describe('galerie',()=>{
+  it('ne montre pas un concours encore ouvert',async()=>{
+    const u=await player('visiteur_galerie');
+    const open=await rpc<string>(db,admin,'admin_save_contest',[null,'Concours ouvert',cam,new Date(Date.now()-3600e3).toISOString(),new Date(Date.now()+86400e3).toISOString(),null,'Ouvert']);
+    expect((await rpc<any[]>(db,u,'get_contest_gallery')).some(x=>x.id===open)).toBe(false);
+    await db.query('delete from public.contests where id=$1',[open]);
   });
 });
 

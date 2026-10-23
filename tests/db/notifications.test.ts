@@ -18,6 +18,27 @@ async function befriend(a:{id:string},b:{id:string;handle:string}){
 }
 
 describe('notifications',()=>{
+  it('prévient le joueur des dons de l’équipe : boosters, Deniers et cartes, une seule fois, jamais pour un retrait (23/10)',async()=>{
+    const admin=(await player('equipe_dons')).id;await db.query(`update public.profiles set role='admin' where id=$1`,[admin]);
+    const u=await player('volfson_test');
+    // Même avec les notifications de succès coupées : un don de l'équipe s'affiche toujours.
+    await db.query(`update public.profiles set notification_prefs='{"achievements":false,"social":false}'::jsonb where id=$1`,[u.id]);
+    const req=randomUUID();
+    await rpc(db,admin,'admin_adjust_boosters',[u.id,13,'Compensation',req]);
+    await rpc(db,admin,'admin_adjust_boosters',[u.id,13,'Compensation',req]); // rejoué : pas de doublon
+    await rpc(db,admin,'admin_adjust_boosters',[u.id,-1,'Erreur',randomUUID()]);
+    await rpc(db,admin,'admin_adjust_deniers',[u.id,500,'Cadeau',randomUUID()]);
+    await rpc(db,admin,'admin_adjust_deniers',[u.id,-100,'Correction',randomUUID()]);
+    const {rows:[c]}=await db.query<{id:string;name:string}>(`select id,name from public.characters where edition_id=$1 order by number limit 1`,[edition]);
+    await rpc(db,admin,'admin_grant_card',[u.id,c.id,'Dorée',2,'Lot',randomUUID()]);
+    const items=(await rpc(db,u.id,'get_notifications')).items;
+    const gifts=items.filter((n:any)=>n.kind==='team_gift');
+    expect(gifts).toHaveLength(3);
+    expect(gifts.map((n:any)=>n.payload)).toEqual(expect.arrayContaining([
+      expect.objectContaining({boosters:13}),expect.objectContaining({deniers:500}),
+      expect.objectContaining({card:c.name,finish:'Dorée',quantity:2})]));
+    expect(JSON.stringify(gifts)).not.toMatch(/Compensation|Cadeau|Lot/); // le motif reste interne
+  });
   it('prévient des demandes d’ami et de leur acceptation',async()=>{
     const a=await player('notif_a');const b=await player('notif_b');
     await befriend(a,b);

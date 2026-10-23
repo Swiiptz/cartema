@@ -1,5 +1,5 @@
 'use client';
-import {useCallback,useEffect,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import {ArrowLeftRight,Award,Bell,CheckCheck,Coins,Gavel,Flag,Gift,Heart,Lightbulb,Palette,UserPlus,Users} from 'lucide-react';
@@ -42,6 +42,10 @@ export function describe(n:AppNotification):{text:string;icon:typeof Bell;href:s
    return {text:`Concours « ${p.title} » : ${p.position}${p.position===1?'re':'e'} place${p.podium?', titre « Illustrateur de génie »':''}${r?` (${r})`:''}.`,icon:Palette,href:'/concours/'};}
   case 'suggestion_received':return {text:`${p.from} envoie une doléance : « ${p.title} ».`,icon:Lightbulb,href:'/admin/'};
   case 'suggestion_answered':return {text:`L’équipe a répondu à votre idée « ${p.title} »${p.status==='planned'?' : elle est prévue !':p.status==='done'?' : c’est fait !':p.status==='declined'?'.':'.'}${p.public?' Elle est ouverte au vote.':''}`,icon:Lightbulb,href:'/doleances/'};
+  case 'team_gift':
+   if((p.boosters??0)>0)return {text:`L’équipe vous offre ${p.boosters} booster${(p.boosters??0)>1?'s':''} : ${(p.boosters??0)>1?'ils vous attendent':'il vous attend'} dans votre réserve.`,icon:Gift,href:'/boosters/'};
+   if((p.deniers??0)>0)return {text:`L’équipe vous offre ${d(p.deniers)}.`,icon:Coins,href:'/'};
+   return {text:`L’équipe vous offre ${(p.quantity??1)>1?`${p.quantity} × `:''}${card}${p.version?`, version « ${p.version} »`:''}.`,icon:Gift,href:'/collection/'};
   default:return {text:'Nouvelle activité.',icon:Bell,href:'/'};
  }
 }
@@ -55,12 +59,20 @@ function ago(iso:string){
 
 /** Cloche de l'en-tête : pastille des non-lues (rafraîchie à chaque page et chaque minute) et panneau. */
 export function NotificationBell(){
- const {session,client,player}=useAuth();
+ const {session,client,player,refreshPlayer}=useAuth();
+ // Nouvelle notification (don de l'équipe, vente, cadeau…) : réserve et Deniers rechargés aussitôt.
+ // Fonction du contexte gardée dans une ref (pas dans les dépendances du chargement).
+ const refreshRef=useRef(refreshPlayer);refreshRef.current=refreshPlayer;
+ const lastUnread=useRef<number|null>(null);
+ const hasPlayer=!!player;
  const pathname=usePathname();
  const [unread,setUnread]=useState(0);
  const [open,setOpen]=useState(false);
  const [data,setData]=useState<Notifications|null>(null);
- const poll=useCallback(()=>{if(client&&player&&document.visibilityState==='visible')void callRpc<number>(client,'get_unread_count').then(setUnread).catch(()=>{});},[client,player]);
+ const poll=useCallback(()=>{if(client&&hasPlayer&&document.visibilityState==='visible')void callRpc<number>(client,'get_unread_count').then(n=>{
+  if(lastUnread.current!==null&&n>lastUnread.current)void refreshRef.current();
+  lastUnread.current=n;setUnread(n);
+ }).catch(()=>{});},[client,hasPlayer]);
  useEffect(()=>{poll();},[poll,pathname]);
  useEffect(()=>{
   const id=setInterval(poll,POLL_MS);document.addEventListener('visibilitychange',poll);

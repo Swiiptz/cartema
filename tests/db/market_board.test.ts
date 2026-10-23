@@ -39,6 +39,18 @@ describe('marché regroupé',()=>{
     expect(groups.map((g:any)=>g.card.variant??null).sort()).toEqual(['Paint',null]);
     expect(groups.find((g:any)=>g.card.variant==='Paint').card.art_path).toBe('/illustrations/x.png');
   });
+  it('propose tous les clans des albums publiés, même sans annonce, avec leur nombre d’annonces (23/10)',async()=>{
+    const {rows:[seth]}=await db.query<{id:string}>(`insert into public.clans (name) values ('Sethite') returning id`);
+    await db.query('update public.characters set clan_id=$1 where id=$2',[seth.id,await character('Rare',1)]);
+    // Un clan qui n'a de membres que dans un album non publié reste caché.
+    const {rows:[hid]}=await db.query<{id:string}>(`insert into public.clans (name) values ('Clan caché') returning id`);
+    const other=await seedEdition(db,{prefix:'HID',perRarity:1});
+    await db.query('update public.editions set album_published=false where id=$1',[other]);
+    await db.query('update public.characters set clan_id=$1 where edition_id=$2',[hid.id,other]);
+    const clans=(await board()).clans;
+    expect(clans).toContainEqual({id:seth.id,name:'Sethite',listings:0});
+    expect(clans.some((c:any)=>c.id===hid.id)).toBe(false);
+  });
   it('filtre par clan, recherche et cartes non découvertes, et trie',async()=>{
     const s=await player('vend_f');const epic=await character('Épique');const epic2=await character('Épique',1);
     await sell(s,epic,900);await sell(s,epic2,400);
@@ -46,7 +58,7 @@ describe('marché regroupé',()=>{
     await db.query('update public.characters set clan_id=$1 where id=$2',[clan.id,epic]);
     const {rows:[c]}=await db.query<{name:string}>('select name from public.characters where id=$1',[epic]);
     expect((await board({clan:clan.id})).items.map((g:any)=>g.card.character_id)).toEqual([epic]);
-    expect((await board()).clans).toContainEqual({id:clan.id,name:'Toréador'});
+    expect((await board()).clans).toContainEqual({id:clan.id,name:'Toréador',listings:1});
     expect((await board({query:c.name.slice(0,4).toUpperCase()})).items.some((g:any)=>g.card.character_id===epic)).toBe(true);
     const asc=(await board({rarity:'Épique',sort:'price_asc'})).items.map((g:any)=>g.min_price);
     expect(asc).toEqual([...asc].sort((x:number,y:number)=>x-y));

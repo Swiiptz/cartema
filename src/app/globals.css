@@ -1350,3 +1350,27 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
     et ombre portée) ; deux fois moins de particules dorées. */
  .motes i:nth-child(2n){display:none}
 }
+/* Galerie des concours et option Mythiques (23/10). */
+.contest-check{display:flex;align-items:flex-start;gap:8px;margin-top:12px;font-size:15px;cursor:pointer}.contest-check input{margin-top:5px;accent-color:var(--gold)}.contest-check small{color:var(--muted);font-size:12.5px}
+.gallery-page{display:flex;flex-direction:column;gap:18px}
+.gallery-contest{display:flex;flex-direction:column;gap:16px}
+.gallery-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}.gallery-head h2{margin:6px 0 0}
+.gallery-podium{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.gallery-podium li{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 8px;border:1px solid var(--line);border-radius:10px;background:#170d16;text-align:center;min-width:0}
+.gallery-podium li.place-1{border-color:#c9a45c88;background:linear-gradient(180deg,#2a1d12,#170d16)}
+.gallery-podium .person-name{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.gallery-podium small{color:var(--muted);font-size:11.5px}
+.gallery-place{display:inline-flex;align-items:center;gap:5px;font:600 11px var(--display);letter-spacing:.14em;color:var(--gold2)}
+.gallery-pending{display:flex;align-items:center;gap:8px;font-size:15px;margin:0}
+.gallery-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:20px 16px}
+.gallery-item{display:flex;flex-direction:column;gap:8px;min-width:0}
+.gallery-card{padding:0;border:0;background:none;cursor:zoom-in;transition:transform .3s var(--ease-out)}.gallery-card:hover{transform:translateY(-4px)}
+.gallery-caption{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;min-width:0}
+.gallery-caption strong{font:600 14px var(--display);letter-spacing:.03em;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gallery-caption small{color:var(--muted);font-size:13px}.gallery-caption small a{color:var(--gold2)}
+.gallery-kind{margin-top:3px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);font:600 10px var(--ui);letter-spacing:.06em;color:var(--muted)}.gallery-kind.main{border-color:#c9a45c66;color:var(--gold2)}
+@media(max-width:560px){.gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 12px}.gallery-podium{gap:6px}.gallery-podium li{padding:10px 4px}}
+/* Série de connexions sur l'accueil (23/10). */
+.dash-chips{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.streak-chip{color:#ffb38a;border-color:#e0704055;background:#2a1410}.streak-chip svg{color:#ff8a4c}.streak-chip small{color:#e8b8a0}
+@media(max-width:560px){.dash-chips{justify-content:flex-start}}

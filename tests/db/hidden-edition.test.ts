@@ -22,7 +22,7 @@ describe('édition en préparation',()=>{
     const reads:[string,unknown[]][]=[
       ['get_album',[]],['get_album',[hidden]],['get_achievements',[]],['get_leaderboard',[50]],['get_missions',[]],
       ['get_player_state',[]],['get_market_board',['fixed']],['get_market_board',['auction']],['get_events',[]],
-      ['get_wishlist',[]],['get_profile',[p.handle]],['get_history',[]],['get_showcase_candidates',[]],['get_trade_status',[]]];
+      ['get_wishlist',[]],['get_profile',[p.handle]],['get_history',[]],['get_showcase_candidates',[]],['get_trade_status',[]],['get_contest_gallery',[]]];
     for(const [fn,args] of reads){
       const out=JSON.stringify(await rpc(db,player,fn,args).catch(e=>({error:(e as Error).message})));
       expect(out,`${fn} laisse voir l’édition cachée`).not.toMatch(SECRET);

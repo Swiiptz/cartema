@@ -3,15 +3,17 @@
 export type RuleItem={title:string;text:string};
 
 /** Règles par défaut, hors dates et récompenses (calculées à part). `before` précède les récompenses, `after` les suit. */
-export function defaultContestRules(edition:string):{before:RuleItem[];after:RuleItem[]}{
+export function defaultContestRules(edition:string,allowMythic=false):{before:RuleItem[];after:RuleItem[]}{
  return {
   before:[
-   {title:'Les cartes.',text:`Toutes les cartes de l’édition ${edition}, sauf les Mythiques. Une carte que vous n’avez pas découverte apparaît neutre (nom et clan seulement) : vous pouvez quand même la dessiner.`},
+   {title:'Les cartes.',text:`Toutes les cartes de l’édition ${edition}, ${allowMythic?'Mythiques comprises (sauf la carte unique)':'sauf les Mythiques'}. Une carte que vous n’avez pas découverte apparaît neutre (nom et clan seulement) : vous pouvez quand même la dessiner.`},
+   ...(allowMythic?[{title:'Mythiques.',text:'Ce sont les cartes les plus prestigieuses du jeu : un dessin retenu doit être à la hauteur de leur rang, il doit faire mythique.'}]:[]),
+   {title:'Format.',text:'Dessin vertical, idéalement 900 × 1350 px. Le visage et l’essentiel dans les deux tiers du haut : le bas de la carte porte le nom du personnage.'},
    {title:'Vos dessins.',text:'Un dessin par carte et par joueur, fait par vous. Vous pouvez le remplacer tant que le concours est ouvert, mais ses votes repartent alors à zéro. Pseudonyme obligatoire.'},
    {title:'Les votes.',text:'Un vote par carte : choisissez votre dessin préféré, changez d’avis quand vous voulez. On ne vote pas pour son propre dessin.'},
    {title:'Les points.',text:'Pour chaque carte, l’auteur du dessin le plus voté gagne 1 point ; à égalité, celui qui a atteint ce nombre de votes en premier le garde. Si un autre dessin passe devant, le point change de main.'},
    {title:'Après la clôture.',text:'L’équipe choisit les dessins retenus (illustration officielle ou version alternative) : +1 point par dessin retenu, et +1 point de plus pour un vrai dessin soigné. Les votes guident ce choix sans le décider.'},
-   {title:'Dessin retenu.',text:'Son auteur reçoit la carte avec son illustration : en Sanglante jusqu’aux Très rares, en Dorée pour une Épique, en Standard pour une Légendaire.'},
+   {title:'Dessin retenu.',text:`Son auteur reçoit la carte avec son illustration : en Sanglante jusqu’aux Très rares, en Dorée pour une Épique, en Standard pour une Légendaire${allowMythic?' ou une Mythique':''}.`},
   ],
   after:[
    {title:'Podium.',text:'Les 3 premiers gagnent le titre « Illustrateur de génie ». Le 1er crée une carte de son choix dans l’édition Éternelle (ETER) et en reçoit un exemplaire ; les cartes éternelles ne tombent que dans les God boosters et certains boosters.'},
@@ -21,8 +23,8 @@ export function defaultContestRules(edition:string):{before:RuleItem[];after:Rul
 }
 
 /** Règles par défaut en texte, pour partir d'une base dans l'admin (une règle par ligne). */
-export function defaultContestRulesText(edition:string){
- const {before,after}=defaultContestRules(edition);
+export function defaultContestRulesText(edition:string,allowMythic=false){
+ const {before,after}=defaultContestRules(edition,allowMythic);
  return [...before,...after].map(r=>`- ${r.title} ${r.text}`).join('\n');
 }
 
