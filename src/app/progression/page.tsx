@@ -187,9 +187,9 @@ function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievemen
    <button className="ach-group-head" aria-expanded={open} onClick={()=>toggle(g.key,gi===0)}><ChevronDown size={18} className="chevron"/><h2>{g.title}</h2><span className="ach-count">{count(all)}</span></button>
    <div className={`collapsible ${open?'open':''}`} inert={!open}><div className="collapsible-inner"><div className="ach-group-body">
     {g.subgroups.map(sg=>{const key=`${g.key}/${sg.key}`;if(!sg.title)return <ul key={key} className="achievement-grid">{render(sg.items)}</ul>;
-     const sOpen=isOpen(key,sg.key==='all'||sg.key==='visible');
+     const sOpen=isOpen(key,sg.key==='all'||sg.key==='visible'||sg.key==='lineages');
      return <div key={key} className={`ach-sub ${sOpen?'open':''}`}>
-      <button className="ach-sub-head" aria-expanded={sOpen} onClick={()=>toggle(key,sg.key==='all'||sg.key==='visible')}><ChevronDown size={15} className="chevron"/><span>{sg.title}</span><span className="ach-count">{count(sg.items)}</span></button>
+      <button className="ach-sub-head" aria-expanded={sOpen} onClick={()=>toggle(key,sg.key==='all'||sg.key==='visible'||sg.key==='lineages')}><ChevronDown size={15} className="chevron"/><span>{sg.title}</span><span className="ach-count">{count(sg.items)}</span></button>
       <div className={`collapsible ${sOpen?'open':''}`} inert={!sOpen}><div className="collapsible-inner"><ul className="achievement-grid">{render(sg.items)}</ul></div></div>
      </div>;})}
    </div></div></div>
