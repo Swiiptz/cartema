@@ -1325,3 +1325,28 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 .achievement.lineage.lost .ach-medal{opacity:.55;filter:grayscale(.6)}
 .ach-lineage-note{display:block;margin-top:4px;color:var(--muted);font-size:11.5px;line-height:1.4}
 .achievement.lineage.lost .ach-lineage-note{color:#e8a3b0}
+/* Téléphone : rien ne dépasse en largeur (23/10). La barre de navigation (6 onglets) faisait 377 px
+   pour 375, et la réserve des boosters débordait de 2 px (marge -20 px pour une page à 18 px) :
+   la page glissait de côté avec une barre de défilement. */
+@media(max-width:700px){.nav a{flex:1 1 0;min-width:0}.reserve-bar{margin-inline:-18px;padding-inline:18px}}
+/* Performance de la page Boosters (23/10). L'effet épique (calque plein écran) restait en place, invisible,
+   après son fondu de 2,6 s : ses rayons géants tournaient à l'infini jusqu'à la fin de la révélation, en
+   occupant des dizaines de Mo de mémoire graphique sur téléphone. Il disparaît maintenant à la fin du
+   fondu et ses rotations s'arrêtent. */
+@media(prefers-reduced-motion:no-preference){
+ .epic-reveal{animation:epic-fade 2.6s ease forwards,epic-gone 0s linear 2.6s forwards}
+ .epic-reveal .epic-rays{animation-iteration-count:1,1}
+ .epic-reveal .eternal-halo:after{animation-iteration-count:1}
+}
+@keyframes epic-gone{to{visibility:hidden}}
+/* Téléphone : barre du bas opaque (le flou recalculait tout ce qui s'anime derrière à chaque image),
+   rayons plus petits (mémoire graphique) et pastille « Soon » sans ombre animée. */
+@media(max-width:700px){
+ .nav{backdrop-filter:none;-webkit-backdrop-filter:none;background:#0d090ffa}
+ .epic-rays{width:120vmax;height:120vmax;margin:-60vmax 0 0 -60vmax}
+ .god-rays{width:110vmax;height:110vmax;margin:-55vmax 0 0 -55vmax}
+ .pack-soon{animation:none;box-shadow:0 0 18px #c9a45c66}
+ /* Au repos : l'ombre animée de « Soon » faisait redessiner à chaque image le booster voisin (filtre gris
+    et ombre portée) ; deux fois moins de particules dorées. */
+ .motes i:nth-child(2n){display:none}
+}
