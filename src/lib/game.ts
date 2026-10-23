@@ -53,7 +53,9 @@ export type Achievement={code:string;secret:boolean;category:'collection'|'gener
  /** Succès de cartes : compte les cartes possédées (pas seulement découvertes). */
  owned_rule?:boolean;
  /** Set à 5 cartes ou moins du but : cartes manquantes (nom seulement si découverte). */
- missing?:{name:string|null;code:string}[]};
+ missing?:{name:string|null;code:string}[];
+ /** Lignée de clan : détenue tant que tous les membres sont possédés (unlocked_at), perdue sinon. */
+ lineage?:boolean;lost_at?:string|null;reward_claimed?:boolean};
 export type FeaturedAchievement={code:string;label:string;description:string|null;title:string|null;tier:number|null;series_label:string|null;rarity:Rarity|null;category:string;unlocked_at:string};
 export type WishItem={code:string;number:number;rarity:string;finish:string|null;silhouette_key:string|null;known:boolean;character_id?:string;name?:string;role_title?:string;clan?:string|null;art_path?:string|null;art_meta?:ArtMeta|null;owned?:number;on_market?:number;best_price?:number|null;friends?:string[]};
 export type Wishlist={visible:boolean;items:WishItem[]};

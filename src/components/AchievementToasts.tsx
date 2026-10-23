@@ -3,7 +3,7 @@ import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {Award,X} from 'lucide-react';
 
-export type UnlockedAchievement={code:string;label:string;title?:string|null;reward_deniers?:number;reward_boosters?:number;series_label?:string|null;tier?:number|null};
+export type UnlockedAchievement={code:string;label:string;title?:string|null;reward_deniers?:number;reward_boosters?:number;series_label?:string|null;tier?:number|null;lineage?:boolean};
 const EVENT='cartema:achievements';
 const TIERS=['Bronze','Argent','Or','Platine','Sang'];
 
@@ -37,7 +37,7 @@ export function AchievementToasts(){
    <span className="ach-toast-shine" aria-hidden="true"/>
    <span className="ach-toast-medal" aria-hidden="true"><Award size={20}/></span>
    <Link className="ach-toast-body" href="/progression/?onglet=succes" onClick={()=>setItems(x=>x.filter(y=>y.key!==a.key))}>
-    <small>Succès débloqué{a.tier&&a.series_label?` · ${a.series_label} ${TIERS[a.tier-1]??''}`:''}</small>
+    <small>{a.lineage?'Lignée complète':'Succès débloqué'}{a.tier&&a.series_label?` · ${a.series_label} ${TIERS[a.tier-1]??''}`:''}</small>
     <strong>{a.label}</strong>
     {(reward||a.title)&&<em>{reward}{reward&&a.title?' · ':''}{a.title?`titre « ${a.title} »`:''}</em>}
    </Link>

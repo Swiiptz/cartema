@@ -1,5 +1,5 @@
 'use client';
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import Link from 'next/link';
 import {Award,ChevronDown,Clock,Crown,Info,Lock,Medal,ScrollText,Search,Trophy,X} from 'lucide-react';
 import {useAuth} from '@/components/AuthProvider';
@@ -10,6 +10,7 @@ import {palette} from '@/components/Card';
 import {callRpc,type Achievement,type Leaderboard,type Mission,type Missions} from '@/lib/game';
 
 type Tab='missions'|'achievements'|'ranking';
+const RANK_PAGE=50;const RANK_ALL=200;
 
 export default function Progression(){
  const {configured,ready,session,client,player,refreshPlayer}=useAuth();
@@ -18,14 +19,26 @@ export default function Progression(){
  const [missions,setMissions]=useState<Missions|null>(null);
  const [achievements,setAchievements]=useState<Achievement[]|null>(null);
  const [board,setBoard]=useState<Leaderboard|null>(null);
+ /** Le classement affiche les 50 premiers ; « Voir plus » en ajoute 50 à chaque fois, jusqu'à 200 (limite du serveur). */
+ const [boardLimit,setBoardLimit]=useState(RANK_PAGE);
+ // Les rechargements (session rafraîchie, mission réclamée) gardent le classement complet s'il est ouvert.
+ const boardLimitRef=useRef(RANK_PAGE);
+ const [boardBusy,setBoardBusy]=useState(false);
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState<{error?:string;notice?:string}>({});
 
  const load=useCallback(async()=>{
   if(!client)return;
-  try{const [m,a,b]=await Promise.all([callRpc<Missions>(client,'get_missions'),callRpc<Achievement[]>(client,'get_achievements'),callRpc<Leaderboard>(client,'get_leaderboard',{p_limit:50})]);setMissions(m);setAchievements(a);setBoard(b);}
+  try{const [m,a,b]=await Promise.all([callRpc<Missions>(client,'get_missions'),callRpc<Achievement[]>(client,'get_achievements'),callRpc<Leaderboard>(client,'get_leaderboard',{p_limit:boardLimitRef.current})]);setMissions(m);setAchievements(a);setBoard(b);}
   catch(e){setMessage({error:(e as Error).message});}
  },[client]);
+ async function showMoreRanking(){
+  if(!client)return;
+  const limit=Math.min(boardLimitRef.current+RANK_PAGE,RANK_ALL);
+  setBoardBusy(true);
+  try{setBoard(await callRpc<Leaderboard>(client,'get_leaderboard',{p_limit:limit}));boardLimitRef.current=limit;setBoardLimit(limit);}
+  catch(e){setMessage({error:(e as Error).message});}finally{setBoardBusy(false);}
+ }
  useEffect(()=>{if(session)void load();},[session,load]);
  useEffect(()=>{const t=new URLSearchParams(window.location.search).get('onglet');if(t==='succes')setTab('achievements');if(t==='classement')setTab('ranking');},[]);
  useEffect(()=>{if(!message.notice)return;const t=setTimeout(()=>setMessage({}),5000);return()=>clearTimeout(t);},[message.notice]);
@@ -69,6 +82,7 @@ export default function Progression(){
     <Link className="person-name" href={`/joueur/?h=${encodeURIComponent(r.handle)}`}>{r.handle}{r.title&&<small className="rank-title">{r.title}</small>}</Link>
     <span className="rank-scores"><strong className="rank-score">{r.achievements}<small> succès</small></strong><small>{r.faces} visage{r.faces>1?'s':''}</small></span>
    </li>)}</ol>
+   {boardLimit<RANK_ALL&&board.top.length>=boardLimit&&<button className="primary ghost compact ranking-more" disabled={boardBusy} onClick={()=>void showMoreRanking()}><ChevronDown size={15}/> {boardBusy?'Chargement…':'Voir plus'}</button>}
    {board.me&&!board.top.some(r=>r.me)&&<p className="muted">Vous êtes {board.me.position}e avec {board.me.achievements} succès et {board.me.faces} visages.</p>}
   </section>)}
   </div>
@@ -114,7 +128,9 @@ function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievemen
   const general=list.filter(a=>a.category==='general');
   const secrets=[...general.filter(a=>a.secret),...custom.filter(a=>!(a.edition&&placed.has(a.edition))&&a.secret)];
   out.push({key:'general',title:'Succès généraux',subgroups:[
-   {key:'visible',title:'',items:general.filter(a=>!a.secret)},
+   {key:'visible',title:'',items:general.filter(a=>!a.secret&&!a.lineage)},
+   // Lignées de clan : se gagnent et se perdent avec la collection.
+   {key:'lineages',title:'Lignées',items:general.filter(a=>a.lineage)},
    {key:'secret',title:'Secrets',items:secrets}].filter(s=>s.items.length)});
   return out;
  },[list]);
@@ -144,19 +160,22 @@ function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievemen
    </div>
   </li>;};
  const render=(items:Achievement[])=>bySeries(items).map((x,i)=>Array.isArray(x)?series(x,i):item(x,i));
- const item=(a:Achievement,i:number)=>{const done=!!a.unlocked_at;const hidden=a.secret&&!done;const hasInfo=!!a.description||!!a.reason;return <li key={a.code} className={`achievement rise ${done?'done':''} ${hidden?'secret':''}`} style={{'--i':Math.min(i,12),'--rc':a.rarity?palette[a.rarity]:'var(--gold)'} as React.CSSProperties}>
+ const item=(a:Achievement,i:number)=>{const done=!!a.unlocked_at;const hidden=a.secret&&!done;const hasInfo=!!a.description||!!a.reason;return <li key={a.code} className={`achievement rise ${done?'done':''} ${hidden?'secret':''} ${a.lineage?'lineage':''} ${a.lineage&&!done&&a.lost_at?'lost':''}`} style={{'--i':Math.min(i,12),'--rc':a.lineage?'#b9374f':a.rarity?palette[a.rarity]:'var(--gold)'} as React.CSSProperties}>
   <span className="ach-medal" aria-hidden="true">{hidden?<Lock size={16}/>:<Award size={18}/>}</span>
   <div className="ach-body">
    <div className="ach-head"><strong>{hidden?'Succès secret':a.label}</strong>{hasInfo&&!hidden&&<button className="info-btn" aria-label="Explication" aria-expanded={info===a.code} onClick={()=>setInfo(info===a.code?null:a.code)}><Info size={13}/></button>}</div>
    {info===a.code&&<p className="ach-bubble" role="note">{a.description}{a.reason&&<span className="ach-reason">Décerné : {a.reason}</span>}</p>}
    {hidden?<small className="muted">Continuez à jouer pour le révéler.</small>
-    :done?<small className="ach-date">Obtenu le {new Date(a.unlocked_at!).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}{a.title?` · titre « ${a.title} »`:''}</small>
+    :done?<small className="ach-date">{a.lineage?'Détenue depuis le':'Obtenu le'} {new Date(a.unlocked_at!).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}{a.title?` · titre « ${a.title} »`:''}</small>
     :<div className="ach-progress"><div className="meter"><i style={{'--v':`${a.target?Math.min(100,(a.progress??0)/a.target*100):0}%`} as React.CSSProperties}/></div><small>{a.progress??0}/{a.target}{a.owned_rule&&<em className="ach-owned"> possédées</em>}</small></div>}
+   {a.lineage&&<small className="ach-lineage-note">{done?'Se perd si un membre du clan quitte votre collection.'
+    :a.lost_at?`Perdue le ${new Date(a.lost_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})} : reprenez les membres manquants pour retrouver ${a.title?`le titre « ${a.title} »`:'la lignée'}.`
+    :a.title?`Titre « ${a.title} », tant que le clan reste complet.`:null}</small>}
    {!done&&!hidden&&a.missing&&a.missing.length>0&&<div className="ach-missing"><span>Il vous manque</span>
     {a.missing.filter(m=>m.name).map(m=><Link key={m.code} className="ach-missing-chip" href={`/market/?q=${encodeURIComponent(m.name!)}`} title={`Chercher ${m.name} au marché`}><Search size={11}/>{m.name}</Link>)}
     {/* Les cartes jamais découvertes restent anonymes, regroupées en une pastille. */}
     {(()=>{const n=a.missing.filter(m=>!m.name).length;return n>0&&<span className="ach-missing-chip unknown" title="Cartes jamais découvertes">+{n} inconnue{n>1?'s':''}</span>;})()}</div>}
-   {!hidden&&((a.reward_deniers??0)>0||(a.reward_boosters??0)>0)&&<small className="ach-reward">{(a.reward_deniers??0)>0&&`+${a.reward_deniers} Deniers`}{(a.reward_boosters??0)>0&&` · +${a.reward_boosters} booster${(a.reward_boosters??0)>1?'s':''}`}</small>}
+   {!hidden&&!a.reward_claimed&&((a.reward_deniers??0)>0||(a.reward_boosters??0)>0)&&<small className="ach-reward">{(a.reward_deniers??0)>0&&`+${a.reward_deniers} Deniers`}{(a.reward_boosters??0)>0&&` · +${a.reward_boosters} booster${(a.reward_boosters??0)>1?'s':''}`}</small>}
   </div>
  </li>;};
 
