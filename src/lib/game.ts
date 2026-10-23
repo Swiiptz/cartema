@@ -62,6 +62,12 @@ export type Achievement={code:string;secret:boolean;category:'collection'|'gener
  lineage?:boolean;lost_at?:string|null;reward_claimed?:boolean;
  /** Camp (Team Apo, Team Gwen…) : mêmes règles qu'une lignée, avec une carte interdite. */
  faction?:boolean};
+/** Paliers d'une série de succès : métal par défaut ; une série dont les paliers portent une rareté
+ * (De l'or à la lie) affiche le nom de la rareté. Jusqu'à 6 paliers. */
+export const TIER_NAMES=['Bronze','Argent','Or','Platine','Sang','Éternel'];
+export const TIER_COLORS=['#c58a5a','#c9ccd6','#e7c46a','#a9e4e8','#d0344f','#e9e4f5'];
+export const TIER_ROMAN=['I','II','III','IV','V','VI'];
+export const tierName=(a:{tier?:number|null;rarity?:string|null})=>a.rarity??TIER_NAMES[(a.tier??1)-1]??'';
 export type FeaturedAchievement={code:string;label:string;description:string|null;title:string|null;tier:number|null;series_label:string|null;rarity:Rarity|null;category:string;unlocked_at:string};
 export type WishItem={code:string;number:number;rarity:string;finish:string|null;silhouette_key:string|null;known:boolean;character_id?:string;name?:string;role_title?:string;clan?:string|null;art_path?:string|null;art_meta?:ArtMeta|null;owned?:number;on_market?:number;best_price?:number|null;friends?:string[]};
 export type Wishlist={visible:boolean;items:WishItem[]};

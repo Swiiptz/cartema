@@ -7,7 +7,7 @@ import {useAsk} from '@/components/AskDialog';
 import {Countdown,Skeleton} from '@/components/ui';
 import {MissionBonusBar,MissionList} from '@/components/MissionList';
 import {palette} from '@/components/Card';
-import {callRpc,type Achievement,type Leaderboard,type Mission,type Missions} from '@/lib/game';
+import {callRpc,TIER_COLORS,TIER_ROMAN,tierName,type Achievement,type Leaderboard,type Mission,type Missions} from '@/lib/game';
 
 type Tab='missions'|'achievements'|'ranking';
 const RANK_PAGE=50;const RANK_ALL=200;
@@ -90,8 +90,8 @@ export default function Progression(){
 }
 
 type Group={key:string;title:string;subgroups:{key:string;title:string;items:Achievement[]}[]};
-const TIERS=['Bronze','Argent','Or','Platine','Sang'];
-const TIER_COLORS=['#c58a5a','#c9ccd6','#e7c46a','#a9e4e8','#d0344f'];
+// Couleur d'un palier : celle de sa rareté s'il en porte une, sinon celle du métal.
+const tierColor=(a:Achievement)=>a.rarity?palette[a.rarity]:TIER_COLORS[Math.min(a.tier??1,TIER_COLORS.length)-1];
 const reward=(a:Achievement)=>[(a.reward_deniers??0)>0&&`+${a.reward_deniers} Deniers`,(a.reward_boosters??0)>0&&`+${a.reward_boosters} booster${(a.reward_boosters??0)>1?'s':''}`].filter(Boolean).join(' · ');
 /** Une série regroupe ses paliers ; les autres succès restent seuls. */
 function bySeries(items:Achievement[]){
@@ -145,18 +145,18 @@ function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievemen
  const series=(tiers:Achievement[],i:number)=>{
   const done=tiers.filter(a=>a.unlocked_at);const top=done[done.length-1];const next=tiers.find(a=>!a.unlocked_at);
   const key=`series:${tiers[0].series}`;const level=top?.tier??0;
-  const color=level?TIER_COLORS[Math.min(level,TIER_COLORS.length)-1]:'var(--gold)';
+  const color=top?tierColor(top):'var(--gold)';
   return <li key={key} className={`achievement series rise ${top?'done':''} ${next?'':'complete'}`} style={{'--i':Math.min(i,12),'--rc':color} as React.CSSProperties}>
-   <span className="ach-medal tier-medal" aria-hidden="true"><Award size={18}/>{level>0&&<b>{['I','II','III','IV','V'][level-1]}</b>}</span>
+   <span className="ach-medal tier-medal" aria-hidden="true"><Award size={18}/>{level>0&&<b>{TIER_ROMAN[level-1]}</b>}</span>
    <div className="ach-body">
-    <div className="ach-head"><strong>{tiers[0].series_label}</strong>{top&&<span className="tier-name">{TIERS[level-1]}</span>}<button className="info-btn" aria-label="Paliers" aria-expanded={info===key} onClick={()=>setInfo(info===key?null:key)}><Info size={13}/></button></div>
-    {info===key&&<ol className="ach-bubble tier-list" role="note">{tiers.map(a=><li key={a.code} className={a.unlocked_at?'on':''} style={{'--tc':TIER_COLORS[(a.tier??1)-1]} as React.CSSProperties}>
-     <b>{TIERS[(a.tier??1)-1]}</b> <span>{a.label} — {a.description}</span>{reward(a)&&<small>{reward(a)}{a.title?` · titre « ${a.title} »`:''}</small>}</li>)}</ol>}
+    <div className="ach-head"><strong>{tiers[0].series_label}</strong>{top&&<span className="tier-name">{tierName(top)}</span>}<button className="info-btn" aria-label="Paliers" aria-expanded={info===key} onClick={()=>setInfo(info===key?null:key)}><Info size={13}/></button></div>
+    {info===key&&<ol className="ach-bubble tier-list" role="note">{tiers.map(a=><li key={a.code} className={a.unlocked_at?'on':''} style={{'--tc':tierColor(a)} as React.CSSProperties}>
+     <b>{tierName(a)}</b> <span>{a.label} — {a.description}</span>{reward(a)&&<small>{reward(a)}{a.title?` · titre « ${a.title} »`:''}</small>}</li>)}</ol>}
     <small className="ach-date">{top?top.label:'Aucun palier atteint'}{top?.title?` · titre « ${top.title} »`:''}</small>
     {next?<div className="ach-progress"><div className="meter"><i style={{'--v':`${next.target?Math.min(100,(next.progress??0)/next.target*100):0}%`} as React.CSSProperties}/></div><small>{next.progress??0}/{next.target}</small></div>
      :<small className="ach-reward">Tous les paliers obtenus</small>}
-    <div className="tier-pips">{tiers.map(a=><i key={a.code} title={`${TIERS[(a.tier??1)-1]} : ${a.label}`} className={a.unlocked_at?'on':''} style={{'--tc':TIER_COLORS[(a.tier??1)-1]} as React.CSSProperties}/>)}</div>
-    {next&&reward(next)&&<small className="ach-reward">Prochain palier ({TIERS[(next.tier??1)-1]}) : {reward(next)}</small>}
+    <div className="tier-pips">{tiers.map(a=><i key={a.code} title={`${tierName(a)} : ${a.label}`} className={a.unlocked_at?'on':''} style={{'--tc':tierColor(a)} as React.CSSProperties}/>)}</div>
+    {next&&reward(next)&&<small className="ach-reward">Prochain palier ({tierName(next)}) : {reward(next)}</small>}
    </div>
   </li>;};
  const render=(items:Achievement[])=>bySeries(items).map((x,i)=>Array.isArray(x)?series(x,i):item(x,i));

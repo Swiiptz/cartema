@@ -302,6 +302,29 @@ describe('missions longues et bonus',()=>{
   });
 });
 
+describe('De l’or à la lie',()=>{
+  it('paliers par rareté : une carte de cette rareté exactement, possédée dans les trois finitions (23/10)',async()=>{
+    const u=await player('trois_eclats');
+    // Édition de test : une carte par rareté et par numéro (1 = Commune … 7 = Mythique, 2 par rareté).
+    const num=async(r:string)=>(await db.query<{n:number}>('select number n from public.characters where edition_id=$1 and rarity=$2 order by number limit 1',[edition,r])).rows[0].n;
+    const own=(n:number,f:string)=>db.query<{id:string}>(`insert into public.inventory_items (owner_id,character_id,finish) select $1,id,$3 from public.characters where edition_id=$2 and number=$4 returning id`,[u,edition,f,n]);
+    const trio=async(n:number)=>{const ids:string[]=[];for(const f of ['Standard','Dorée','Sanglante'])ids.push((await own(n,f)).rows[0].id);return ids;};
+    const tiers=async()=>(await rpc<any[]>(db,u,'get_achievements')).filter(a=>a.series==='trio').sort((a,b)=>a.tier-b.tier);
+    let s=await tiers();
+    expect(s.map(a=>[a.code,a.rarity])).toEqual([['trio_commun','Commun'],['trio_rare','Rare'],['trio_tres_rare','Très rare'],['trio_epique','Épique'],['trio_legendaire','Légendaire'],['trio_mythique','Mythique']]);
+    // Une Épique dans ses trois finitions débloque seulement le palier Épique.
+    const epic=await trio(await num('Épique'));
+    s=await tiers();
+    expect(s.map(a=>!!a.unlocked_at)).toEqual([false,false,false,true,false,false]);
+    await trio(await num('Commun'));
+    expect((await tiers())[0].unlocked_at).not.toBeNull();
+    // Il faut les posséder au moment du déblocage : une Légendaire incomplète ne compte pas.
+    const leg=await num('Légendaire');await own(leg,'Standard');await own(leg,'Dorée');
+    expect((await tiers())[4]).toMatchObject({progress:0,unlocked_at:null,owned_rule:true});
+    expect(epic).toHaveLength(3);
+  });
+});
+
 describe('Narcisse',()=>{
   it('se débloque avec 200 exemplaires d’une même carte et donne le titre Narcissique (23/10)',async()=>{
     const u=await player('miroir');
