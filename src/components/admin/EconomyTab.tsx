@@ -55,35 +55,36 @@ export function EconomyTab({client,act,reason}:{client:SupabaseClient;act:Act;re
 }
 
 type God={odds:number;blood_pct:number;alt_odds:number;rare_slots:number;opened:number;
- /** Garantie : chaque N-ième booster ouvert dans le jeu (absent avant la migration du 23/10). */
- guarantee_every?:number;total_opened?:number;next_guaranteed?:number|null};
+ /** Garantie cachée : N-ième ouverture d'un joueur depuis son dernier God booster ; closest = les plus proches. */
+ guarantee_every?:number;legend_mult?:number;closest?:{handle:string|null;since:number;remaining:number}[]|null};
 
 /** God booster : chance d'apparition et contenu. */
 function GodSettings({client,act,reason}:{client:SupabaseClient;act:Act;reason:Reason}){
  const [god,setGod]=useState<God|null>(null);
- const [form,setForm]=useState<Record<'odds'|'blood_pct'|'alt_odds'|'rare_slots'|'guarantee_every',string>|null>(null);
- const load=useCallback(async()=>{const g=await callRpc<God>(client,'admin_god_settings');setGod(g);setForm({odds:String(g.odds),blood_pct:String(g.blood_pct),alt_odds:String(g.alt_odds),rare_slots:String(g.rare_slots),guarantee_every:String(g.guarantee_every??0)});},[client]);
+ const [form,setForm]=useState<Record<'odds'|'blood_pct'|'alt_odds'|'rare_slots'|'guarantee_every'|'legend_mult',string>|null>(null);
+ const load=useCallback(async()=>{const g=await callRpc<God>(client,'admin_god_settings');setGod(g);setForm({odds:String(g.odds),blood_pct:String(g.blood_pct),alt_odds:String(g.alt_odds),rare_slots:String(g.rare_slots),guarantee_every:String(g.guarantee_every??0),legend_mult:String(g.legend_mult??5)});},[client]);
  useEffect(()=>{void load().catch(()=>{});},[load]);
  if(!god||!form)return <Skeleton style={{height:160}}/>;
  const n=(k:keyof typeof form)=>Number(form[k].replace(',','.'));
- const bad=!/^\d+$/.test(form.odds)||!/^\d+$/.test(form.alt_odds)||!/^[0-4]$/.test(form.rare_slots)||!/^\d+$/.test(form.guarantee_every)||!(n('blood_pct')>=0&&n('blood_pct')<=100);
- const dirty=n('odds')!==god.odds||n('blood_pct')!==Number(god.blood_pct)||n('alt_odds')!==god.alt_odds||n('rare_slots')!==god.rare_slots||n('guarantee_every')!==(god.guarantee_every??0);
+ const bad=!/^\d+$/.test(form.odds)||!/^\d+$/.test(form.alt_odds)||!/^[0-4]$/.test(form.rare_slots)||!/^\d+$/.test(form.guarantee_every)||!(Number(form.legend_mult)>=1&&Number(form.legend_mult)<=20&&/^\d+$/.test(form.legend_mult))||!(n('blood_pct')>=0&&n('blood_pct')<=100);
+ const dirty=n('odds')!==god.odds||n('blood_pct')!==Number(god.blood_pct)||n('alt_odds')!==god.alt_odds||n('rare_slots')!==god.rare_slots||n('guarantee_every')!==(god.guarantee_every??0)||n('legend_mult')!==(god.legend_mult??5);
  async function save(){
-  const r=await reason(`God booster : ${n('odds')>0?`1 booster sur ${n('odds').toLocaleString('fr-FR')}`:'désactivé'}, ${n('blood_pct')} % de Sanglante, version alternative 1 sur ${n('alt_odds')}, ${n('rare_slots')} carte(s) de plus en Rare ou mieux, ${n('guarantee_every')>0?`garanti tous les ${n('guarantee_every').toLocaleString('fr-FR')} boosters ouverts`:'sans garantie'}. S’applique aux prochaines ouvertures.`);
+  const r=await reason(`God booster : ${n('odds')>0?`1 booster sur ${n('odds').toLocaleString('fr-FR')}`:'désactivé'}, ${n('blood_pct')} % de Sanglante, version alternative 1 sur ${n('alt_odds')}, ${n('rare_slots')} carte(s) de plus en Rare ou mieux, Légendaires et Mythiques ×${n('legend_mult')}, ${n('guarantee_every')>0?`garanti au ${n('guarantee_every').toLocaleString('fr-FR')}e booster de chaque joueur depuis son dernier God booster`:'sans garantie'}. S’applique aux prochaines ouvertures.`);
   if(r===null)return;
-  if(await act('Réglages du God booster enregistrés.',c=>callRpc(c,'admin_save_god_settings',{p_odds:n('odds'),p_blood_pct:n('blood_pct'),p_alt_odds:n('alt_odds'),p_rare_slots:n('rare_slots'),p_reason:r,p_guarantee_every:n('guarantee_every')})))await load();
+  if(await act('Réglages du God booster enregistrés.',c=>callRpc(c,'admin_save_god_settings',{p_odds:n('odds'),p_blood_pct:n('blood_pct'),p_alt_odds:n('alt_odds'),p_rare_slots:n('rare_slots'),p_reason:r,p_guarantee_every:n('guarantee_every'),p_legend_mult:n('legend_mult')})))await load();
  }
  const field=(k:keyof typeof form,label:string,help:string)=><label className="auth-field"><span>{label}</span><input inputMode="decimal" value={form[k]} onChange={e=>setForm(f=>f&&{...f,[k]:e.target.value})}/><small>{help}</small></label>;
  return <section className="panel admin-edition eco-section">
   <div className="section-header"><div><span className="eyebrow">Booster divin · {god.opened} ouvert{god.opened>1?'s':''} à ce jour</span><h2>God booster</h2></div></div>
-  {god.next_guaranteed!=null&&<p className="admin-hint">{(god.total_opened??0).toLocaleString('fr-FR')} boosters ouverts dans le jeu : le prochain God booster garanti tombe dans {god.next_guaranteed.toLocaleString('fr-FR')} ouverture{god.next_guaranteed>1?'s':''}.</p>}
+  {god.closest&&god.closest.length>0&&<p className="admin-hint">Compteur caché aux joueurs. Les plus proches de leur God booster garanti : {god.closest.map(c=>`${c.handle??'sans pseudo'} (encore ${c.remaining.toLocaleString('fr-FR')})`).join(', ')}.</p>}
   <p className="admin-hint">À chaque ouverture, une chance qu’un booster devienne divin : toutes ses cartes au moins Dorées, plus de Sanglantes et de versions alternatives, et davantage de cartes Rares ou mieux.</p>
   <div className="eco-grid">
    {field('odds','Chance d’apparition','« 1 sur N » boosters ouverts (0 = jamais)')}
    {field('blood_pct','Part de Sanglante','% par carte, les autres sont Dorées')}
    {field('alt_odds','Versions alternatives','« 1 sur N » par carte (une ligne à 0 ne tombe jamais)')}
    {field('rare_slots','Cartes Rares en plus','0 à 4 cartes avant la 5e tirées comme la 5e')}
-   {field('guarantee_every','Garanti tous les','N boosters ouverts dans tout le jeu (0 = pas de garantie)')}
+   {field('legend_mult','Légendaires et Mythiques','×N sur la table de la 5e carte, God booster seulement (1 à 20)')}
+   {field('guarantee_every','Garanti au bout de','N boosters d’un joueur depuis son dernier God booster (0 = sans garantie)')}
   </div>
   <div className="admin-actions"><button className="primary" disabled={bad||!dirty} onClick={()=>void save()}><Save size={15}/> Enregistrer</button></div>
  </section>;

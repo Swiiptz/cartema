@@ -65,19 +65,51 @@ describe('édition annoncée (Soon)',()=>{
 });
 
 describe('God booster',()=>{
-  it('est garanti tous les 2 000 boosters ouverts dans le jeu (23/10)',async()=>{
-    await rpc(db,admin,'admin_save_god_settings',[0,0,20,2,'Test : seulement la garantie']);
-    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({guarantee_every:2000});
-    const u=await player();await db.query('update public.booster_balances set purchased_count=3 where owner_id=$1',[u]);
-    await db.query(`select setval('private.pack_opening_seq',3998)`); // 3 999e ouverture, puis la 4 000e
+  it('est garanti au N-ième booster d’un joueur depuis son dernier God booster, sans compteur visible (23/10)',async()=>{
+    await rpc(db,admin,'admin_save_god_settings',[0,0,20,2,'Test : garantie tous les 3',3]);
+    const u=await player();const v=await player();
+    await db.query('update public.booster_balances set purchased_count=10 where owner_id = any($1)',[[u,v]]);
+    // Compteur propre à chaque joueur : 3e ouverture de u = God, les ouvertures de v ne comptent pas pour u.
+    expect((await open(u,cam)).god).toBe(false);
+    expect((await open(v,cam)).god).toBe(false);
     expect((await open(u,cam)).god).toBe(false);
     const g=await open(u,cam);
     expect(g.god).toBe(true);
     expect(g.cards.every((c:any)=>c.finish==='Dorée')).toBe(true);
-    expect((await open(u,cam)).god).toBe(false);
-    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({total_opened:4001,next_guaranteed:1999});
+    expect((await open(u,cam)).god).toBe(false); // repart à zéro
+    // Un God booster tombé par chance remet aussi le compteur à zéro.
+    await rpc(db,admin,'admin_save_god_settings',[1,0,20,2,'Test : toujours']);
+    expect((await open(v,cam)).god).toBe(true);
+    await rpc(db,admin,'admin_save_god_settings',[0,0,20,2,'Test : garantie seule']);
+    expect((await open(v,cam)).god).toBe(false);
+    expect((await open(v,cam)).god).toBe(false);
+    expect((await open(v,cam)).god).toBe(true);
+    // Caché aux joueurs ; l'admin voit qui en est le plus proche.
+    expect(JSON.stringify(await rpc(db,u,'get_player_state'))).not.toMatch(/guarantee|pity|garant/i);
+    const s=await rpc<any>(db,admin,'admin_god_settings');
+    expect(s.guarantee_every).toBe(3);
+    expect(s.closest.length).toBeGreaterThan(0);
+    expect(s.closest.every((x:any)=>x.remaining===Math.max(3-x.since,1))).toBe(true);
+    expect(s.closest.map((x:any)=>x.remaining)).toEqual([...s.closest.map((x:any)=>x.remaining)].sort((a:number,b:number)=>a-b));
     await rpc(db,admin,'admin_save_god_settings',[0,0,20,2,'Test : sans garantie',0]);
-    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({guarantee_every:0,next_guaranteed:null});
+    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({guarantee_every:0});
+  });
+
+  it('multiplie les Légendaires et Mythiques de sa table, les autres raretés réduites en proportion (23/10)',async()=>{
+    const table=[{value:'Rare',weight:55000},{value:'Très rare',weight:37000},{value:'Épique',weight:6000},{value:'Légendaire',weight:1900},{value:'Mythique',weight:100}];
+    const boost=async(m:number)=>(await db.query<{t:{value:string;weight:number}[]}>('select private.boost_top_rarities($1::jsonb,$2) t',[JSON.stringify(table),m])).rows[0].t;
+    const x5=await boost(5);
+    expect(x5.reduce((s,r)=>s+Number(r.weight),0)).toBe(100000);
+    expect(x5.find(r=>r.value==='Légendaire')!.weight).toBe(9500);
+    expect(x5.find(r=>r.value==='Mythique')!.weight).toBe(500);
+    expect(x5.find(r=>r.value==='Rare')!.weight).toBeLessThan(55000);
+    expect(await boost(1)).toEqual(table);
+    await rpc(db,admin,'admin_save_god_settings',[1,0,20,2,'Test : ×20',null,20]);
+    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({legend_mult:20});
+    const u=await player();await db.query('update public.booster_balances set purchased_count=1 where owner_id=$1',[u]);
+    expect((await open(u,cam)).god).toBe(true);
+    await rpc(db,admin,'admin_save_god_settings',[1,0,20,2,'Test : ×5',null,5]);
+    await expectError(rpc(db,admin,'admin_save_god_settings',[1,0,20,2,'Test : trop',null,50]),/check|violates/);
   });
 
   it('donne des cartes dorées, plus de Rares et le signale',async()=>{
@@ -93,7 +125,7 @@ describe('God booster',()=>{
     await rpc(db,admin,'admin_save_god_settings',[1,100,20,2,'Test : Sanglante']);
     await db.query('update public.booster_balances set purchased_count=1 where owner_id=$1',[u]);
     expect((await open(u,cam)).cards.every((c:any)=>c.finish==='Sanglante')).toBe(true);
-    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({odds:1,blood_pct:100,opened:5});
+    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({odds:1,blood_pct:100,opened:8});
     await rpc(db,admin,'admin_save_god_settings',[0,10,20,2,'Test : jamais']);
     await db.query('update public.booster_balances set purchased_count=1 where owner_id=$1',[u]);
     expect((await open(u,cam)).god).toBe(false);
