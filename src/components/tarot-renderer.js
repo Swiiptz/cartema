@@ -48,17 +48,20 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  const artTop=artLayout==='cover'?Math.max(11,11+artOffsetY):11;
  const image=(y,height,fit,extra='')=>`<image href="${illustration}" x="11" y="${y}" width="178" height="${height}" preserveAspectRatio="${fit}" ${extra}/>`;
  const fullArt=artLayout==='fullart';
+ // Pleine illustration affichée : ni cartouche, ni médaillon, ni barre ; un voile léger en bas et une ombre douce sous les textes.
+ const fa=fullArt&&kn&&!!illustration;
+ const ink=fa?` filter="url(#text-shadow${u})"`:'';
  const foreground=artLayout==='cover'?image(11+artOffsetY,194,'xMidYMax slice'):artLayout==='full'?image(11,174,'xMidYMid meet'):`<image href="${illustration}" x="4" y="7" width="192" height="310" preserveAspectRatio="xMidYMin meet"/>`;
  const art=kn&&illustration&&fullArt?image(11,278,'xMidYMid slice'):kn&&illustration?`<g mask="url(#art-sides${u})">${artLayout==='cover'?`<g mask="url(#art-ambience${u})">${image(11,194,'xMidYMax slice','opacity=".3" style="filter:blur(5px)"')}</g>`:''}<g mask="url(#art-fade${u})">${foreground}</g></g>`:silhouette(Number.isInteger(silhouetteIndex)?silhouetteIndex:H(id)%6,u);
  const name=kn?n:'Inconnu',clan=kn&&cl!=='?'?cl:'Clan inconnu';
  const title=kn?(role||'Chronique Camarilla'):'Identité voilée';
  const frame='M13 6H187Q194 6 194 13V287Q194 294 187 294H13Q6 294 6 287V13Q6 6 13 6Z';
  return `<div class="card crafted-card ${fin} rarity-${lv}${unique?' unique-veiled':''}"><svg viewBox="0 0 200 300" role="img" aria-label="${kn?n+', '+(provisional?'cadre de présentation':ra):'Personnage inconnu, '+ra}">
- <defs>
- ${fin==='blood'?bloodDefinitions(u):fin==='gold'?goldDefinitions(u):''}
+ <defs>${fa?`<filter id="text-shadow${u}" x="-20%" y="-50%" width="140%" height="220%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation=".85"/><feOffset dy=".7"/><feComponentTransfer><feFuncA type="linear" slope=".85"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>`:''}
+ ${fin==='blood'?bloodDefinitions(u):fin==='gold'?goldDefinitions(u,fa):''}
   <linearGradient id="metal${u}" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="${light}"/><stop offset=".28" stop-color="${color}"/><stop offset=".48" stop-color="${light}"/><stop offset=".65" stop-color="${color}"/><stop offset="1" stop-color="${light}"/></linearGradient>
   <radialGradient id="glass${u}" cx=".5" cy=".38" r=".75"><stop stop-color="${fin==='blood'?'#75152b':color}" stop-opacity="${fin==='blood'?'.2':'.23'}"/><stop offset=".6" stop-color="#141218"/><stop offset="1" stop-color="#06080a"/></radialGradient>
-  <linearGradient id="shade${u}" x1="0" y1="0" x2="0" y2="1"><stop offset=".57" stop-color="#08080b" stop-opacity="0"/><stop offset="1" stop-color="#08080b" stop-opacity=".94"/></linearGradient>
+  <linearGradient id="shade${u}" x1="0" y1="0" x2="0" y2="1">${fa?'<stop offset=".7" stop-color="#08080b" stop-opacity="0"/><stop offset="1" stop-color="#08080b" stop-opacity=".62"/>':'<stop offset=".57" stop-color="#08080b" stop-opacity="0"/><stop offset="1" stop-color="#08080b" stop-opacity=".94"/>'}</linearGradient>
   <linearGradient id="art-vertical${u}" gradientUnits="userSpaceOnUse" x1="0" y1="${artTop}" x2="0" y2="${artBottom}"><stop stop-color="white" stop-opacity="0"/><stop offset=".035" stop-color="white"/><stop offset=".82" stop-color="white"/><stop offset=".9" stop-color="white" stop-opacity=".88"/><stop offset=".96" stop-color="white" stop-opacity=".35"/><stop offset="1" stop-color="white" stop-opacity="0"/></linearGradient>
   <linearGradient id="art-horizontal${u}" gradientUnits="userSpaceOnUse" x1="11" y1="0" x2="189" y2="0"><stop stop-color="white" stop-opacity="0"/><stop offset=".045" stop-color="white"/><stop offset=".955" stop-color="white"/><stop offset="1" stop-color="white" stop-opacity="0"/></linearGradient>
   <linearGradient id="art-background${u}" gradientUnits="userSpaceOnUse" x1="0" y1="11" x2="0" y2="205"><stop stop-color="white" stop-opacity="0"/><stop offset=".05" stop-color="white"/><stop offset=".76" stop-color="white"/><stop offset="1" stop-color="white" stop-opacity="0"/></linearGradient>
@@ -75,7 +78,7 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  <g clip-path="url(#${clip})"><rect x="10" y="10" width="180" height="280" fill="url(#glass${u})"/>
  <g stroke="${color}" fill="none" opacity="${kn?'.13':'.19'}" stroke-width=".7"><circle cx="100" cy="111" r="72"/><circle cx="100" cy="111" r="59"/><path d="${spokes(100,111,22,72,12)}"/><path d="M100 39 151 162 34 91H166L49 162Z"/></g>
  ${lv>=5?`<g stroke="${metal}" fill="none" opacity=".48"><circle cx="100" cy="102" r="55" stroke-width="1.1"/><path d="${spokes(100,102,58,69,lv===6?24:16)}" stroke-width="1.35"/></g>`:''}
- ${art}<rect x="10" y="10" width="180" height="${fullArt&&kn&&illustration?280:212}" fill="url(#shade${u})" opacity="${fullArt&&kn&&illustration?'.9':artLayout==='full'||artLayout==='cover'?'.15':'1'}"/>
+ ${art}<rect x="10" y="10" width="180" height="${fa?280:212}" fill="url(#shade${u})" opacity="${fa?'1':artLayout==='full'||artLayout==='cover'?'.15':'1'}"/>
  ${fin==='gold'?goldSurface(u):''}
  ${fin==='blood'?`<g class="blood-patina" fill="#430c18" opacity=".7"><path d="M11 12 28 13 22 20 26 31 18 44 21 59 16 68 18 84 11 103Z"/><path d="M189 17 180 25 184 40 177 47 180 67 174 84 180 96 177 118 185 132 189 153Z"/><path d="M11 154 17 162 14 177 23 185 18 198 25 209H11ZM189 168 181 181 185 193 173 205 189 213Z"/></g><g class="blood-etching" fill="none" stroke="#86303b" stroke-width=".7" stroke-linecap="round" opacity=".65"><path d="M20 17 18 32 21 43 17 57 19 75M181 22 178 41 182 56 175 73 177 91 173 109M15 174 19 182 17 191M185 182 179 195 181 207"/><path d="M23 25 28 29M177 67 169 72M19 184 26 188" stroke-width=".4"/></g><g class="blood-residue" fill="#7b1c2e" opacity=".5"><circle cx="26" cy="38" r=".8"/><circle cx="23" cy="48" r=".45"/><circle cx="171" cy="82" r=".9"/><circle cx="175" cy="96" r=".4"/><circle cx="23" cy="176" r=".6"/><circle cx="178" cy="188" r=".8"/></g><g class="blood-incense" fill="none" stroke="#78303f" stroke-width="7" opacity=".1"><path d="M12 214C38 182 12 160 29 132S12 77 20 50M188 218C163 185 191 162 175 129S190 81 179 54"/></g>`:''}
  <rect x="10" y="10" width="180" height="280" fill="url(#grain${u})"/>
@@ -85,21 +88,21 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  ${fin?`<path class="finish-edge ${fin}-edge" d="${frame}" fill="none" stroke="${fin==='gold'?'#fff0b0':'#b36b66'}" stroke-width="2.3" pathLength="100" stroke-dasharray="12 88"/>`:''}
  <rect x="10" y="10" width="180" height="280" rx="7" fill="none" stroke="${color}" stroke-width=".75" opacity=".6"/>
  <path d="M14 56V34Q14 14 34 14H56M144 14H166Q186 14 186 34V56" fill="none" stroke="${metal}" stroke-width="1.15"/>
- <path d="M13 224Q12 210 25 207H72Q86 207 100 197 114 207 128 207H175Q188 210 187 224V277Q186 287 176 287H24Q14 287 13 277Z" fill="url(#panel${u})" fill-opacity="${fullArt&&kn&&illustration?'.5':'1'}" stroke="${metal}" stroke-width="1.4"/>
- <path d="M15 223Q24 212 42 215H77M123 215H158Q176 212 185 223M18 274Q30 280 46 281H75M125 281H154Q170 280 182 274" fill="none" stroke="${color}" stroke-width="1" opacity=".7"/>
+ ${fa?'':`<path d="M13 224Q12 210 25 207H72Q86 207 100 197 114 207 128 207H175Q188 210 187 224V277Q186 287 176 287H24Q14 287 13 277Z" fill="url(#panel${u})" fill-opacity="1" stroke="${metal}" stroke-width="1.4"/>
+ <path d="M15 223Q24 212 42 215H77M123 215H158Q176 212 185 223M18 274Q30 280 46 281H75M125 281H154Q170 280 182 274" fill="none" stroke="${color}" stroke-width="1" opacity=".7"/>`}
  ${fin==='blood'?bloodFrame(u):fin==='gold'?goldFrame(u):['','translate(200 0) scale(-1 1)','translate(0 300) scale(1 -1)','translate(200 300) scale(-1 -1)'].map(t=>`<g transform="${t}">${corner(lv,metal)}</g>`).join('')}
 
  ${fin==='gold'?goldShine(u):''}
- <path d="M26 207Q46 198 66 207M134 207Q154 198 174 207" fill="none" stroke="${metal}" stroke-width="1.6"/>
+ ${fa?'':`<path d="M26 207Q46 198 66 207M134 207Q154 198 174 207" fill="none" stroke="${metal}" stroke-width="1.6"/>
  <circle cx="100" cy="205" r="17" fill="#080a0d" stroke="${metal}" stroke-width="1.7"/>
  <circle cx="100" cy="205" r="13.5" fill="none" stroke="${color}" stroke-width=".65" opacity=".65"/>
- <g transform="translate(100 205) scale(.88)" fill="none" stroke="#e5cea0" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">${SIG[kn?cl:'?']||SIG['?']}</g>
- <text x="100" y="235" text-anchor="middle" font-family="var(--display)" font-weight="600" font-size="${name.length>16?10.3:name.length>12?11.7:14}"${name.length>22?' textLength="150" lengthAdjust="spacingAndGlyphs"':''} fill="#f3e5c9">${name}</text>
- <text x="100" y="248" text-anchor="middle" font-family="var(--display)" font-size="8.4" letter-spacing="1.2" fill="${light}">${clan.toUpperCase()}</text>
+ <g transform="translate(100 205) scale(.88)" fill="none" stroke="#e5cea0" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">${SIG[kn?cl:'?']||SIG['?']}</g>`}
+ <text x="100" y="235" text-anchor="middle" font-family="var(--display)" font-weight="600" font-size="${name.length>16?10.3:name.length>12?11.7:14}"${name.length>22?' textLength="150" lengthAdjust="spacingAndGlyphs"':''}${ink} fill="#f3e5c9">${name}</text>
+ <text x="100" y="248" text-anchor="middle" font-family="var(--display)" font-size="8.4" letter-spacing="1.2"${ink} fill="${light}">${clan.toUpperCase()}</text>
  <path d="M36 259H52M148 259H164" stroke="${metal}" stroke-width=".65" opacity=".5"/>
- <text x="100" y="273" text-anchor="middle" font-family="var(--body)" font-size="${title.length>24?9.5:11}" fill="#e3d0b2">${title}</text>
- <text x="100" y="291" text-anchor="middle" font-family="var(--display)" font-size="5.6" letter-spacing=".5" fill="#ded1b9">${id}</text>
- <text x="100" y="258" text-anchor="middle" font-family="var(--display)" font-size="5.2" letter-spacing=".6" fill="${light}" opacity=".8">${provisional?'APERÇU':unique?'UNIQUE':ra.toUpperCase()}${fin?' · '+(fin==='gold'?'DORÉE':'SANGLANTE'):''}</text>
+ <text x="100" y="273" text-anchor="middle" font-family="var(--body)" font-size="${title.length>24?9.5:11}"${ink} fill="#e3d0b2">${title}</text>
+ <text x="100" y="291" text-anchor="middle" font-family="var(--display)" font-size="5.6" letter-spacing=".5"${ink} fill="#ded1b9">${id}</text>
+ <text x="100" y="258" text-anchor="middle" font-family="var(--display)" font-size="5.2" letter-spacing=".6"${ink} fill="${light}" opacity=".8">${provisional?'APERÇU':unique?'UNIQUE':ra.toUpperCase()}${fin?' · '+(fin==='gold'?'DORÉE':'SANGLANTE'):''}</text>
  </svg></div>`;
 }
 export const renderBack=(t,k)=>`<div class="card"><svg viewBox="0 0 200 300"><defs><pattern id="bd${k}" width="18" height="18" patternUnits="userSpaceOnUse"><path d="M9 1l6 8-6 8-6-8z" fill="none" stroke="#c9a45c" stroke-opacity=".09" stroke-width="1"/></pattern><radialGradient id="bg2${k}" cx=".5" cy=".5" r=".75"><stop stop-color="#561430"/><stop offset="1" stop-color="#12060d"/></radialGradient></defs><rect width="200" height="300" fill="url(#bg2${k})"/><rect width="200" height="300" fill="url(#bd${k})"/><rect x="3" y="3" width="194" height="294" rx="10" fill="none" stroke="#c9a45c" stroke-width="3"/><rect x="9" y="9" width="182" height="282" rx="6" fill="none" stroke="#c9a45c" stroke-width="1.4"/><g>${corner(4,'#c9a45c')}</g><g transform="translate(200 0) scale(-1 1)">${corner(4,'#c9a45c')}</g><g transform="translate(0 300) scale(1 -1)">${corner(4,'#c9a45c')}</g><g transform="translate(200 300) scale(-1 -1)">${corner(4,'#c9a45c')}</g><g fill="none" stroke="#c9a45c" stroke-width="2" opacity=".65"><circle cx="100" cy="150" r="48"/><path d="${spokes(100,150,52,58,8)}"/></g><path d="M100 92l32 58-32 58-32-58z" fill="#7b1d36" stroke="#f0d79a" stroke-width="2"/><path d="M100 110l20 40-20 40-20-40z" fill="none" stroke="#f0d79a" stroke-width="1.5"/><circle cx="100" cy="150" r="9" fill="#12060d" stroke="#f0d79a"/>${t?`<rect x="30" y="246" width="140" height="24" fill="#12060d" stroke="#c9a45c"/><text x="100" y="263" text-anchor="middle" font-family="var(--display)" font-weight="700" font-size="16" letter-spacing="5" fill="#f0d79a">${t}</text>`:''}</svg></div>`;

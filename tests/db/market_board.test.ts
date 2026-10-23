@@ -94,11 +94,14 @@ describe('marché regroupé',()=>{
     const prices=(args:unknown[])=>rpc(db,viewer,'get_card_prices',args);
     expect(await prices([ch,'Standard'])).toMatchObject({sales:[],average:null,last:null,lowest:null});
     for(const p of [100,200]){const id=await sell(s,ch,p);await rpc(db,viewer,'buy_listing',[id]);}
+    // Dates distinctes : la dernière vente doit être 200, pas la moyenne de 150.
+    await db.query("update public.listings set closed_at=now()-interval '1 day' where character_id=$1 and price=100 and status='sold'",[ch]);
     await sell(s,ch,900,'Dorée'); // autre finition : ne compte pas
     await sell(s,ch,350);
     const r=await prices([ch,'Standard']);
     expect(r.sales.map((x:any)=>x.price).sort()).toEqual([100,200]);
     expect([r.average,r.lowest]).toEqual([150,350]);
+    expect(r.last).toBe(200);
     // Depuis un exemplaire : même carte, même version.
     const {rows:[i]}=await db.query<{id:string}>(`select id from public.inventory_items where owner_id=$1 and character_id=$2 limit 1`,[viewer,ch]);
     expect((await prices([ch,'Standard',null,i.id])).average).toBe(150);

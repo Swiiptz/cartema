@@ -52,3 +52,34 @@ describe('carte unique',()=>{
   expect(renderCard(['CAM-037','Gabrielle Monique de Saint-Etienne','Toréador','Ancilla','Rare',1,''],'l1')).toContain('textLength="150"');
  });
 });
+
+
+describe('pleine illustration',()=>{
+ const card=['CAM-042','Isabeau de Marnay','Tremere','Ancienne','Légendaire',1,''];
+ it.each(['','gold','blood'])('dégage le dessin et conserve les textes en finition %s',finish=>{
+  const html=renderCard([...card.slice(0,6),finish],'fullart-check','/illustrations/existante.webp','fullart');
+  expect(html).toContain('width="178" height="278" preserveAspectRatio="xMidYMid slice"');
+  expect(html).not.toContain('M13 224Q12 210');
+  expect(html).not.toContain('M26 207Q46 198');
+  expect(html).not.toContain('translate(100 205)');
+  expect(html).not.toContain('cx="100" cy="205"');
+  expect(html).toContain('filter="url(#text-shadow');
+  expect(html).not.toContain('paint-order="stroke"');
+  expect(html).toContain('Isabeau de Marnay');
+  expect(html).toContain('TREMERE');
+ });
+ it.each(['portrait','full','cover'])('conserve le cartouche et le symbole en cadrage %s',layout=>{
+  const html=renderCard(card,'classic-check','/illustrations/existante.webp',layout);
+  expect(html).toContain('M13 224Q12 210');
+  expect(html).toContain('translate(100 205)');
+  expect(html).not.toContain('paint-order="stroke"');
+ });
+ it('conserve le voile pour une carte inconnue ou sans illustration',()=>{
+  for(const [known,image] of [[0,'/illustrations/secrete.webp'],[1,undefined]] as const){
+   const html=renderCard([...card.slice(0,5),known,''],'veiled-check',image,'fullart');
+   expect(html).not.toContain('<image');
+   expect(html).toContain('translate(100 205)');
+   if(!known)expect(html).not.toContain('Isabeau de Marnay');
+  }
+ });
+});
