@@ -93,10 +93,11 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
  const [selling,setSelling]=useState<InventoryItem|null>(null);
  // Prix de référence de l'exemplaire mis en vente (même finition et même version).
  const [prices,setPrices]=useState<CardPrices|null>(null);
- useEffect(()=>{setPrices(null);if(!selling||!client)return;let alive=true;
-  void callRpc<CardPrices>(client,'get_card_prices',{p_character_id:characterId,p_finish:selling.finish,p_instance_id:selling.instance_id}).then(p=>{if(alive)setPrices(p);}).catch(()=>{});
+ const [pricesStatus,setPricesStatus]=useState<'loading'|'ready'|'error'>('loading');
+ useEffect(()=>{if(!selling||!client)return;let alive=true;
+  void callRpc<CardPrices>(client,'get_card_prices',{p_character_id:characterId,p_finish:selling.finish,p_instance_id:selling.instance_id}).then(p=>{if(alive){setPrices(p);setPricesStatus('ready');}}).catch(()=>{if(alive)setPricesStatus('error');});
   return()=>{alive=false;};},[selling,client,characterId]);
- const sell=(it:InventoryItem)=>setSelling(it);
+ const sell=(it:InventoryItem)=>{setPrices(null);setPricesStatus('loading');setSelling(it);};
  const confirmSell=(c:SellChoice)=>{const it=selling!;setSelling(null);void run(async()=>{
   if(c.kind==='fixed'){
    const r=await callRpc<{net:number}>(client!,'create_listing',{p_instance_id:it.instance_id,p_price:c.price,p_request_id:crypto.randomUUID()});
@@ -116,7 +117,7 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
  return <section className="owned-copies" aria-label="Vos exemplaires">
   {askNode}
   {client&&<GiftDialog open={!!gifting} client={client} name={cardName} onCancel={()=>setGifting(null)} onConfirm={confirmGift}/>}
-  <SellDialog open={!!selling} name={cardName} finish={selling?.finish??'Standard'} suggested={Math.max((selling?.value??5)*2,10)} prices={prices} onCancel={()=>setSelling(null)} onConfirm={confirmSell}/>
+  <SellDialog open={!!selling} name={cardName} finish={selling?.finish??'Standard'} prices={prices} pricesStatus={pricesStatus} onCancel={()=>setSelling(null)} onConfirm={confirmSell}/>
   <div className="owned-head"><span className="eyebrow">Vos exemplaires</span><strong>{items.length}</strong></div>
   {items.length===0?<p className="muted">Vous ne possédez plus d’exemplaire de cette carte. Elle reste découverte dans votre album.</p>:<ul className="owned-list">{items.map(it=><li key={it.instance_id} className={`finish-${it.finish==='Dorée'?'gold':it.finish==='Sanglante'?'blood':'standard'} ${it.listing_id?'listed':''}`}>
    <div className="owned-top">
