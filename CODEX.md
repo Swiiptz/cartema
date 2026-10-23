@@ -1,5 +1,7 @@
 # Mission Codex : implémenter CARTEMA intégralement
 
+> **Historique.** Cette mission d'origine est terminée : le jeu est en production depuis le 20/10/2026. Pour reprendre le travail, lire **`AGENTS.md`** (consignes) puis **`docs/PASSATION.md`** (état actuel et journal des livraisons).
+
 **Avant la reprise, lire `docs/PASSATION.md`** : état constaté du code et décisions utilisateur récentes. Les consignes graphiques historiques de DESIGN/preview sont à interpréter avec cette passation ; ne pas annuler les évolutions validées.
 
 Lis d'abord `docs/CAHIER_DES_CHARGES.md`, puis `README.md`. Construis **tous les modules demandés** et rends l'application utilisable de bout en bout ; ce dépôt fourni n'est qu'une fondation UI, de données et de règles.

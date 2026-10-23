@@ -1,32 +1,45 @@
 # CARTEMA — État des lieux et passation
 
-Mise à jour : 22 octobre 2026 (soir). Commencer par l'état ci-dessous et par `CLAUDE.md` (consignes de travail). Le §0 est le journal de ce qui a été livré ; les sections suivantes décrivent l'état actuel.
+Mise à jour : 23 octobre 2026 (soir). Commencer par l'état ci-dessous, puis `AGENTS.md` (consignes de travail, aussi pour Codex) ou `CLAUDE.md` (mêmes consignes). Le §0 est le journal de ce qui a été livré ; les sections suivantes décrivent l'état actuel.
 
-## État au 22 octobre 2026 (soir) — à lire en premier
+## État au 23 octobre 2026 (soir) — à lire en premier
 
-**Production.** Base Supabase `grlpysqlabwylexinbrl` : les 56 migrations sont appliquées, la dernière est `20261022270000_eternal_edition`. Site : le déploiement du commit `7753bdd` (concours et édition éternelle) a été lancé pendant un incident GitHub Actions. Vérifier dans l'onglet Actions qu'il a réussi, sinon relancer « Déployer sur GitHub Pages ».
+**Production.** Base Supabase `grlpysqlabwylexinbrl` : les 79 migrations du dépôt sont appliquées, la dernière est `20261023220000_featured_lineages`. Code poussé sur `main` (dernier commit de la journée : `85366cc`). Environ 147 joueurs actifs, ~6 250 boosters ouverts depuis le 20/10.
 
-**Livré le 22/10** (détail au §0, une ligne par livraison avec sa migration) :
-- marché : cartes regroupées, prix de référence, Mes ventes et Mes mises allégés ;
-- échanges : fin des prêts (pas de retour avant 30 jours, délai de 72 h), échanges guidés par les listes de souhaits, loupe sur les cartes ;
-- versions d'illustration : lignes de versions avec leur chance et la liste de leurs cartes, anciennes officielles tirables comme des alternatives ;
-- succès : rangement (généraux ou set d'une édition), conditions avec finition ; l'admin peut donner une carte en version alternative ;
-- éditions en préparation invisibles des joueurs (test `tests/db/hidden-edition.test.ts`) ;
-- page Boosters : carrousel par édition, prix et réserve par édition, annonce « Soon », sachet ANE (dorure gravée de montagnes), God booster ;
-- concours d'illustrations (`/concours/`, Admin › Concours) et édition Éternelle ETER (sixième carte) ;
-- correctifs : boucle du compte à rebours, polices embarquées, code d'édition dans le sélecteur.
+**Le site n'a peut-être pas été redéployé depuis plusieurs livraisons.** Les migrations sont en ligne, mais une partie de l'interface attend un déploiement manuel (GitHub › Actions › « Déployer sur GitHub Pages »). Tant qu'il n'est pas fait : le bouton « Enregistrer » d'Admin › Économie échoue (le site en ligne ne connaît pas les nouveaux réglages), et les joueurs ne voient pas la pastille de série, la galerie, les Lignées, la vitrine par version, le « Voir plus » du classement. Vérifier dans l'onglet Actions la date du dernier déploiement réussi.
 
-**Ce que l'admin (Swiiptz) n'a pas encore fait** :
-1. Créer l'édition **ANE** (album et boosters fermés). Dans « Boutique et annonce » : sachet « Alpes de Savoie », cocher « Annoncer Soon ».
-2. Créer le **concours du week-end** (Admin › Concours › Nouveau concours, édition Camarilla).
-3. Décider de la chance du **God booster** : 1 sur 1 000 depuis le 22/10, réglable à 0 dans Admin › Économie.
-4. Après le concours : valider les dessins, distribuer les récompenses, créer l'édition **ETER** (cocher « Édition éternelle »), puis y ajouter la carte du gagnant et la lui donner depuis sa fiche joueur.
+**Livré le 23/10** (détail au §0, une ligne par livraison avec sa migration) :
+- vitrine par version d'illustration et par exemplaire ; succès « Narcisse » (200 exemplaires d'une carte) ;
+- **God booster** : garantie cachée **par joueur** (2 000 ouvertures depuis son dernier God booster, remise à zéro s'il en tombe un avant), Légendaires et Mythiques ×5 dans sa table de 5e carte (`legend_mult`, réglable) ;
+- **cartes garanties** (pitié cachée) : Épique ou mieux au 25e booster sans Épique, Légendaire ou Mythique au N-ième sans Légendaire. Swiiptz a réglé N à **150** (Économie, version 13) ;
+- **lignées de clan** (14 clans, titres choisis par Swiiptz) et **camps** Team Apo / Team Gwen : succès qu'on peut **perdre** (état dans `lineage_holds`, pas dans `achievement_unlocks`, hors classement), titre retiré dès que la condition tombe ; mises en avant possibles sur le profil tant qu'ils sont détenus ;
+- **série de connexions** : jours d'affilée (Paris), 1 booster tous les 7 jours, succès « Assiduité » 7/30/100 jours ;
+- concours : case « Mythiques admises » par concours (jamais Caïn), galerie `/concours/galerie/` ;
+- dons de l'équipe notifiés au joueur (boosters, Deniers, cartes) et réserve rechargée à chaque nouvelle notification ;
+- marché : tous les clans dans le filtre (Sethites compris) ; classement : « Voir plus » jusqu'à 200 joueurs ;
+- doléances masquables par l'admin seul ; « Soutien de la première heure » fermé (gardé par ses 152 détenteurs) ;
+- téléphone : plus de débordement horizontal (barre du bas à 6 onglets), page Boosters allégée (effet épique qui tournait à l'infini, flou d'arrière-plan, animations coûteuses).
 
-**Jamais vus à l'écran avec un vrai compte** (vérifiés seulement par les tests SQL et le build) : page Concours, animation du God booster, boutique et réserve par édition, révélation d'une sixième carte éternelle. Les regarder dès qu'ils sont en ligne.
+**Concours en cours** : « Concours rush d'illustrations - CAM 1 », du ven. 23/10 16 h au dim. 25/10 23 h 50 (Paris), édition Camarilla, ×2 sur 170 des 251 cartes (sans illustration ou illustration IA). Les règles écrites par Swiiptz disent « sauf les Mythiques » : à modifier s'il coche « Mythiques admises ». Barème : au-delà de la 20e place on gagne 200 Deniers, plus que les places 11–20 (100) — signalé, à corriger avant la distribution.
 
-**Incident du 22/10, 11 h 43 – 12 h 17.** La base (taille « nano ») a saturé. Cause : le composant `Countdown` relançait chaque seconde le rechargement de la page marché après la fin d'une enchère. En plus, `get_my_listings` et `get_my_bids` clôturaient toutes les enchères du jeu à chaque appel. Les deux sont corrigés, mais la leçon tient : voir les règles React et base de données de `CLAUDE.md`. Si `statement timeout` réapparaît dans les logs Postgres, chercher d'abord une boucle côté site.
+**Ce que l'admin (Swiiptz) doit encore faire** :
+1. **Déployer le site** (voir plus haut).
+2. Après la clôture du concours : valider les dessins (Admin › Concours), distribuer les récompenses, créer l'édition **ETER** et y ajouter la carte du gagnant.
+3. Cliquer « Retirer partout » sur l'ancienne illustration de Rumpelstilchzen (CAM-050) dans Versions d'illustration.
+4. Cocher « illustration IA » sur les cartes concernées (Admin › Personnages) pour qu'elles comptent ×2 au concours.
+5. Taille de la base : si ce n'est pas déjà fait, passer de nano à **Micro** (Supabase › Compute). La mémoire saturée (swap) était la cause principale des ralentissements du 22/10 ; l'abonnement Pro a été pris, le changement de taille n'a pas été confirmé.
 
-**Pistes décidées mais pas commencées** : classement de saison pour le set 2 ; série de connexions (à étudier, pas décidée).
+**Jamais vus à l'écran avec un vrai compte** (vérifiés seulement par les tests SQL et le build) : galerie des concours, pastille de série sur l'accueil, case « Mythiques admises », section Lignées ouverte, champs Économie (série, garanties), bouton « Masquer » des doléances. Les regarder dès qu'ils sont en ligne.
+
+**Mécanismes à connaître avant de toucher aux succès ou aux boosters** :
+- Succès « perdables » (lignées `clan_lineage`, camps `faction`) : jamais dans `achievement_unlocks`. Gain à la passe `private.sync_achievement_states` (page Progrès, fin de révélation d'un booster) ; perte immédiate par le déclencheur d'inventaire `private.on_inventory_leave` (départ d'une carte, arrivée d'une carte interdite). Récompense la première fois seulement.
+- Compteurs cachés calculés sur l'historique, sans table dédiée : `private.openings_without` (Épique/Légendaire), garantie God dans `open_booster` (ouvertures depuis le dernier God booster). Plusieurs boosters ouverts dans la même transaction ont le même `created_at` : les compteurs sous-comptent légèrement, jamais l'inverse.
+- `private.pick_weighted` exige des tables qui totalisent 100 000 : toute modification de poids passe par `private.boost_top_rarities` ou `private.restrict_rarities` (renormalisation).
+- Réglages d'économie : une clé nouvelle doit être ajoutée à `private.validate_settings` **et** à `public.admin_save_settings` (dernières copies dans `20261023210000_rarity_pity`), puis à `FIELDS` dans `src/components/admin/EconomyTab.tsx`.
+
+**Incidents** : 22/10 (base saturée par une boucle `Countdown` et des clôtures d'enchères dans des lectures, puis par une rafale de requêtes CLI) — voir `CLAUDE.md`. 23/10 : la page Boosters faisait ramer les téléphones (corrigé, voir §0).
+
+**Pistes proposées, pas décidées** : notifier la perte d'une lignée ; régler le ×2 du concours dans l'admin ; lignée automatique pour un nouveau clan ; assouplir le délai de 72 h ; historique des prix (refusé le 23/10) ; classement de saison pour le set 2 ; suivi des erreurs côté joueurs.
 
 ## 0. Avancement depuis la passation
 
@@ -199,7 +212,7 @@ Une migration ne se modifie jamais après avoir été appliquée : on en ajoute 
 | Collection | Album par édition, découvertes, exemplaires, verrouillage, recyclage, liste de souhaits | — |
 | Marché | Prix fixe regroupé par carte, enchères, taxes, filtres, prix de référence (dernières ventes, moyenne) | — |
 | Social | Amis, cadeaux, échanges guidés par les listes de souhaits, limites quotidiennes, délai de 72 h, pas de retour d'une carte avant 30 jours | — |
-| Progression | Missions quotidiennes / hebdomadaires, succès à paliers, de collection, secrets et personnalisés (rangés en général ou par set), titres, classement | Classement de saison à préparer pour le set 2 ; série de connexions à étudier |
+| Progression | Missions quotidiennes / hebdomadaires, succès à paliers, de collection, secrets et personnalisés (rangés en général ou par set), lignées de clan et camps (perdables), série de connexions, titres, classement (« Voir plus » jusqu'à 200) | Classement de saison à préparer pour le set 2 |
 | Profil | Profil public, vitrine de 5 cartes, succès favoris, confidentialité, historique | — |
 | Notifications | Dans le site, par catégorie, préférences | Pas de push (décision du 22/10) |
 | Admin | Catalogue, illustrations, économie versionnée, joueurs, signalements, contributions, événements, statistiques, surveillance anti-triche | — |
@@ -262,7 +275,6 @@ Les illustrations officielles sont dans `public/illustrations/<préfixe>/` (orig
 ## 8. Points ouverts
 
 - **Set 2** : préparer un classement de saison (points remis à zéro chaque mois, récompense cosmétique du podium), car le classement actuel est plafonné (nombre fini de succès et de cartes).
-- **Série de connexions** (bonus croissant) : idée à étudier, pas décidée.
 - **Suivi des erreurs** côté joueurs : rien n'est remonté aujourd'hui quand une page plante sur un téléphone.
 - **Fichiers volumineux** : `globals.css` (~160 Ko) et `src/app/admin/page.tsx` (~57 Ko). Découper progressivement, par page ou par onglet, sans changer le rendu.
 - **Plan gratuit Supabase** : le premier appel après une période calme prend ~3 s (réveil du projet). Vérifier les quotas avant une forte affluence.
