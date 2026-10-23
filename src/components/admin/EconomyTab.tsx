@@ -8,7 +8,7 @@ import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc} from '@/lib/game';
 
 type Weighted={value:string;weight:number};
-type Settings={streak_booster_every?:number;streak_booster_count?:number;trade_cooldown_hours:number;trade_daily_limit:number;gift_daily_limit:number;trade_tax_pct:number;trade_weekly_deniers_cap:number;buyer_tax_pct:number;bid_refund_tax_pct:number;alternate_art_odds:number;booster_offers:Record<string,number>;daily_login_reward:number;discovery_reward:number;welcome_free_boosters:number;free_booster_capacity:number;
+type Settings={pity_epic_every?:number;pity_legend_every?:number;streak_booster_every?:number;streak_booster_count?:number;trade_cooldown_hours:number;trade_daily_limit:number;gift_daily_limit:number;trade_tax_pct:number;trade_weekly_deniers_cap:number;buyer_tax_pct:number;bid_refund_tax_pct:number;alternate_art_odds:number;booster_offers:Record<string,number>;daily_login_reward:number;discovery_reward:number;welcome_free_boosters:number;free_booster_capacity:number;
  market_commission_pct:number;mission_bonus_daily:number;mission_bonus_weekly:number;recycle_values:Record<Rarity,number>;finish_multipliers:Record<string,number>};
 type Economy={settings:{version:number;settings:Settings;created_at:string};settings_history:{version:number;created_at:string;by:string|null;active:boolean}[];
  ruleset:{version:number;slots:Weighted[][];finishes:Weighted[];unique_odds:number;notes:string;created_at:string};
@@ -27,6 +27,8 @@ const FIELDS:[keyof Settings,string,string][]=[
  ['daily_login_reward','Bonus de connexion','Deniers, une fois par jour'],
  ['streak_booster_every','Série de connexions','un bonus tous les N jours d’affilée (0 = aucun)'],
  ['streak_booster_count','Bonus de série','boosters offerts à chaque palier'],
+ ['pity_epic_every','Épique garantie','au N-ième booster d’un joueur sans Épique (0 = aucune), caché aux joueurs'],
+ ['pity_legend_every','Légendaire garantie','au N-ième booster d’un joueur sans Légendaire (0 = aucune), caché aux joueurs'],
  ['discovery_reward','Découverte d’un personnage','Deniers, une fois par personnage'],
  ['welcome_free_boosters','Boosters de bienvenue','à l’inscription'],
  ['free_booster_capacity','Réserve de boosters gratuits','maximum accumulable'],

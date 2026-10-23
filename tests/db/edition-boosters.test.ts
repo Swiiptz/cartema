@@ -140,3 +140,39 @@ describe('God booster',()=>{
     expect(await pick(1)).toBeNull();         // une ligne à 0 ne tombe jamais, même en God booster
   });
 });
+
+describe('cartes garanties (pitié cachée)',()=>{
+  it('force une Épique au N-ième booster sans Épique, une Légendaire au N-ième sans Légendaire (23/10)',async()=>{
+    await rpc(db,admin,'admin_save_god_settings',[0,0,20,2,'Sans God',0]);
+    // Tirage normal quasi sans Épique ni mieux : seules les garanties en donnent.
+    const {rows:[r]}=await db.query<{id:string;slots:any}>('select id,slots from public.pack_rulesets where id=(private.active_ruleset()).id');
+    const flat=JSON.parse(JSON.stringify(r.slots));
+    flat[3]=[{value:'Peu commun',weight:100000}];
+    // Épique et mieux presque impossibles (3 sur 100 000) : la garantie garde ces proportions entre elles.
+    flat[4]=[{value:'Rare',weight:99997},{value:'Épique',weight:1},{value:'Légendaire',weight:1},{value:'Mythique',weight:1}];
+    // Table de tirage figée par un déclencheur : modifiée directement pour ce test seulement.
+    const setSlots=async(s:unknown)=>{await db.query(`set session_replication_role = replica`);
+      try{await db.query('update public.pack_rulesets set slots=$2 where id=$1',[r.id,JSON.stringify(s)]);}finally{await db.query(`set session_replication_role = origin`);}};
+    await setSlots(flat);
+    try{
+      const TOP=['Épique','Légendaire','Mythique'];
+      const fifth=(o:any)=>o.cards.find((c:any)=>c.position===5).rarity;
+      await rpc(db,admin,'admin_save_settings',[{pity_epic_every:3,pity_legend_every:0},'Épique au 3e']);
+      const u=await player();await db.query('update public.booster_balances set purchased_count=10 where owner_id=$1',[u]);
+      expect(fifth(await open(u,cam))).toBe('Rare');
+      expect(fifth(await open(u,cam))).toBe('Rare');
+      expect(TOP).toContain(fifth(await open(u,cam)));   // 3e sans Épique : garantie
+      expect(fifth(await open(u,cam))).toBe('Rare');     // compteur remis à zéro
+      await rpc(db,admin,'admin_save_settings',[{pity_epic_every:0,pity_legend_every:2},'Légendaire au 2e']);
+      const v=await player();await db.query('update public.booster_balances set purchased_count=10 where owner_id=$1',[v]);
+      expect(fifth(await open(v,cam))).toBe('Rare');
+      expect(['Légendaire','Mythique']).toContain(fifth(await open(v,cam)));
+      // Caché aux joueurs.
+      expect(JSON.stringify(await rpc(db,v,'get_player_state'))).not.toMatch(/pity/);
+      await expectError(rpc(db,admin,'admin_save_settings',[{pity_epic_every:-1},'Négatif']),/invalid_setting/);
+    }finally{
+      await setSlots(r.slots);
+      await rpc(db,admin,'admin_save_settings',[{pity_epic_every:25,pity_legend_every:100},'Retour aux valeurs']);
+    }
+  });
+});
