@@ -74,6 +74,21 @@ describe('lignées de clan',()=>{
   });
 });
 
+describe('lignée mise en avant sur le profil',()=>{
+  it('se met en avant avec un succès définitif tant qu’elle est détenue, disparaît du profil une fois perdue (23/10)',async()=>{
+    const u=await player('vitrine_lignee');
+    const first=await give(u,cam,1);await give(u,cam,2);await give(u,anx,1);
+    await rpc(db,u,'get_achievements'); // lignée gagnée
+    const lasting='faces_10';
+    await db.query(`insert into public.achievement_unlocks (owner_id,code) values ($1,$2)`,[u,lasting]);
+    const p=await rpc(db,u,'set_featured_achievements',[[lasting,CODE]]);
+    expect(p.featured.map((f:any)=>f.code)).toEqual([lasting,CODE]);
+    await rpc(db,u,'recycle_cards',[[first],randomUUID(),true]);
+    expect((await rpc(db,u,'get_profile',['vitrine_lignee'])).featured.map((f:any)=>f.code)).toEqual([lasting]);
+    await expectError(rpc(db,u,'set_featured_achievements',[[CODE]]),/title_locked/);
+  });
+});
+
 describe('camps (Team Apo, Team Gwen)',()=>{
   it('se gagnent avec les cartes requises sans la carte interdite, et se perdent dès qu’on obtient l’interdite (23/10)',async()=>{
     const id=async(ed:string,n:number)=>(await db.query<{id:string}>('select id from public.characters where edition_id=$1 and number=$2',[ed,n])).rows[0].id;
