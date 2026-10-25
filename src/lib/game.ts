@@ -266,14 +266,16 @@ export function revealOrder<C extends {rarity:Rarity;finish?:string;unique?:bool
 /** Concours d'illustrations (voir supabase/migrations/20261022260000_art_contest.sql). */
 export type ContestCard={character_id:string;code:string;number:number;name:string;clan:string|null;rarity:Rarity;discovered:boolean;card:SocialCard|null;entries:number;leader:string|null;mine:boolean;voted:boolean;
  /** Carte à privilégier (sans illustration ou illustration IA) : points multipliés. */
- priority?:boolean};
+ priority?:boolean;
+ /** Multiplicateur des points de la carte : Mythique ×3, carte à privilégier ×2, sinon 1. */
+ multiplier?:number};
 export type ContestPlace={from:number;to:number;deniers:number;boosters:number};
 export type ContestRewards={places:ContestPlace[];others:{deniers:number;boosters:number}};
 /** Galerie : concours clos, dessins retenus (carte rendue avec l'illustration) et podium une fois distribué. */
 export type ContestGalleryItem={entry_id:string;character:string;code:string;rarity:Rarity;author:string|null;kind:'main'|'alternate';line_label:string|null;real_drawing:boolean;image_path:string;card:SocialCard};
 export type ContestGallery={id:string;title:string;edition:string;starts_at:string;ends_at:string;final:boolean;entries:number;artists:number;
  podium:{place:number;handle:string;points:number;selected:number;leads:number}[];selected:ContestGalleryItem[]};
-export type Contest={id:string;title:string;starts_at:string;ends_at:string;open:boolean;rewarded:boolean;edition:string;rewards:ContestRewards;rules?:string|null;upcoming?:boolean;priority_multiplier?:number;allow_mythic?:boolean;my_entries:number;my_points:number;cards:ContestCard[]};
+export type Contest={id:string;title:string;starts_at:string;ends_at:string;open:boolean;rewarded:boolean;edition:string;rewards:ContestRewards;rules?:string|null;upcoming?:boolean;priority_multiplier?:number;allow_mythic?:boolean;mythic_multiplier?:number;my_entries:number;my_points:number;cards:ContestCard[]};
 export type ContestEntry={entry_id:string;image_path:string;author:string;votes:number;leading:boolean;mine:boolean;my_vote:boolean;selected:'main'|'alternate'|null;created_at:string};
 export type ContestRank={position:number;handle:string;leads:number;selected:number;real:number;points:number;me:boolean};
 

@@ -1374,3 +1374,5 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 .dash-chips{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .streak-chip{color:#ffb38a;border-color:#e0704055;background:#2a1410}.streak-chip svg{color:#ff8a4c}.streak-chip small{color:#e8b8a0}
 @media(max-width:560px){.dash-chips{justify-content:flex-start}}
+/* Concours : pastille ×3 des Mythiques (25/10). */
+.prio-badge.mythic{background:linear-gradient(135deg,#ff7a5c,#b0123a);box-shadow:0 2px 8px #b0123a66}

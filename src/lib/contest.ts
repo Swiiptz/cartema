@@ -3,11 +3,11 @@
 export type RuleItem={title:string;text:string};
 
 /** Règles par défaut, hors dates et récompenses (calculées à part). `before` précède les récompenses, `after` les suit. */
-export function defaultContestRules(edition:string,allowMythic=false):{before:RuleItem[];after:RuleItem[]}{
+export function defaultContestRules(edition:string,allowMythic=false,mythicMult=3):{before:RuleItem[];after:RuleItem[]}{
  return {
   before:[
    {title:'Les cartes.',text:`Toutes les cartes de l’édition ${edition}, ${allowMythic?'Mythiques comprises (sauf la carte unique)':'sauf les Mythiques'}. Une carte que vous n’avez pas découverte apparaît neutre (nom et clan seulement) : vous pouvez quand même la dessiner.`},
-   ...(allowMythic?[{title:'Mythiques.',text:'Ce sont les cartes les plus prestigieuses du jeu : un dessin retenu doit être à la hauteur de leur rang, il doit faire mythique.'}]:[]),
+   ...(allowMythic?[{title:`Mythiques ×${mythicMult}.`,text:`Ce sont les cartes les plus prestigieuses du jeu : être en tête des votes ou voir son dessin retenu y rapporte ${mythicMult} points. Le dessin doit être à la hauteur de leur rang : il doit faire mythique.`}]:[]),
    {title:'Format.',text:'Dessin vertical, idéalement 900 × 1350 px. Le visage et l’essentiel dans les deux tiers du haut : le bas de la carte porte le nom du personnage.'},
    {title:'Vos dessins.',text:'Un dessin par carte et par joueur, fait par vous. Vous pouvez le remplacer tant que le concours est ouvert, mais ses votes repartent alors à zéro. Pseudonyme obligatoire.'},
    {title:'Les votes.',text:'Un vote par carte : choisissez votre dessin préféré, changez d’avis quand vous voulez. On ne vote pas pour son propre dessin.'},

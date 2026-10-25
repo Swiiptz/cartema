@@ -39,6 +39,8 @@ Mise à jour : 23 octobre 2026 (soir). Commencer par l'état ci-dessous, puis `A
 
 **Incidents** : 22/10 (base saturée par une boucle `Countdown` et des clôtures d'enchères dans des lectures, puis par une rafale de requêtes CLI) — voir `CLAUDE.md`. 23/10 : la page Boosters faisait ramer les téléphones (corrigé, voir §0).
 
+**25/10 — Mythiques au concours de dessin** (décision de Swiiptz, migration `20261025100000_contest_mythic_x3`, tests dans `contest`) : les Mythiques sont dessinables (case « Mythiques admises » cochée par défaut, et cochée sur CAM 1, dont la phrase « sauf les Mythiques » des règles écrites est remplacée) ; une Mythique rapporte **×3** (`contests.mythic_multiplier`) sur le point « en tête » et le point « dessin retenu », le « vrai dessin » reste à 1, sans cumul avec le ×2 (`private.contest_card_multiplier`) ; le dessin doit « faire mythique » (règles et pastille ×3 rouge sur la page). Le classement étant recalculé à la distribution, le ×3 vaut pour CAM 1. La date de fin de CAM 1 ne bouge pas (décision de Swiiptz). Carte unique toujours exclue ; dessin retenu sur une Mythique offert en Standard.
+
 **Pistes proposées, pas décidées** : notifier la perte d'une lignée ; régler le ×2 du concours dans l'admin ; lignée automatique pour un nouveau clan ; assouplir le délai de 72 h ; historique des prix (refusé le 23/10) ; classement de saison pour le set 2 ; suivi des erreurs côté joueurs.
 
 ## 0. Avancement depuis la passation

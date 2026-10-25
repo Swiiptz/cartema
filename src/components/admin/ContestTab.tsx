@@ -49,7 +49,8 @@ function ContestForm({contest,catalog,act,reason,onDone}:{contest:AdminContest|n
  const [places,setPlaces]=useState<ContestPlace[]>(contest?.rewards.places??DEFAULT_REWARDS.places);
  const [others,setOthers]=useState(contest?.rewards.others??DEFAULT_REWARDS.others);
  const [rules,setRules]=useState(contest?.rules??'');
- const [allowMythic,setAllowMythic]=useState(!!contest?.allow_mythic);
+ // Mythiques admises par défaut pour un nouveau concours (décision du 25/10).
+ const [allowMythic,setAllowMythic]=useState(contest?!!contest.allow_mythic:true);
  const num=(v:string)=>Math.max(0,Number(v.replace(/\D/g,''))||0);
  const setPlace=(i:number,k:keyof ContestPlace,v:string)=>setPlaces(p=>p.map((x,j)=>j===i?{...x,[k]:num(v)}:x));
  const editionName=editions.find(e=>e.id===edition)?.name??'';
@@ -71,7 +72,7 @@ function ContestForm({contest,catalog,act,reason,onDone}:{contest:AdminContest|n
     <label className="auth-field"><span>Début</span><input type="datetime-local" value={start} onChange={e=>setStart(e.target.value)}/></label>
     <label className="auth-field"><span>Fin</span><input type="datetime-local" value={end} onChange={e=>setEnd(e.target.value)}/></label>
    </div>
-   <label className="contest-check"><input type="checkbox" checked={allowMythic} onChange={e=>setAllowMythic(e.target.checked)}/> <span>Mythiques admises <small>(jamais la carte unique ; un dessin retenu offre la carte en Standard)</small></span></label>
+   <label className="contest-check"><input type="checkbox" checked={allowMythic} onChange={e=>setAllowMythic(e.target.checked)}/> <span>Mythiques admises <small>(points ×3, le dessin doit faire mythique ; jamais la carte unique ; un dessin retenu offre la carte en Standard)</small></span></label>
    {badDates&&<p className="contest-error">La fin doit venir après le début.</p>}
   </fieldset>
   <fieldset className="contest-fieldset">
