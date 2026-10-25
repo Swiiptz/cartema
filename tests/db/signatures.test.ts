@@ -10,6 +10,7 @@ beforeAll(async()=>{
   admin=await createUser(db);await rpc(db,admin,'set_handle',['gardien_signatures']);
   await db.query(`update public.profiles set role='admin' where id=$1`,[admin]);
   await rpc(db,admin,'admin_save_god_settings',[0,0,20,2,'Sans God',0]);
+  await rpc(db,admin,'admin_save_settings',[{next_set_features:1},'Nouveautés du set allumées (test)']);
 },30000);
 async function player(h:string){const id=await createUser(db,{createdAt:'2026-01-01T00:00:00Z'});await rpc(db,id,'set_handle',[h]);await credit(db,id,5000);
   await db.query('update public.booster_balances set free_count=0,purchased_count=5 where owner_id=$1',[id]);return id;}

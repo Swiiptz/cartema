@@ -19,6 +19,8 @@ export function CardFeedback({code,name,hasArt}:{code:string;name:string;hasArt:
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState<string|null>(null);
  const [sent,setSent]=useState(false);
+ // Signature et texte d'ambiance : seulement une fois les nouveautés du prochain set allumées.
+ const [nextSet,setNextSet]=useState(false);
  if(!client||!session)return null;
  const reset=()=>{setKind('info');setMessage('');setCredit('');setFile(null);setError(null);setSent(false);};
  async function send(e:React.FormEvent){
@@ -39,7 +41,7 @@ export function CardFeedback({code,name,hasArt}:{code:string;name:string;hasArt:
   }catch(err){setError((err as Error).message);}finally{setBusy(false);}
  }
  return <>
-  <div className="feedback-row"><button className="feedback-link" onClick={()=>{reset();setOpen(true);}} title="Signaler une erreur, proposer une illustration ou demander un crédit"><MessageSquareWarning size={13}/><span>Une erreur ? Une illustration à proposer ?</span></button></div>
+  <div className="feedback-row"><button className="feedback-link" onClick={()=>{reset();setOpen(true);void callRpc<{next_set:boolean}>(client,'get_features').then(f=>setNextSet(f.next_set)).catch(()=>setNextSet(false));}} title="Signaler une erreur, proposer une illustration ou demander un crédit"><MessageSquareWarning size={13}/><span>Une erreur ? Une illustration à proposer ?</span></button></div>
   <Sheet open={open} onClose={()=>setOpen(false)} title={name}>
    {sent?<p className="auth-notice">Merci ! L’administrateur va examiner votre proposition. Vous serez prévenu de sa décision{kind==='illustration'&&!hasArt?' ; une illustration acceptée rapporte 1 booster':kind==='credit'?' ; une fois validé, votre nom apparaîtra dans les détails de la carte':''}.</p>
     :<form className="report-form" onSubmit={e=>void send(e)}>
@@ -47,8 +49,8 @@ export function CardFeedback({code,name,hasArt}:{code:string;name:string;hasArt:
       <button type="button" role="tab" aria-selected={kind==='info'} onClick={()=>setKind('info')}>Information erronée</button>
       <button type="button" role="tab" aria-selected={kind==='illustration'} onClick={()=>setKind('illustration')}>{hasArt?'Autre illustration':'Proposer une illustration'}</button>
       {hasArt&&<button type="button" role="tab" aria-selected={kind==='credit'} onClick={()=>setKind('credit')}>Demander un crédit</button>}
-      <button type="button" role="tab" aria-selected={kind==='ambiance'} onClick={()=>setKind('ambiance')}>Texte d’ambiance</button>
-      <button type="button" role="tab" aria-selected={kind==='signature'} onClick={()=>setKind('signature')}>Ma signature</button>
+      {nextSet&&<button type="button" role="tab" aria-selected={kind==='ambiance'} onClick={()=>setKind('ambiance')}>Texte d’ambiance</button>}
+      {nextSet&&<button type="button" role="tab" aria-selected={kind==='signature'} onClick={()=>setKind('signature')}>Ma signature</button>}
      </div>
      {kind==='signature'&&<p className="admin-hint">Réservé à la personne qui joue ce personnage : l’administrateur le vérifie. Envoyez votre signature sur fond transparent (PNG). Une fois validée, des exemplaires signés de cette carte pourront tomber dans les boosters.</p>}
      {(kind==='illustration'||kind==='signature')&&<label className="feedback-file"><ImagePlus size={16}/><span>{file?file.name:'Choisir une image (PNG, WebP, JPEG · 10 Mo max)'}</span><input type="file" accept="image/png,image/webp,image/jpeg" onChange={e=>setFile(e.target.files?.[0]??null)}/></label>}
