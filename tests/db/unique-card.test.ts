@@ -23,7 +23,7 @@ beforeAll(async()=>{
 
 describe('carte unique',()=>{
   it('ne compte pas dans les 7 raretés et n’est jamais tirée normalement',async()=>{
-    await useOdds(2,0);
+    await useOdds(3,0);
     const u=await createUser(db);await giveFree(u,6);
     for(let i=0;i<6;i++){
       const r=await rpc(db,u,'open_booster',[edition,randomUUID()]);
@@ -33,7 +33,7 @@ describe('carte unique',()=>{
     expect(e.c).toBe(true);
   });
   it('remplace la 5e carte quand elle sort, une seule fois dans tout le jeu',async()=>{
-    await useOdds(3,1); // 1 chance sur 1 : sortie garantie si encore disponible
+    await useOdds(4,1); // 1 chance sur 1 : sortie garantie si encore disponible
     const winner=await createUser(db);await giveFree(winner,1);
     const r=await rpc(db,winner,'open_booster',[edition,randomUUID()]);
     expect(r.cards[4]).toMatchObject({character_id:cain,unique:true,finish:'Standard',name:'Caïn'});
@@ -60,6 +60,6 @@ describe('carte unique',()=>{
     expect(entry).toEqual({known:false,edition_id:edition,code:'CAM-100',number:100,rarity:'Mythique',unique:true,silhouette_key:entry.silhouette_key});
   });
   it('fige la probabilité dans la version de règles',async()=>{
-    await expectError(db.query('update public.pack_rulesets set unique_odds=5 where version=3'),/immutable_ruleset/);
+    await expectError(db.query('update public.pack_rulesets set unique_odds=5 where version=4'),/immutable_ruleset/);
   });
 });

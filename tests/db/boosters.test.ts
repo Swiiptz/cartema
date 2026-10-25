@@ -57,7 +57,7 @@ describe('ouverture',()=>{
     const r=await rpc(db,u,'open_booster',[edition,randomUUID()]);
     expect(r.replayed).toBe(false);
     expect(r.pool).toBe('free');
-    expect(r.ruleset_version).toBe(1);
+    expect(r.ruleset_version).toBe(2); // version active : Très rares à 25 % (25/10)
     expect(r.cards).toHaveLength(5);
     expect(r.cards.map((c:any)=>c.position)).toEqual([1,2,3,4,5]);
     expect(['Rare','Très rare','Épique','Légendaire','Mythique']).toContain(r.cards[4].rarity);
@@ -140,6 +140,12 @@ describe('règles de tirage',()=>{
     expect(Object.keys(freq).every(k=>['Rare','Très rare','Épique','Légendaire','Mythique'].includes(k))).toBe(true);
     expect(freq['Rare']).toBeGreaterThan(0.53);expect(freq['Rare']).toBeLessThan(0.57);
     expect(freq['Très rare']).toBeGreaterThan(0.35);expect(freq['Très rare']).toBeLessThan(0.39);
+    // Version 2 (25/10) : Très rares moins fréquentes, Rare 67 %, Très rare 25 %.
+    const {rows:v2}=await db.query<{v:string;n:number}>(
+      `select v, count(*)::int n from (select private.pick_weighted(slots->4) v from public.pack_rulesets, generate_series(1,$1) where version=2 and active) x group by v`,[N]);
+    const f2=Object.fromEntries(v2.map(r=>[r.v,r.n/N]));
+    expect(f2['Rare']).toBeGreaterThan(0.65);expect(f2['Rare']).toBeLessThan(0.69);
+    expect(f2['Très rare']).toBeGreaterThan(0.23);expect(f2['Très rare']).toBeLessThan(0.27);
     const {rows:f}=await db.query<{n:number}>(
       `select count(*)::int n from (select private.pick_weighted(finishes) v from public.pack_rulesets, generate_series(1,$1) where version=1) x where v='Standard'`,[N]);
     expect(f[0].n/N).toBeGreaterThan(0.97);

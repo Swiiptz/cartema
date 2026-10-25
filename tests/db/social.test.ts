@@ -181,6 +181,20 @@ describe('limites quotidiennes',()=>{
     expect([st.trade_daily_limit,st.trades_today]).toEqual([2,2]);
     await setLimits(5,5);
   });
+  it('compte les propositions en attente : on ne propose pas plus d’échanges qu’il n’en reste (25/10)',async()=>{
+    await setLimits(2,0);
+    const a=await player();const b=await player();const c=await player();const d=await player();
+    await befriend(a,b);await befriend(a,c);await befriend(a,d);
+    const swap=async(x:{id:string},y:{id:string})=>(await rpc(db,x.id,'propose_trade',[y.id,[await give(x.id)],[],0,0,randomUUID(),null])).trade_id;
+    const t1=await swap(a,b);await swap(a,c);
+    await expectError(swap(a,d),/trade_daily_limit/);          // 2 propositions en attente
+    await rpc(db,b.id,'respond_trade',[t1,true]);              // 1 conclu + 1 en attente
+    await expectError(swap(a,d),/trade_daily_limit/);
+    // Les autres peuvent toujours lui proposer ; l'acceptation reste le contrôle qui fait foi.
+    const t4=await swap(d,a);
+    expect(t4).toBeTruthy();
+    await setLimits(5,5);
+  });
   it('plafonne les cadeaux envoyés et reçus par jour',async()=>{
     await setLimits(0,2);
     const a=await player();const b=await player();const c=await player();const d=await player();

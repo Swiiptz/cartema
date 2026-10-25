@@ -23,7 +23,7 @@ describe('historique du joueur',()=>{
     expect(all.items.map((x:any)=>x.type)).toEqual(['recycling','sale','opening','opening','shop']);
     const opening=all.items.find((x:any)=>x.type==='opening');
     expect(opening.cards).toHaveLength(5);
-    expect(opening).toMatchObject({pool:expect.any(String),ruleset:1});
+    expect(opening).toMatchObject({pool:expect.any(String),ruleset:2});
     expect(all.items.find((x:any)=>x.type==='sale')).toMatchObject({status:'sold',price:200,commission:10,other:'acheteur_h'});
     expect((await rpc(db,b,'get_history',['market',null,30])).items[0]).toMatchObject({type:'purchase',price:200,other:'historien'});
     expect((await rpc(db,s,'get_history',['boosters',null,30])).items.map((x:any)=>x.type)).toEqual(['opening','opening','shop']);
