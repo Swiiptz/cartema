@@ -153,10 +153,20 @@ describe('concours d’illustrations',()=>{
     expect(d1.finish).toBe('Dorée');
     const {rows:[ch]}=await db.query<{art_path:string;art_credit:string}>('select art_path,art_credit from public.characters where id=$1',[epic]);
     expect(ch).toEqual({art_path:'/illustrations/CAM/concours.webp',art_credit:'artiste_or'});
-    // Alternative pour la Rare : carte Sanglante avec la version de la ligne choisie.
+    // Alternative pour la Rare : carte en contour classique avec la version de la ligne choisie.
     await rpc(db,admin,'admin_decide_contest_entry',[er,'alternate','Ligne Concours',false,'/illustrations/CAM/concours-rare.webp',{},'Belle version']);
     const {rows:[inst]}=await db.query<{finish:string;label:string}>(`select i.finish,a.label from public.inventory_items i join public.card_arts a on a.id=i.art_id where i.owner_id=$1`,[q]);
-    expect(inst).toEqual({finish:'Sanglante',label:'Ligne Concours'});
+    expect(inst).toEqual({finish:'Standard',label:'Ligne Concours'});
+    // Exemplaire de l'artiste : ni vente, ni échange, ni don pendant 30 jours ; la mention reste ensuite.
+    const {rows:[gift]}=await db.query<{id:string}>(`select id from public.inventory_items where owner_id=$1 and art_id is not null`,[q]);
+    await expectError(rpc(db,q,'create_listing',[gift.id,500,randomUUID()]),/artist_copy/);
+    const copy=(await rpc<any[]>(db,q,'get_inventory',[rare])).find(x=>x.instance_id===gift.id);
+    expect(copy.artist_copy).toBe(true);
+    expect(new Date(copy.artist_until).getTime()).toBeGreaterThan(Date.now()+29*86400e3);
+    await db.query(`update public.inventory_items set artist_until=now()-interval '1 minute' where id=$1`,[gift.id]);
+    const freed=(await rpc<any[]>(db,q,'get_inventory',[rare])).find(x=>x.instance_id===gift.id);
+    expect(freed).toMatchObject({artist_copy:true,artist_until:null});
+    expect((await rpc(db,q,'create_listing',[gift.id,500,randomUUID()])).listing_id).toBeTruthy();
     // Galerie : dessins retenus visibles dès les choix faits, podium seulement après la distribution.
     const g0=(await rpc<any[]>(db,w,'get_contest_gallery')).find(x=>x.id===contest);
     expect(g0).toMatchObject({title:'Concours d’automne',final:false,podium:[]});

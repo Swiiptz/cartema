@@ -37,7 +37,9 @@ export type UnknownAlbumEntry={known:false;edition_id:string;code:string;number:
 export type AlbumEntry=KnownAlbumEntry|UnknownAlbumEntry;
 /** Carte d'album : rendu + informations de possession. */
 export type AlbumCard=DemoCard&{variants?:ArtVariant[];characterId?:string;editionId?:string;finishesSeen?:Finish[];owned?:number};
-export type InventoryItem={cooldown_until?:string|null;variant?:string|null;variant_kind?:string|null;instance_id:string;finish:Finish;locked:boolean;reserved:boolean;reserved_kind?:string|null;listing_id?:string|null;listing_price?:number|null;listing_kind?:'fixed'|'auction'|null;acquired_at:string;unique:boolean;value:number};
+export type InventoryItem={cooldown_until?:string|null;
+ /** Exemplaire de l'artiste (concours) : mention gardée ; lié (ni vente, ni échange, ni don) jusqu'à artist_until. */
+ artist_copy?:boolean;artist_until?:string|null;variant?:string|null;variant_kind?:string|null;instance_id:string;finish:Finish;locked:boolean;reserved:boolean;reserved_kind?:string|null;listing_id?:string|null;listing_price?:number|null;listing_kind?:'fixed'|'auction'|null;acquired_at:string;unique:boolean;value:number};
 export type ListingCard={variant?:string|null;art_credit?:string|null;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
 export type Listing={buyer_tax?:number;min_next_tax?:number;listing_id:string;price:number;net:number;status:'active'|'sold'|'cancelled'|'expired';kind:'fixed'|'auction';ends_at:string|null;current_bid:number|null;bid_count:number;min_next_bid:number;leading:boolean;won:boolean;created_at:string;closed_at:string|null;mine:boolean;seller:string|null;buyer:string|null;finish:Finish;discovered:boolean;card:ListingCard};
 export type SocialCard={instance_id:string|null;finish:Finish;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;art_credit?:string|null;variant?:string|null;
@@ -216,6 +218,7 @@ const messages:Record<string,string>={
  suggestion_limit:'Vous avez envoyé 5 doléances aujourd’hui. Revenez demain, après 6 h.',
  own_suggestion:'On ne vote pas pour sa propre idée.',
  card_cooldown:'Carte reçue récemment : elle ne peut pas être échangée, offerte ni vendue avant 72 h.',
+ artist_copy:'Exemplaire de l’artiste : il ne peut être ni vendu, ni échangé, ni offert pendant 30 jours après le concours.',
  card_returning:'Cette carte a appartenu à ce joueur il y a moins de 30 jours : elle ne peut pas encore lui revenir.',
  trade_daily_limit:'Limite d’échanges du jour atteinte (pour vous ou votre ami). Elle se renouvelle à 6 h.',
  gift_daily_limit:'Vous avez envoyé tous vos cadeaux du jour. La limite se renouvelle à 6 h.',

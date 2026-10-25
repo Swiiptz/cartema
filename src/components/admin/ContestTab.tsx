@@ -137,7 +137,8 @@ function ContestReview({contest,client,act,reason,ask,onChanged}:{contest:AdminC
  async function select(e:Entry,mode:'main'|'alternate'){
   let label:string|null=null;let half=false;
   if(mode==='alternate'){const v=await askAlternative(e);if(!v)return;label=v.label;half=v.half;}
-  const finish=['Commun','Peu commun','Rare','Très rare'].includes(e.rarity)?'Sanglante':e.rarity==='Épique'?'Dorée':'Standard';
+  // Officielle : finition selon la rareté ; alternative : contour classique (la version est déjà rare).
+  const finish=mode==='alternate'?'classique':['Commun','Peu commun','Rare','Très rare'].includes(e.rarity)?'Sanglante':e.rarity==='Épique'?'Dorée':'classique';
   const r=await reason(`${mode==='main'?`Faire du dessin de ${e.author} l’illustration officielle de ${e.name} (les exemplaires déjà possédés gardent l’ancienne)`:`Ajouter le dessin de ${e.author} en version « ${label} » de ${e.name}`}. ${e.author} reçoit la carte en ${finish} et ${half?'un demi-point':'1 point'}${e.rarity==='Mythique'?' (×4 sur une Mythique)':''}.`);
   if(r===null)return;setBusy(e.entry_id);
   await done(await act('Dessin retenu : carte offerte à son auteur.',async c=>{

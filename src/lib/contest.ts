@@ -13,7 +13,7 @@ export function defaultContestRules(edition:string,allowMythic=false,mythicMult=
    {title:'Les votes.',text:'Un vote par carte : choisissez votre dessin préféré, changez d’avis quand vous voulez. On ne vote pas pour son propre dessin.'},
    {title:'Les points.',text:'Pour chaque carte, l’auteur du dessin le plus voté gagne 1 point ; à égalité, celui qui a atteint ce nombre de votes en premier le garde. Si un autre dessin passe devant, le point change de main.'},
    {title:'Après la clôture.',text:'L’équipe choisit les dessins retenus (illustration officielle ou version alternative) : +1 point par dessin retenu, et +1 point de plus pour un vrai dessin soigné. Les votes guident ce choix sans le décider.'},
-   {title:'Dessin retenu.',text:`Son auteur reçoit la carte avec son illustration : en Sanglante jusqu’aux Très rares, en Dorée pour une Épique, en Standard pour une Légendaire${allowMythic?' ou une Mythique':''}.`},
+   {title:'Dessin retenu.',text:`Son auteur reçoit la carte avec son illustration. En illustration officielle : en Sanglante jusqu’aux Très rares, en Dorée pour une Épique, en Standard pour une Légendaire${allowMythic?' ou une Mythique':''}. En version alternative (pleine illustration) : en contour classique. C’est un exemplaire de l’artiste : ni vendu, ni échangé, ni offert pendant 30 jours.`},
   ],
   after:[
    {title:'Podium.',text:'Les 3 premiers gagnent le titre « Illustrateur de génie ». Le 1er crée une carte de son choix dans l’édition Éternelle (ETER) et en reçoit un exemplaire ; les cartes éternelles ne tombent que dans les God boosters et certains boosters.'},
