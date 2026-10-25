@@ -181,6 +181,28 @@ describe('concours d’illustrations',()=>{
   });
 });
 
+describe('versions alternatives retenues',()=>{
+  it('valent un point plein ou un demi-point, multiplicateur compris, arrondi au supérieur sur le total (25/10)',async()=>{
+    const id=await rpc<string>(db,admin,'admin_save_contest',[null,'Concours des versions',cam,new Date(Date.now()-3600e3).toISOString(),new Date(Date.now()+86400e3).toISOString(),null,'Versions']);
+    const rapide=await player('dessin_rapide'),soigne=await player('dessin_soigne');
+    const en=[await submit(rapide,await card('Commun')),await submit(rapide,await card('Peu commun')),await submit(rapide,await card('Rare'))];
+    const fini=await submit(soigne,await card('Très rare'));
+    const myth=await submit(soigne,await card('Mythique'));
+    await db.query(`update public.contests set ends_at=now()-interval '1 minute' where id=$1`,[id]);
+    const alt=(e:string,half:boolean|null)=>rpc(db,admin,'admin_decide_contest_entry',[e,'alternate','Ligne des versions',false,'/illustrations/CAM/version.webp',{},'Version retenue',half]);
+    for(const e of en)await alt(e,true);   // 3 demi-points = 1,5
+    await alt(fini,false);                 // point plein = 1
+    await alt(myth,true);                  // Mythique ×4, demi-point = 2
+    const {rows}=await db.query<{handle:string;points:string;selected:string}>('select handle,points,selected from private.contest_ranking($1)',[id]);
+    const pts=Object.fromEntries(rows.map(r=>[r.handle,Number(r.points)]));
+    expect(pts).toMatchObject({dessin_rapide:2,dessin_soigne:3}); // 1,5 arrondi à 2 ; 1 + 2
+    expect((await rpc<any[]>(db,admin,'admin_contest_entries',[id])).find(x=>x.entry_id===fini)).toMatchObject({selected:'alternate',half_point:false});
+    expect((await rpc<any[]>(db,admin,'admin_contest_entries',[id])).find(x=>x.entry_id===en[0])).toMatchObject({half_point:true});
+    // Sans précision (ancien site) : point plein, comme avant.
+    await db.query('delete from public.contests where id=$1',[id]);
+  });
+});
+
 describe('galerie',()=>{
   it('ne montre pas un concours encore ouvert',async()=>{
     const u=await player('visiteur_galerie');

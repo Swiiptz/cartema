@@ -1,5 +1,5 @@
 'use client';
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Check,Crown,Eye,EyeOff,Flag,Gift,Layers,Plus,Replace,Save,ScrollText,Trash2,X} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {Skeleton} from '@/components/ui';
@@ -13,7 +13,7 @@ type Act=(label:string,action:(c:SupabaseClient)=>Promise<unknown>)=>Promise<boo
 type Reason=(message:string,confirmLabel?:string)=>Promise<string|null>;
 type Ask=(o:AskOptions)=>Promise<string|null>;
 type AdminContest={id:string;title:string;edition_id:string;starts_at:string;ends_at:string;rewards:ContestRewards;rewarded_at:string|null;rules:string|null;open:boolean;entries:number;reports:number;allow_mythic?:boolean};
-type Entry={entry_id:string;character_id:string;code:string;name:string;rarity:string;prefix:string;number:number;author:string;image_path:string;created_at:string;votes:number;leading:boolean;hidden:boolean;hidden_reason:string|null;reports:string[];selected:'main'|'alternate'|null;line_label:string|null;real_drawing:boolean;granted:boolean};
+type Entry={entry_id:string;character_id:string;code:string;name:string;rarity:string;prefix:string;number:number;author:string;image_path:string;created_at:string;votes:number;leading:boolean;hidden:boolean;hidden_reason:string|null;reports:string[];selected:'main'|'alternate'|null;line_label:string|null;real_drawing:boolean;granted:boolean;half_point?:boolean};
 
 const DEFAULT_REWARDS:ContestRewards={places:[{from:1,to:1,deniers:3000,boosters:10},{from:2,to:2,deniers:2000,boosters:6},{from:3,to:3,deniers:1500,boosters:4},{from:4,to:10,deniers:500,boosters:2}],others:{deniers:200,boosters:1}};
 /** Date ISO → valeur d'un champ datetime-local (heure de l'appareil). */
@@ -129,18 +129,23 @@ function ContestReview({contest,client,act,reason,ask,onChanged}:{contest:AdminC
   if(r===null)return;setBusy(e.entry_id);
   await done(await act('Décision enregistrée.',c=>callRpc(c,'admin_decide_contest_entry',{p_entry_id:e.entry_id,p_selected:null,p_line_label:null,p_real_drawing:!e.real_drawing,p_art_path:null,p_art_meta:null,p_reason:r})));
  }
+ // Version alternative : ligne de versions (existante ou nouvelle) et point plein ou demi-point.
+ const [altFor,setAltFor]=useState<Entry|null>(null);
+ const altResolve=useRef<((v:{label:string;half:boolean}|null)=>void)|null>(null);
+ const askAlternative=(e:Entry)=>new Promise<{label:string;half:boolean}|null>(resolve=>{altResolve.current=resolve;setAltFor(e);});
+ const closeAlternative=(v:{label:string;half:boolean}|null)=>{const r=altResolve.current;altResolve.current=null;setAltFor(null);r?.(v);};
  async function select(e:Entry,mode:'main'|'alternate'){
-  let label:string|null=null;
-  if(mode==='alternate'){label=await ask({title:'Nom de la ligne de versions',message:`Les versions de même nom forment une ligne (chance de tirage réglable dans Économie).`,inputLabel:'Nom de la version',confirmLabel:'Continuer'});if(label===null)return;}
+  let label:string|null=null;let half=false;
+  if(mode==='alternate'){const v=await askAlternative(e);if(!v)return;label=v.label;half=v.half;}
   const finish=['Commun','Peu commun','Rare','Très rare'].includes(e.rarity)?'Sanglante':e.rarity==='Épique'?'Dorée':'Standard';
-  const r=await reason(`${mode==='main'?`Faire du dessin de ${e.author} l’illustration officielle de ${e.name} (les exemplaires déjà possédés gardent l’ancienne)`:`Ajouter le dessin de ${e.author} en version « ${label} » de ${e.name}`}. ${e.author} reçoit la carte en ${finish} et 1 point.`);
+  const r=await reason(`${mode==='main'?`Faire du dessin de ${e.author} l’illustration officielle de ${e.name} (les exemplaires déjà possédés gardent l’ancienne)`:`Ajouter le dessin de ${e.author} en version « ${label} » de ${e.name}`}. ${e.author} reçoit la carte en ${finish} et ${half?'un demi-point':'1 point'}${e.rarity==='Mythique'?' (×4 sur une Mythique)':''}.`);
   if(r===null)return;setBusy(e.entry_id);
   await done(await act('Dessin retenu : carte offerte à son auteur.',async c=>{
    const url=contestImageUrl(e.image_path);if(!url)throw new Error('Image introuvable.');
    const blob=await (await fetch(url)).blob();
    const file=new File([blob],`${e.code}-concours.webp`,{type:blob.type||'image/webp'});
    const {path,meta}=await uploadIllustration(c,file,{prefix:e.prefix,number:e.number});
-   await callRpc(c,'admin_decide_contest_entry',{p_entry_id:e.entry_id,p_selected:mode,p_line_label:label,p_real_drawing:e.real_drawing,p_art_path:path,p_art_meta:{...meta,layout:mode==='alternate'?'fullart':meta.layout},p_reason:r});
+   await callRpc(c,'admin_decide_contest_entry',{p_entry_id:e.entry_id,p_selected:mode,p_line_label:label,p_real_drawing:e.real_drawing,p_art_path:path,p_art_meta:{...meta,layout:mode==='alternate'?'fullart':meta.layout},p_reason:r,p_half:mode==='alternate'?half:null});
   }));
  }
  async function distribute(){
@@ -149,6 +154,7 @@ function ContestReview({contest,client,act,reason,ask,onChanged}:{contest:AdminC
   await done(await act('Récompenses distribuées.',c=>callRpc(c,'admin_reward_contest',{p_contest_id:contest.id,p_reason:r})));
  }
  return <>
+  {altFor&&<AlternativeDialog client={client} entry={altFor} onClose={closeAlternative}/>}
   <section className="panel admin-edition contest-summary">
    <div className="section-header"><div><span className="eyebrow">{contest.open?'Ouvert':closed?(contest.rewarded_at?'Terminé · récompenses distribuées':'Terminé · à valider'):'À venir'} · {when(contest.starts_at)} → {when(contest.ends_at)}</span><h2>{contest.title}</h2></div></div>
    <p className="admin-hint">{contest.entries} dessin{contest.entries>1?'s':''} · {contest.reports} signalement{contest.reports>1?'s':''} en attente.{closed?' Retenez les dessins (principale ou alternative), cochez les vrais dessins, puis distribuez.':' La validation s’ouvre après la clôture ; vous pouvez déjà masquer un dessin.'}</p>
@@ -159,7 +165,7 @@ function ContestReview({contest,client,act,reason,ask,onChanged}:{contest:AdminC
    <ul className="contest-entries">{list.map(e=><li key={e.entry_id} className={`${e.leading?'leading':''} ${e.hidden?'off':''}`}>
     <a className="contest-entry-img" href={contestImageUrl(e.image_path)} target="_blank" rel="noreferrer"><img src={contestImageUrl(e.image_path)} alt={`Dessin de ${e.author}`} loading="lazy"/></a>
     <div className="contest-entry-info">
-     <span className="contest-entry-author">{e.leading&&<Crown size={13}/>} {e.author}{e.selected&&<small className="selected-pill"><Check size={11}/> {e.selected==='main'?'officielle':e.line_label??'alternative'}</small>}</span>
+     <span className="contest-entry-author">{e.leading&&<Crown size={13}/>} {e.author}{e.selected&&<small className="selected-pill"><Check size={11}/> {e.selected==='main'?'officielle':`${e.line_label??'alternative'}${e.half_point?' · ½ point':''}`}</small>}</span>
      <span className="contest-entry-votes">{e.votes} vote{e.votes>1?'s':''}{e.hidden?` · masqué${e.hidden_reason?` (${e.hidden_reason})`:''}`:''}</span>
      {e.reports.length>0&&<span className="contest-reports"><Flag size={11}/> {e.reports.join(' · ')}</span>}
      <span className="contest-entry-actions">
@@ -181,4 +187,32 @@ function ContestReview({contest,client,act,reason,ask,onChanged}:{contest:AdminC
    <div className="admin-actions"><button className="primary" disabled={!!busy||!!contest.rewarded_at||!ranking?.length} onClick={()=>void distribute()}><Gift size={15}/> {contest.rewarded_at?'Récompenses distribuées':'Distribuer les récompenses'}</button></div>
   </section>}
  </>;
+}
+
+/** Choix d'une version alternative : ligne de versions existante ou nouvelle, point plein ou demi-point. */
+function AlternativeDialog({client,entry,onClose}:{client:SupabaseClient;entry:Entry;onClose:(v:{label:string;half:boolean}|null)=>void}){
+ const ref=useRef<HTMLDialogElement>(null);
+ const [lines,setLines]=useState<string[]|null>(null);
+ const [line,setLine]=useState('');
+ const [fresh,setFresh]=useState('');
+ const [half,setHalf]=useState(true);
+ useEffect(()=>{ref.current?.showModal();
+  void callRpc<{lines:{label:string;legacy?:boolean}[]}>(client,'admin_art_lines').then(d=>{const l=d.lines.filter(x=>!x.legacy).map(x=>x.label);setLines(l);setLine(l[0]??'__new');}).catch(()=>{setLines([]);setLine('__new');});
+ },[client]);
+ const label=line==='__new'?fresh.trim():line;
+ return <dialog ref={ref} className="ask-dialog" aria-label="Version alternative" onCancel={e=>{e.preventDefault();onClose(null);}} onClick={e=>{if(e.target===e.currentTarget)onClose(null);}}>
+  <form className="ask-dialog-body" onSubmit={e=>{e.preventDefault();if(label)onClose({label,half});}}>
+   <h2>Version alternative</h2>
+   <p className="muted">Dessin de {entry.author} pour {entry.name}. Les versions de même nom forment une ligne (chance de tirage réglable dans Économie).</p>
+   <label className="auth-field"><span>Ligne de versions</span><select value={line} disabled={!lines} onChange={e=>setLine(e.target.value)}>
+    {(lines??[]).map(l=><option key={l} value={l}>{l}</option>)}<option value="__new">Nouvelle ligne…</option></select></label>
+   {line==='__new'&&<label className="auth-field"><span>Nom de la nouvelle ligne</span><input autoFocus value={fresh} maxLength={60} onChange={e=>setFresh(e.target.value)} placeholder="Version du concours"/></label>}
+   <fieldset className="contest-points-choice"><legend>Points pour {entry.author}</legend>
+    <label><input type="radio" name="alt-points" checked={half} onChange={()=>setHalf(true)}/> Demi-point <small>(par défaut)</small></label>
+    <label><input type="radio" name="alt-points" checked={!half} onChange={()=>setHalf(false)}/> Point plein <small>(beau dessin soigné)</small></label>
+    <small className="muted">Multiplicateur de la carte compris ; le total de chaque joueur est arrondi au supérieur.</small>
+   </fieldset>
+   <div className="ask-dialog-actions"><button type="button" className="primary ghost" onClick={()=>onClose(null)}>Annuler</button><button type="submit" className="primary" disabled={!label}>Continuer</button></div>
+  </form>
+ </dialog>;
 }

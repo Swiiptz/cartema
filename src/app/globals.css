@@ -1376,3 +1376,5 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 @media(max-width:560px){.dash-chips{justify-content:flex-start}}
 /* Concours : pastille ×3 des Mythiques (25/10). */
 .prio-badge.mythic{background:linear-gradient(135deg,#ff7a5c,#b0123a);box-shadow:0 2px 8px #b0123a66}
+/* Admin › Concours : choix des points d'une version alternative (25/10). */
+.contest-points-choice{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0}.contest-points-choice legend{padding:0 6px;color:var(--gold2);font-size:13px}.contest-points-choice label{display:flex;align-items:center;gap:8px;cursor:pointer}.contest-points-choice input{accent-color:var(--gold)}.contest-points-choice small{color:var(--muted)}
