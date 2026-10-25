@@ -141,5 +141,11 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
  </section>;
 }
 
-/** « à 14 h 05 » aujourd'hui, sinon « demain à 14 h 05 ». */
-function until(iso:string){const d=new Date(iso);const t=d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});return d.toDateString()===new Date().toDateString()?`à ${t}`:`demain à ${t}`;}
+/** « à 14 h 05 » aujourd'hui, « demain à 14 h 05 », sinon « lundi 27 octobre à 14 h 05 » (le délai dure 72 h). */
+function until(iso:string){
+ const d=new Date(iso);const t=d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+ const day=(k:number)=>{const x=new Date();x.setDate(x.getDate()+k);return x.toDateString();};
+ if(d.toDateString()===day(0))return `à ${t}`;
+ if(d.toDateString()===day(1))return `demain à ${t}`;
+ return `le ${d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à ${t}`;
+}

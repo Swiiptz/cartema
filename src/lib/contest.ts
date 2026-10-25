@@ -3,7 +3,7 @@
 export type RuleItem={title:string;text:string};
 
 /** Règles par défaut, hors dates et récompenses (calculées à part). `before` précède les récompenses, `after` les suit. */
-export function defaultContestRules(edition:string,allowMythic=false,mythicMult=3):{before:RuleItem[];after:RuleItem[]}{
+export function defaultContestRules(edition:string,allowMythic=false,mythicMult=4):{before:RuleItem[];after:RuleItem[]}{
  return {
   before:[
    {title:'Les cartes.',text:`Toutes les cartes de l’édition ${edition}, ${allowMythic?'Mythiques comprises (sauf la carte unique)':'sauf les Mythiques'}. Une carte que vous n’avez pas découverte apparaît neutre (nom et clan seulement) : vous pouvez quand même la dessiner.`},

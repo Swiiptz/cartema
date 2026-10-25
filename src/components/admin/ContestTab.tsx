@@ -72,7 +72,7 @@ function ContestForm({contest,catalog,act,reason,onDone}:{contest:AdminContest|n
     <label className="auth-field"><span>Début</span><input type="datetime-local" value={start} onChange={e=>setStart(e.target.value)}/></label>
     <label className="auth-field"><span>Fin</span><input type="datetime-local" value={end} onChange={e=>setEnd(e.target.value)}/></label>
    </div>
-   <label className="contest-check"><input type="checkbox" checked={allowMythic} onChange={e=>setAllowMythic(e.target.checked)}/> <span>Mythiques admises <small>(points ×3, le dessin doit faire mythique ; jamais la carte unique ; un dessin retenu offre la carte en Standard)</small></span></label>
+   <label className="contest-check"><input type="checkbox" checked={allowMythic} onChange={e=>setAllowMythic(e.target.checked)}/> <span>Mythiques admises <small>(points ×4, le dessin doit faire mythique ; jamais la carte unique ; un dessin retenu offre la carte en Standard)</small></span></label>
    {badDates&&<p className="contest-error">La fin doit venir après le début.</p>}
   </fieldset>
   <fieldset className="contest-fieldset">

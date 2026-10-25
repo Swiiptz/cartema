@@ -71,11 +71,11 @@ export default function Concours(){
     <select aria-label="Filtrer" value={filter} onChange={e=>setFilter(e.target.value as Filter)}><option value="all">Toutes les cartes</option><option value="priority">À privilégier</option><option value="entries">Avec des dessins</option><option value="empty">Sans dessin</option><option value="mine">Mes propositions</option></select>
    </div>
    <p className="market-count muted">{cards.length} carte{cards.length>1?'s':''} {contest.allow_mythic?' · Mythiques comprises':' · les Mythiques ne sont pas au concours'} · <Link className="text-link" href="/concours/galerie/"><Images size={12}/> Galerie des concours</Link></p>
-   {prioCount>0&&<button className={`prio-banner ${filter==='priority'?'on':''}`} onClick={()=>setFilter(filter==='priority'?'all':'priority')}><Flame size={16}/><span><strong>{prioCount} carte{prioCount>1?'s':''} à privilégier · points ×{mult}{contest.allow_mythic?` ou ×${contest.mythic_multiplier??3}`:''}</strong><small>Sans illustration ou illustration IA : le dessin en tête et le dessin retenu y valent {mult} points{contest.allow_mythic?<>. Mythiques : {contest.mythic_multiplier??3} points, et le dessin doit faire mythique</>:null}.</small></span><b>{filter==='priority'?'Toutes les cartes':'Les voir'}</b></button>}
+   {prioCount>0&&<button className={`prio-banner ${filter==='priority'?'on':''}`} onClick={()=>setFilter(filter==='priority'?'all':'priority')}><Flame size={16}/><span><strong>{prioCount} carte{prioCount>1?'s':''} à privilégier · points ×{mult}{contest.allow_mythic?` ou ×${contest.mythic_multiplier??4}`:''}</strong><small>Sans illustration ou illustration IA : le dessin en tête et le dessin retenu y valent {mult} points{contest.allow_mythic?<>. Mythiques : {contest.mythic_multiplier??4} points, et le dessin doit faire mythique</>:null}.</small></span><b>{filter==='priority'?'Toutes les cartes':'Les voir'}</b></button>}
    <div className="card-grid contest-grid">{cards.map((c,i)=><button key={c.character_id} className="contest-card rise" style={{'--i':Math.min(i,12)} as React.CSSProperties} onClick={()=>setOpen(c)} aria-label={`${c.code} ${c.name} : ${c.entries} dessin${c.entries>1?'s':''}`}>
     <ContestCardFace c={c}/>
     <span className="contest-meta"><strong>{c.entries}</strong> dessin{c.entries>1?'s':''}{c.leader&&<small><Crown size={11}/> {c.leader}</small>}</span>
-    {c.priority&&<span className={`prio-badge ${c.rarity==='Mythique'?'mythic':''}`} title={c.rarity==='Mythique'?`Mythique : points ×${c.multiplier??3}, le dessin doit faire mythique`:`Carte à privilégier : points ×${c.multiplier??mult}`}><Flame size={11}/>×{c.multiplier??mult}</span>}
+    {c.priority&&<span className={`prio-badge ${c.rarity==='Mythique'?'mythic':''}`} title={c.rarity==='Mythique'?`Mythique : points ×${c.multiplier??4}, le dessin doit faire mythique`:`Carte à privilégier : points ×${c.multiplier??mult}`}><Flame size={11}/>×{c.multiplier??mult}</span>}
     {(c.mine||c.voted)&&<span className="contest-flags">{c.mine&&<i title="Votre dessin"><Brush size={11}/></i>}{c.voted&&<i title="Vous avez voté"><Heart size={11}/></i>}</span>}
    </button>)}</div>
   </>}
@@ -169,13 +169,13 @@ function CardEntries({card,contest,client,canSubmit,ask,onChanged,onError}:{card
 function Rules({contest}:{contest:Contest}){
  const places=contest.rewards.places;
  const rule=(r:RuleItem,k:number)=><li key={k}>{r.title&&<strong>{r.title}</strong>} {r.text}</li>;
- const defaults=defaultContestRules(contest.edition,!!contest.allow_mythic,contest.mythic_multiplier??3);
+ const defaults=defaultContestRules(contest.edition,!!contest.allow_mythic,contest.mythic_multiplier??4);
  return <section className="social-section contest-rules">
   <h2>Règles du concours</h2>
   <ol>
    <li><strong>Dates.</strong> Du {dateFr(contest.starts_at)} au {dateFr(contest.ends_at)}. Après la fin, plus de dessins ni de votes.</li>
    <li><strong>Cartes à privilégier ×{contest.priority_multiplier??2}.</strong> Les cartes sans illustration, ou dont l’illustration a été générée par IA, portent la pastille « ×{contest.priority_multiplier??2} » : être en tête des votes ou voir son dessin retenu y rapporte {contest.priority_multiplier??2} points au lieu de 1. Ce sont les cartes qui ont le plus besoin de vos crayons !</li>
-   {contest.rules&&contest.allow_mythic&&<li><strong>Mythiques ×{contest.mythic_multiplier??3}.</strong> Elles sont au concours (jamais la carte unique) : être en tête des votes ou voir son dessin retenu y rapporte {contest.mythic_multiplier??3} points. Le dessin doit être à la hauteur de leur rang : il doit faire mythique. La carte est alors offerte en Standard.</li>}
+   {contest.rules&&contest.allow_mythic&&<li><strong>Mythiques ×{contest.mythic_multiplier??4}.</strong> Elles sont au concours (jamais la carte unique) : être en tête des votes ou voir son dessin retenu y rapporte {contest.mythic_multiplier??4} points. Le dessin doit être à la hauteur de leur rang : il doit faire mythique. La carte est alors offerte en Standard.</li>}
    {contest.rules
     ?parseContestRules(contest.rules).map((x,k)=>x.kind==='rule'?rule(x.item,k):<li key={k} className="plain">{x.text}</li>)
     :defaults.before.map(rule)}

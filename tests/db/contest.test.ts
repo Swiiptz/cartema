@@ -115,27 +115,30 @@ describe('concours d’illustrations',()=>{
     expect(await isPrio()).toBe(true);
     expect((await rpc(db,admin,'admin_catalog')).characters.find((x:any)=>x.id===c)).toMatchObject({art_ai:false,art_path:null});
   });
-  it('Mythiques : admises par défaut, points ×3 sans cumul avec le ×2, signalées sur la page (25/10)',async()=>{
+  it('Mythiques : admises par défaut, points ×4 sans cumul avec le ×2, signalées sur la page (25/10)',async()=>{
     // Un nouveau concours admet les Mythiques sans qu'on le précise.
     const later=await rpc<string>(db,admin,'admin_save_contest',[null,'Concours lointain',cam,new Date(Date.now()+60*86400e3).toISOString(),new Date(Date.now()+62*86400e3).toISOString(),null,'Plus tard']);
-    expect((await rpc<any[]>(db,admin,'admin_contests')).find(x=>x.id===later)).toMatchObject({allow_mythic:true,mythic_multiplier:3});
+    expect((await rpc<any[]>(db,admin,'admin_contests')).find(x=>x.id===later)).toMatchObject({allow_mythic:true,mythic_multiplier:4});
     await db.query('delete from public.contests where id=$1',[later]);
     const c0=await rpc(db,admin,'get_contest');
     await rpc(db,admin,'admin_save_contest',[contest,c0.title,cam,c0.starts_at,c0.ends_at,null,'Mythiques',null,true]);
     const a=await player('peintre_mythe'),v=await player('votant_mythe');
     const myth=await card('Mythique');
     const info=async()=>(await rpc(db,v,'get_contest')).cards.find((x:any)=>x.character_id===myth);
-    expect(await info()).toMatchObject({priority:true,multiplier:3});
-    expect((await rpc(db,v,'get_contest')).mythic_multiplier).toBe(3);
+    expect(await info()).toMatchObject({priority:true,multiplier:4});
+    expect((await rpc(db,v,'get_contest')).mythic_multiplier).toBe(4);
     const e=await submit(a,myth);await vote(v,e);
-    expect((await board()).peintre_mythe).toBe(3); // en tête d'une Mythique : 3 points
-    // Sans illustration, une Mythique reste ×3 (pas ×6).
+    expect((await board()).peintre_mythe).toBe(4); // en tête d'une Mythique : 4 points
+    // Sans illustration, une Mythique reste ×4 (pas ×8).
     await db.query(`update public.characters set art_path=null where id=$1`,[myth]);
-    expect(await info()).toMatchObject({multiplier:3});
-    expect((await board()).peintre_mythe).toBe(3);
+    expect(await info()).toMatchObject({multiplier:4});
+    expect((await board()).peintre_mythe).toBe(4);
     await db.query(`update public.characters set art_path='/illustrations/test.webp' where id=$1`,[myth]);
     // Les cartes ordinaires gardent leur multiplicateur.
     expect((await rpc(db,v,'get_contest')).cards.find((x:any)=>x.rarity==='Rare')).toMatchObject({multiplier:1});
+    // Dessin masqué : il ne fausse pas le podium du test de clôture.
+    await rpc(db,admin,'admin_hide_contest_entry',[e,true,'Fin du test']);
+    expect((await board()).peintre_mythe).toBeUndefined();
   });
   it('après la clôture : validation, carte offerte, points et récompenses une seule fois',async()=>{
     const p=await player('artiste_or'),q=await player('artiste_argent'),w=await player('jury_public');
