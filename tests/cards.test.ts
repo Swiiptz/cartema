@@ -83,3 +83,17 @@ describe('pleine illustration',()=>{
   }
  });
 });
+
+describe('carte signée',()=>{
+ const card=['CAM-042','Isabeau de Marnay','Tremere','Ancienne','Légendaire',1,''];
+ it.each(['portrait','fullart'])('pose la signature sur l’illustration (cadrage %s), avec son liseré',layout=>{
+  const html=renderCard(card,'signed-check','/illustrations/existante.webp',layout,false,0,undefined,false,'/illustrations/CAM/signatures/sig.webp');
+  expect(html).toContain('class="card-signature"');
+  expect(html).toContain('href="/illustrations/CAM/signatures/sig.webp"');
+  expect(html).toContain('filter="url(#signature-ink');
+ });
+ it('ne signe jamais une carte inconnue ni une carte sans signature',()=>{
+  expect(renderCard([...card.slice(0,5),0,''],'veiled-sign',undefined,'portrait',false,0,undefined,false,'/illustrations/CAM/signatures/sig.webp')).not.toContain('card-signature');
+  expect(renderCard(card,'plain','/illustrations/existante.webp')).not.toContain('card-signature');
+ });
+});

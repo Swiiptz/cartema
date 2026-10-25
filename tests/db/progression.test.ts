@@ -272,6 +272,20 @@ describe('séries de succès à paliers',()=>{
 });
 
 describe('missions longues et bonus',()=>{
+  it('ne tire jamais deux missions du même objectif le même jour, même après un remplacement (25/10)',async()=>{
+    await db.query(`update public.mission_templates set active = code in ('d_discover_1','d_discover_2','d_open_1','d_open_2','d_rare_1','d_recycle_3') or kind='weekly'`);
+    const metrics=async(u:string)=>(await db.query<{m:string}>(`select t.metric m from public.mission_assignments a join public.mission_templates t on t.code=a.template_code
+      where a.owner_id=$1 and a.kind='daily' and a.replaced_at is null`,[u])).rows.map(r=>r.m);
+    for(let i=0;i<12;i++){
+      const u=await player(`objectif_${i}`);
+      const m=await rpc(db,u,'get_missions');
+      let ms=await metrics(u);
+      expect(ms).toHaveLength(3);expect(new Set(ms).size).toBe(3);
+      await rpc(db,u,'replace_mission',[m.daily[0].assignment_id]);
+      ms=await metrics(u);
+      expect(ms).toHaveLength(3);expect(new Set(ms).size).toBe(3);
+    }
+  });
   it('garde « Venir 5 jours » dans les hebdomadaires, sans remplacement possible',async()=>{
     await db.query(`update public.mission_templates set active = fixed or code like 'w\_%days%' or code in ('w_open_25','w_rare_15') or kind='daily'`);
     const u=await player('assidu');

@@ -12,6 +12,7 @@ import {EconomyTab} from '@/components/admin/EconomyTab';
 import {PlayerCards,ReportsTab} from '@/components/admin/ModerationTabs';
 import {CardArtsPanel,ContributionsTab} from '@/components/admin/ContributionsTab';
 import {IdeasTab} from '@/components/admin/IdeasTab';
+import {SeasonsTab} from '@/components/admin/SeasonsTab';
 import {EventContent} from '@/components/admin/EventContent';
 import {MonitorTab} from '@/components/admin/MonitorTab';
 import {EditionShop} from '@/components/admin/EditionShop';
@@ -21,7 +22,7 @@ import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc,silhouetteIndex} from '@/lib/game';
 import {ACCEPTED_TYPES,ENGRAVED_CLANS,matchIllustrations,nextNumber,uploadIllustration,type AdminCatalog,type AdminCharacter,type AdminEdition,type CharacterStatus,type IllustrationMeta} from '@/lib/admin';
 
-type Tab='characters'|'editions'|'clans'|'achievements'|'players'|'events'|'stats'|'economy'|'reports'|'contributions'|'contest'|'monitor'|'ideas';
+type Tab='characters'|'editions'|'clans'|'achievements'|'players'|'events'|'stats'|'economy'|'reports'|'contributions'|'contest'|'monitor'|'ideas'|'seasons';
 const STATUS_LABEL:Record<CharacterStatus,string>={draft:'Brouillon',published:'Publiée',archived:'Archivée'};
 // jsonb ne conserve pas l'ordre des clés : comparaison indépendante de l'ordre.
 const canonical=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
@@ -67,9 +68,9 @@ export default function Admin(){
 
  return <AskContext.Provider value={ask}><div className="page admin-page">{askNode}
   <header className="admin-heading"><div><span className="eyebrow">Back-office</span><h1>Le cabinet de l’archiviste</h1></div><p className="muted">Chaque modification est enregistrée dans le journal d’administration.</p></header>
-  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['economy','Économie'],['players','Joueurs'],['contributions','Contributions'],['ideas','Doléances'],['contest','Concours'],['reports','Signalements'],['monitor','Surveillance'],['stats','Statistiques']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
+  <nav className="admin-tabs" aria-label="Sections du back-office">{([['characters','Personnages'],['editions','Éditions'],['clans','Clans'],['achievements','Succès'],['events','Événements'],['economy','Économie'],['players','Joueurs'],['contributions','Contributions'],['ideas','Doléances'],['contest','Concours'],['seasons','Saisons'],['reports','Signalements'],['monitor','Surveillance'],['stats','Statistiques']] as const).map(([k,l])=><button key={k} className={tab===k?'on':''} aria-pressed={tab===k} onClick={()=>setTab(k)}>{l}</button>)}</nav>
   <div className="admin-toast" aria-live="polite">{error&&<p className="auth-error" role="alert">{error}<button className="icon-button" aria-label="Fermer" onClick={()=>setError(null)}><X size={16}/></button></p>}{notice&&<p className="auth-notice">{notice}<button className="icon-button" aria-label="Fermer" onClick={()=>setNotice(null)}><X size={16}/></button></p>}</div>
-  <div key={tab} className="tab-panel">{!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!} characters={catalog.characters}/>:tab==='stats'?<StatsTab client={client!}/>:tab==='economy'?<EconomyHost act={act} client={client!}/>:tab==='reports'?<ReportsHost act={act} client={client!}/>:tab==='monitor'?<MonitorTab client={client!} onOpenPlayer={id=>{setFocusPlayer(id);setTab('players');}}/>:tab==='contributions'?<ContributionsHost act={act} client={client!} catalog={catalog}/>:tab==='contest'?<ContestHost act={act} client={client!} catalog={catalog}/>:tab==='ideas'?<IdeasHost act={act} client={client!}/>:<PlayersTab act={act} client={client!} characters={catalog.characters} focus={focusPlayer}/>}</div>
+  <div key={tab} className="tab-panel">{!catalog?<div className="admin-card-list">{Array.from({length:6},(_,i)=><Skeleton key={i} style={{height:84}}/>)}</div>:tab==='characters'?<CharactersTab catalog={catalog} act={act} client={client!} onError={setError}/>:tab==='editions'?<EditionsTab catalog={catalog} act={act}/>:tab==='clans'?<ClansTab catalog={catalog} act={act}/>:tab==='achievements'?<AchievementsTab catalog={catalog} act={act} client={client!}/>:tab==='events'?<EventsTab act={act} client={client!} characters={catalog.characters}/>:tab==='stats'?<StatsTab client={client!}/>:tab==='economy'?<EconomyHost act={act} client={client!}/>:tab==='reports'?<ReportsHost act={act} client={client!}/>:tab==='monitor'?<MonitorTab client={client!} onOpenPlayer={id=>{setFocusPlayer(id);setTab('players');}}/>:tab==='contributions'?<ContributionsHost act={act} client={client!} catalog={catalog}/>:tab==='contest'?<ContestHost act={act} client={client!} catalog={catalog}/>:tab==='ideas'?<IdeasHost act={act} client={client!}/>:tab==='seasons'?<SeasonsHost act={act} client={client!}/>:<PlayersTab act={act} client={client!} characters={catalog.characters} focus={focusPlayer}/>}</div>
  </div></AskContext.Provider>;
 }
 
@@ -314,11 +315,19 @@ function EditionCard({edition:e,catalog,act}:{edition:AdminEdition;catalog:Admin
 function ClansTab({catalog,act}:{catalog:AdminCatalog;act:Act}){
  const [name,setName]=useState('');
  const missing=ENGRAVED_CLANS.filter(n=>!catalog.clans.some(c=>c.name===n));
- const create=(n:string)=>act(`Clan « ${n} » ajouté.`,c=>callRpc(c,'admin_save_clan',{p_id:null,p_name:n,p_symbol_key:null}));
  const ask=useContext(AskContext);
+ // Lignée du clan : succès « Lignée <clan> » et titre porté par ceux qui ont tous ses membres.
+ const lineage=async(id:string,name:string,current?:string|null)=>{
+  const title=await ask({title:`Lignée ${name}`,message:'Titre porté tant qu’un joueur possède tous les membres du clan (il se perd sinon).',inputLabel:'Titre de la lignée',initialValue:current??'',confirmLabel:'Enregistrer'});
+  if(title&&title.trim())await act(`Lignée « ${name} » enregistrée.`,c=>callRpc(c,'admin_set_clan_lineage',{p_clan_id:id,p_title:title.trim(),p_reason:'Lignée de clan'}));
+ };
+ const create=async(n:string)=>{let id:string|null=null;
+  const ok=await act(`Clan « ${n} » ajouté.`,async c=>{id=await callRpc<string>(c,'admin_save_clan',{p_id:null,p_name:n,p_symbol_key:null});});
+  if(ok&&id)await lineage(id,n);
+  return ok;};
  const rename=async(id:string,old:string)=>{const n=await ask({title:'Renommer le clan',inputLabel:'Nouveau nom',initialValue:old,confirmLabel:'Renommer'});if(n&&n.trim()&&n.trim()!==old)void act('Clan renommé.',c=>callRpc(c,'admin_save_clan',{p_id:id,p_name:n.trim(),p_symbol_key:null}));};
  return <div className="admin-clans">
-  <ul className="panel admin-clan-list">{catalog.clans.map(c=><li key={c.id}><span>{c.name}</span><span className="admin-hint">{ENGRAVED_CLANS.includes(c.name)?'Symbole gravé':'Médaillon mystérieux (symbole à fournir)'}</span><button className="text-link" onClick={()=>void rename(c.id,c.name)}>Renommer</button></li>)}{!catalog.clans.length&&<li className="muted">Aucun clan pour l’instant.</li>}</ul>
+  <ul className="panel admin-clan-list">{catalog.clans.map(c=><li key={c.id}><span>{c.name}</span><span className="admin-hint">{ENGRAVED_CLANS.includes(c.name)?'Symbole gravé':'Médaillon mystérieux (symbole à fournir)'}</span><span className="admin-hint">{c.lineage_title?<>Lignée : « {c.lineage_title} »</>:'Pas de lignée'}</span><button className="text-link" onClick={()=>void lineage(c.id,c.name,c.lineage_title)}>{c.lineage_title?'Titre de lignée':'Créer la lignée'}</button><button className="text-link" onClick={()=>void rename(c.id,c.name)}>Renommer</button></li>)}{!catalog.clans.length&&<li className="muted">Aucun clan pour l’instant.</li>}</ul>
   <form className="panel admin-create" onSubmit={e=>{e.preventDefault();void create(name.trim()).then(ok=>{if(ok)setName('');});}}>
    <span className="eyebrow">Nouveau clan ou lignée</span>
    <label className="auth-field"><span>Nom</span><input value={name} onChange={e=>setName(e.target.value)} required maxLength={40}/></label>
@@ -551,6 +560,11 @@ function ReportsHost({act,client}:{act:Act;client:SupabaseClient}){
 function ContestHost({act,client,catalog}:{act:Act;client:SupabaseClient;catalog:AdminCatalog}){
  const reason=useReason();const ask=useContext(AskContext);
  return <ContestTab act={act} client={client} reason={reason} ask={ask} catalog={catalog}/>;
+}
+
+function SeasonsHost({act,client}:{act:Act;client:SupabaseClient}){
+ const reason=useReason();
+ return <SeasonsTab act={act} client={client} reason={reason}/>;
 }
 
 function IdeasHost({act,client}:{act:Act;client:SupabaseClient}){

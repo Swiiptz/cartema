@@ -10,7 +10,7 @@ import type {Rarity} from '@/lib/draw';
 
 type Act=(label:string,action:(c:SupabaseClient)=>Promise<unknown>)=>Promise<boolean>;
 type Reason=(message:string,confirmLabel?:string)=>Promise<string|null>;
-type Submission={credit_name:string|null;art_credit:string|null;id:string;kind:'info'|'illustration'|'credit';status:'pending'|'accepted'|'rejected';message:string;image_path:string|null;created_at:string;decided_at:string|null;admin_note:string|null;
+type Submission={credit_name:string|null;art_credit:string|null;id:string;kind:'info'|'illustration'|'credit'|'ambiance'|'signature';status:'pending'|'accepted'|'rejected';message:string;image_path:string|null;created_at:string;decided_at:string|null;admin_note:string|null;
  reward_deniers:number;reward_boosters:number;author:string|null;character_id:string;name:string;number:number;prefix:string;rarity:Rarity;role_title:string;clan:string|null;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
 type Art={credit:string|null;id:string;kind:'legacy'|'alternate';label:string;art_path:string;art_meta:ArtMeta;active:boolean;owned:number};
 const FRAMES:Record<string,string>={fullart:'Plein cadre (full art)',cover:'Remplir la fenêtre',portrait:'Portrait',full:'Image entière, centrée'};
@@ -40,7 +40,8 @@ export function ContributionsTab({client,act,reason,catalog}:{client:SupabaseCli
 function SubmissionItem({s,client,act,reason,catalog,onDone}:{s:Submission;client:SupabaseClient;act:Act;reason:Reason;catalog:AdminCatalog;onDone:()=>void}){
  const image=useSigned(client,s.image_path);
  // Une illustration acceptée pour une carte qui n'en avait pas rapporte 1 booster ; le reste est au choix.
- const [deniers,setDeniers]=useState('0');
+ // Texte d'ambiance : 50 Deniers proposés par défaut.
+ const [deniers,setDeniers]=useState(s.kind==='ambiance'?'50':'0');
  const [boosters,setBoosters]=useState(s.kind==='illustration'&&!s.art_path?'1':'0');
  // Crédit de l'illustration appliquée : le pseudo de l'auteur par défaut.
  const [credit,setCredit]=useState(s.author??'');
@@ -51,12 +52,17 @@ function SubmissionItem({s,client,act,reason,catalog,onDone}:{s:Submission;clien
   const blob=await (await fetch(image!)).blob();
   return new File([blob],s.image_path!.split('/').pop()!,{type:blob.type||'image/png'});
  }
- async function decide(accept:boolean,apply?:'official'|'alternate'|'credit'){
-  const note=await reason(accept?`Accepter la proposition de ${s.author} pour ${s.name}${apply==='official'?' et remplacer l’illustration officielle':apply==='alternate'?' et l’ajouter en version alternative':apply==='credit'?` et créditer « ${s.credit_name} »`:''} ? Récompense : ${Number(deniers)||0} Deniers, ${Number(boosters)||0} booster(s).${(apply==='official'||apply==='alternate')&&credit.trim()?` Crédit : « ${credit.trim()} ».`:''} Note pour le joueur :`:`Refuser la proposition de ${s.author} : raison (envoyée au joueur) ?`,accept?'Accepter':'Refuser');
+ async function decide(accept:boolean,apply?:'official'|'alternate'|'credit'|'signature'){
+  const note=await reason(accept?`Accepter la proposition de ${s.author} pour ${s.name}${apply==='official'?' et remplacer l’illustration officielle':apply==='alternate'?' et l’ajouter en version alternative':apply==='credit'?` et créditer « ${s.credit_name} »`:apply==='signature'?' et publier sa signature (des exemplaires signés pourront tomber)':''} ? Récompense : ${Number(deniers)||0} Deniers, ${Number(boosters)||0} booster(s).${(apply==='official'||apply==='alternate')&&credit.trim()?` Crédit : « ${credit.trim()} ».`:''} Note pour le joueur :`:`Refuser la proposition de ${s.author} : raison (envoyée au joueur) ?`,accept?'Accepter':'Refuser');
   if(note===null)return;
   setBusy(true);
   const ok=await act(accept?'Proposition acceptée.':'Proposition refusée.',async c=>{
    if(accept&&apply==='credit')await callRpc(c,'admin_set_art_credit',{p_character_id:s.character_id,p_art_id:null,p_credit:s.credit_name,p_reason:note});
+   else if(accept&&apply==='signature'){
+    // Signature publiée dans le stockage public, puis rattachée au personnage (cartes signées).
+    const {path}=await uploadIllustration(c,await imageFile(),{prefix:s.prefix,number:s.number});
+    await callRpc(c,'admin_set_signature',{p_character_id:s.character_id,p_path:path,p_reason:note});
+   }
    else if(accept&&apply){
     const ch=catalog.characters.find(x=>x.id===s.character_id);
     if(!ch)throw new Error('Personnage introuvable dans le catalogue.');
@@ -73,10 +79,10 @@ function SubmissionItem({s,client,act,reason,catalog,onDone}:{s:Submission;clien
   if(ok)onDone();
  }
  return <li className={`panel report-item contribution ${s.status}`}>
-  <div className="report-head"><span className="status-chip">{s.kind==='illustration'?(s.art_path?'Autre illustration':'Nouvelle illustration'):s.kind==='credit'?'Demande de crédit':'Information erronée'}</span><strong>{code} · {s.name}</strong><small>{when(s.created_at)} · par {s.author??'—'}</small></div>
+  <div className="report-head"><span className="status-chip">{s.kind==='illustration'?(s.art_path?'Autre illustration':'Nouvelle illustration'):s.kind==='credit'?'Demande de crédit':s.kind==='ambiance'?'Texte d’ambiance':s.kind==='signature'?'Signature':'Information erronée'}</span><strong>{code} · {s.name}</strong><small>{when(s.created_at)} · par {s.author??'—'}</small></div>
   <div className="contribution-body">
    <div className="contribution-card"><span className="admin-hint">Actuelle</span><TarotCard card={card}/></div>
-   {s.kind==='illustration'&&<div className="contribution-card"><span className="admin-hint">Proposée</span>{image?<a href={image} target="_blank" rel="noreferrer"><img src={image} alt={`Illustration proposée pour ${s.name}`}/></a>:<Skeleton className="skeleton-card"/>}
+   {(s.kind==='illustration'||s.kind==='signature')&&<div className="contribution-card"><span className="admin-hint">Proposée</span>{image?<a href={image} target="_blank" rel="noreferrer"><img src={image} alt={`Illustration proposée pour ${s.name}`}/></a>:<Skeleton className="skeleton-card"/>}
     {image&&<TarotCard card={{...card,illustration:image,artLayout:undefined,artOffsetY:undefined}}/>}</div>}
    <div className="contribution-text">{s.message?<p className="report-message">{s.message}</p>:<p className="muted">Sans message.</p>}
     {s.kind==='info'&&<p className="admin-hint">Corrigez la fiche dans l’onglet Personnages, puis acceptez.</p>}
@@ -90,6 +96,7 @@ function SubmissionItem({s,client,act,reason,catalog,onDone}:{s:Submission;clien
     {s.kind==='illustration'&&<><button className="primary compact" disabled={busy||!image} onClick={()=>void decide(true,'official')}><Replace size={14}/> {s.art_path?'Remplacer l’officielle':'Appliquer'}</button>
      <button className="primary ghost compact" disabled={busy||!image} onClick={()=>void decide(true,'alternate')}><Layers size={14}/> Version alternative</button></>}
     {s.kind==='credit'&&<button className="primary compact" disabled={busy} onClick={()=>void decide(true,'credit')}><Check size={14}/> Créditer et accepter</button>}
+    {s.kind==='signature'&&<button className="primary compact" disabled={busy||!image} onClick={()=>void decide(true,'signature')}><Check size={14}/> Publier la signature</button>}
     <button className="primary ghost compact" disabled={busy} onClick={()=>void decide(true)}><Check size={14}/> Accepter{s.kind==='illustration'?' sans appliquer':s.kind==='credit'?' sans créditer':''}</button>
     <button className="primary ghost compact danger" disabled={busy} onClick={()=>void decide(false)}><X size={14}/> Refuser</button>
    </div>

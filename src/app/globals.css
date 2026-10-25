@@ -1380,3 +1380,18 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 .contest-points-choice{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0}.contest-points-choice legend{padding:0 6px;color:var(--gold2);font-size:13px}.contest-points-choice label{display:flex;align-items:center;gap:8px;cursor:pointer}.contest-points-choice input{accent-color:var(--gold)}.contest-points-choice small{color:var(--muted)}
 /* Exemplaire de l'artiste (concours, 25/10). */
 .owned-note.artist-note{color:var(--gold2);font-style:italic}
+/* Pastille « Nouveau » à l'ouverture d'un booster (25/10). */
+.new-pill{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#2f7d5b;color:#eafff4;font:700 9px/1.6 var(--ui);letter-spacing:.08em;text-transform:uppercase;vertical-align:middle}
+.new-badge{position:absolute;top:-7px;left:50%;z-index:4;transform:translateX(-50%);padding:2px 8px;border-radius:999px;background:#2f7d5b;color:#eafff4;font:700 9px/1.5 var(--ui);letter-spacing:.08em;text-transform:uppercase;box-shadow:0 2px 6px #0008;pointer-events:none;animation:new-pop .4s var(--ease-out) both}
+@keyframes new-pop{from{opacity:0;transform:translate(-50%,6px) scale(.8)}to{opacity:1;transform:translate(-50%,0)}}
+@media(prefers-reduced-motion:reduce){.new-badge{animation:none}}
+/* Texte d'ambiance dans la fiche d'une carte (25/10). */
+.flavor-text{margin:10px 0 4px;padding:8px 12px;border-left:2px solid var(--gold);border-radius:0;color:var(--text);font:italic 17px/1.5 var(--body)}.flavor-text p{margin:0}.flavor-text cite{display:block;margin-top:4px;color:var(--muted);font:normal 12px var(--ui)}
+/* Cartes signées (25/10). */
+.owned-signed{color:var(--gold2);font-style:italic}
+.card-signature{pointer-events:none}
+/* Classement : bascule Général / Saison (25/10). */
+.ranking-views{margin:0 0 12px;max-width:320px}
+/* Concours : bonus de la carte dans sa fenêtre (25/10). */
+.card-bonus{display:flex;align-items:center;gap:5px;margin-top:5px;color:#ff9a6c;font-size:12px}
+.card-hint{color:var(--gold2);font-style:italic}

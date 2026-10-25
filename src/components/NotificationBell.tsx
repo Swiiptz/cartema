@@ -9,6 +9,10 @@ import {callRpc,type AppNotification,type Notifications} from '@/lib/game';
 
 const POLL_MS=60000;
 
+// Type d'une contribution sur une carte, dans les phrases des notifications.
+const SUBMISSION_A:Record<string,string>={illustration:'une illustration',ambiance:'un texte d’ambiance',signature:'sa signature',credit:'une demande de crédit'};
+const SUBMISSION_OF:Record<string,string>={illustration:'illustration',ambiance:'texte d’ambiance',signature:'signature',credit:'demande de crédit'};
+
 /** Libellé, icône et lien d'une notification. */
 export function describe(n:AppNotification):{text:string;icon:typeof Bell;href:string}{
  const p=n.payload;const card=p.card?`${p.card}${p.finish&&p.finish!=='Standard'?` (${p.finish})`:''}`:'';
@@ -24,10 +28,10 @@ export function describe(n:AppNotification):{text:string;icon:typeof Bell;href:s
   case 'outbid':return {text:`Enchère dépassée sur ${card} : ${d(p.amount)}.`,icon:Gavel,href:'/market/'};
   case 'auction_won':return {text:`Vous remportez ${card} pour ${d(p.price)}.`,icon:Gavel,href:'/collection/'};
   case 'report_received':return {text:`Nouveau signalement : ${p.target} (par ${p.from}).`,icon:Flag,href:'/admin/'};
-  case 'submission_received':return {text:`${p.from} propose ${p.kind==='illustration'?'une illustration':'une correction'} pour ${p.card}.`,icon:Flag,href:'/admin/'};
+  case 'submission_received':return {text:`${p.from} propose ${SUBMISSION_A[p.kind??'']??'une correction'} pour ${p.card}.`,icon:Flag,href:'/admin/'};
   case 'submission_decided':{
    const r=[(p.reward_deniers??0)>0&&`+${d(p.reward_deniers)}`,(p.reward_boosters??0)>0&&`+${p.reward_boosters} booster${(p.reward_boosters??0)>1?'s':''}`].filter(Boolean).join(' · ');
-   return {text:p.accepted?`Votre ${p.kind==='illustration'?'illustration':'correction'} pour ${p.card} est acceptée${r?` (${r})`:''}. Merci !`:`Votre proposition pour ${p.card} n’a pas été retenue${p.note?` : ${p.note}`:''}.`,icon:Award,href:'/collection/'};}
+   return {text:p.accepted?`Votre ${SUBMISSION_OF[p.kind??'']??'correction'} pour ${p.card} est accepté${p.kind==='ambiance'?'':'e'}${r?` (${r})`:''}. Merci !`:`Votre proposition pour ${p.card} n’a pas été retenue${p.note?` : ${p.note}`:''}.`,icon:Award,href:'/collection/'};}
   case 'event_reward':{
    const r=[(p.reward_deniers??0)>0&&`+${d(p.reward_deniers)}`,(p.reward_boosters??0)>0&&`+${p.reward_boosters} booster${(p.reward_boosters??0)>1?'s':''}`].filter(Boolean).join(' · ');
    return {text:p.kind==='podium'?`${p.rank}${p.rank===1?'re':'e'} place de l’événement « ${p.event} » : ${r}.`:`Défi communautaire « ${p.event} » réussi : ${r}.`,icon:Gift,href:'/'};}
@@ -46,6 +50,9 @@ export function describe(n:AppNotification):{text:string;icon:typeof Bell;href:s
    if((p.boosters??0)>0)return {text:`L’équipe vous offre ${p.boosters} booster${(p.boosters??0)>1?'s':''} : ${(p.boosters??0)>1?'ils vous attendent':'il vous attend'} dans votre réserve.`,icon:Gift,href:'/boosters/'};
    if((p.deniers??0)>0)return {text:`L’équipe vous offre ${d(p.deniers)}.`,icon:Coins,href:'/'};
    return {text:`L’équipe vous offre ${(p.quantity??1)>1?`${p.quantity} × `:''}${card}${p.version?`, version « ${p.version} »`:''}.`,icon:Gift,href:'/collection/'};
+  case 'season_reward':{
+   const r=[(p.deniers??0)>0&&`+${d(p.deniers)}`,(p.boosters??0)>0&&`+${p.boosters} booster${(p.boosters??0)>1?'s':''}`].filter(Boolean).join(' · ');
+   return {text:`Saison « ${p.title} » : ${p.position}${p.position===1?'re':'e'} place${p.podium?', titre « Champion de la saison »':''}${r?` (${r})`:''}.`,icon:Award,href:'/progression/?onglet=classement'};}
   default:return {text:'Nouvelle activité.',icon:Bell,href:'/'};
  }
 }

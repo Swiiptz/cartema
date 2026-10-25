@@ -33,7 +33,7 @@ describe('catalogue',()=>{
     clan=await rpc(db,admin,'admin_save_clan',[null,'Toréador',null]);
     const cat=await rpc(db,admin,'admin_catalog');
     expect(cat.editions[0]).toMatchObject({name:'Camarilla',prefix:'CAM',complete:false,packs_enabled:false});
-    expect(cat.clans).toEqual([{id:clan,name:'Toréador',symbol_key:null}]);
+    expect(cat.clans).toEqual([{id:clan,name:'Toréador',symbol_key:null,lineage_title:null}]);
     const {rows}=await db.query<{action:string}>(`select action from public.admin_audit_logs where actor_id=$1 order by id`,[admin]);
     expect(rows.map(r=>r.action)).toEqual(['edition_create','clan_create']);
     await expectError(rpc(db,admin,'admin_save_edition',[null,'Doublon','CAM',false,null]),/prefix_taken/);

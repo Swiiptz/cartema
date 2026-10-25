@@ -16,7 +16,7 @@ type Category='all'|'boosters'|'market'|'social'|'recycling'|'deniers';
 const TABS:[Category,string][]=[['all','Tout'],['boosters','Boosters'],['market','Marché'],['social','Échanges'],['recycling','Recyclage'],['deniers','Deniers']];
 const LEDGER:Record<string,string>={achievement_reward:'Succès',admin_adjust:'Ajustement de l’administrateur',auction_sale:'Vente aux enchères',bid_hold:'Enchère placée',bid_refund:'Enchère remboursée',
  daily_login:'Bonus de connexion',discovery_reward:'Nouveau visage découvert',market_purchase:'Achat au marché',market_sale:'Vente au marché',mission_reward:'Mission',recycle:'Recyclage',
- shop_booster:'Achat de boosters',trade_hold:'Échange proposé (réserve)',trade_payment:'Échange conclu (payé)',trade_receipt:'Échange conclu (reçu)',trade_refund:'Échange annulé (remboursé)',contribution_reward:'Contribution acceptée'};
+ shop_booster:'Achat de boosters',trade_hold:'Échange proposé (réserve)',trade_payment:'Échange conclu (payé)',trade_receipt:'Échange conclu (reçu)',trade_refund:'Échange annulé (remboursé)',contribution_reward:'Contribution acceptée',contest_reward:'Concours d’illustrations',season_reward:'Classement de saison'};
 const STATUS:Record<string,string>={sold:'vendue',cancelled:'retirée',expired:'sans offre',accepted:'accepté',declined:'refusé',countered:'contre-proposé',cancelled_trade:'annulé',expired_trade:'expiré'};
 const fmt=(n:number)=>n.toLocaleString('fr-FR').replace(/ /g,' ');
 const when=(d:string)=>new Date(d).toLocaleString('fr-FR',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});

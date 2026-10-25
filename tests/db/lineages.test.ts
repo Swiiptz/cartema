@@ -115,3 +115,22 @@ describe('camps (Team Apo, Team Gwen)',()=>{
     expect((await team()).unlocked_at).toBeNull();
   });
 });
+
+describe('lignée d’un nouveau clan',()=>{
+  it('l’admin crée la lignée avec son titre ; le renommage du clan suit (25/10)',async()=>{
+    const admin=await player('gardien_lignees');await db.query(`update public.profiles set role='admin' where id=$1`,[admin]);
+    const clan=await rpc<string>(db,admin,'admin_save_clan',[null,'Salubri']);
+    const code=await rpc<string>(db,admin,'admin_set_clan_lineage',[clan,'Troisième œil','Nouveau clan']);
+    expect(code).toBe(`lineage:${clan}`);
+    const row=async()=>(await db.query<{label:string;title:string}>('select label,title,metric,category,clan_id from public.achievements where code=$1',[code])).rows[0];
+    expect(await row()).toMatchObject({label:'Lignée Salubri',title:'Troisième œil',metric:'clan_lineage',category:'general',clan_id:clan});
+    await rpc(db,admin,'admin_set_clan_lineage',[clan,'Œil de Saulot','Nouveau titre']);
+    expect((await row()).title).toBe('Œil de Saulot');
+    await rpc(db,admin,'admin_save_clan',[clan,'Salubris']);
+    expect((await row()).label).toBe('Lignée Salubris');
+    expect((await rpc(db,admin,'admin_catalog')).clans.find((c:any)=>c.id===clan)).toMatchObject({lineage_title:'Œil de Saulot'});
+    const u=await player('curieux_lignee');
+    await expectError(rpc(db,u,'admin_set_clan_lineage',[clan,'Pirate','x']),/forbidden/);
+    await expectError(rpc(db,admin,'admin_set_clan_lineage',[clan,'  ','Vide']),/invalid/);
+  });
+});

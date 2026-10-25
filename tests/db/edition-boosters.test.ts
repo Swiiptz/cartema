@@ -176,3 +176,18 @@ describe('cartes garanties (pitié cachée)',()=>{
     }
   });
 });
+
+describe('pastille « Nouveau »',()=>{
+  it('marque les cartes découvertes par cette ouverture, une seule fois par personnage (25/10)',async()=>{
+    await rpc(db,admin,'admin_save_god_settings',[0,0,20,2,'Sans God',0]);
+    const u=await player();await db.query('update public.booster_balances set purchased_count=3 where owner_id=$1',[u]);
+    const o=await open(u,cam);
+    const seen=new Set<string>();
+    for(const c of [...o.cards].sort((a:any,b:any)=>a.position-b.position)){
+      expect(c.new).toBe(!seen.has(c.character_id));seen.add(c.character_id);
+    }
+    // Un personnage déjà découvert n'est plus nouveau.
+    const o2=await open(u,cam);
+    for(const c of o2.cards)if(seen.has(c.character_id))expect(c.new).toBe(false);
+  });
+});

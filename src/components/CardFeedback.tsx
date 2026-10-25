@@ -12,7 +12,7 @@ const MAX=10*1024*1024;
 export function CardFeedback({code,name,hasArt}:{code:string;name:string;hasArt:boolean}){
  const {client,session}=useAuth();
  const [open,setOpen]=useState(false);
- const [kind,setKind]=useState<'info'|'illustration'|'credit'>('info');
+ const [kind,setKind]=useState<'info'|'illustration'|'credit'|'ambiance'|'signature'>('info');
  const [credit,setCredit]=useState('');
  const [message,setMessage]=useState('');
  const [file,setFile]=useState<File|null>(null);
@@ -23,12 +23,12 @@ export function CardFeedback({code,name,hasArt}:{code:string;name:string;hasArt:
  const reset=()=>{setKind('info');setMessage('');setCredit('');setFile(null);setError(null);setSent(false);};
  async function send(e:React.FormEvent){
   e.preventDefault();setError(null);
-  if(kind==='illustration'&&(!file||!TYPES[file.type])){setError('Choisissez une image PNG, WebP ou JPEG.');return;}
+  if((kind==='illustration'||kind==='signature')&&(!file||!TYPES[file.type])){setError('Choisissez une image PNG, WebP ou JPEG.');return;}
   if(file&&file.size>MAX){setError('Image trop lourde : 10 Mo maximum.');return;}
   setBusy(true);
   try{
    let path:string|null=null;
-   if(kind==='illustration'&&file){
+   if((kind==='illustration'||kind==='signature')&&file){
     // Chaque joueur n'écrit que dans son propre dossier du bucket privé.
     path=`${session!.user.id}/${crypto.randomUUID()}.${TYPES[file.type]}`;
     const up=await client!.storage.from('submissions').upload(path,file,{contentType:file.type,upsert:false});
@@ -47,14 +47,17 @@ export function CardFeedback({code,name,hasArt}:{code:string;name:string;hasArt:
       <button type="button" role="tab" aria-selected={kind==='info'} onClick={()=>setKind('info')}>Information erronée</button>
       <button type="button" role="tab" aria-selected={kind==='illustration'} onClick={()=>setKind('illustration')}>{hasArt?'Autre illustration':'Proposer une illustration'}</button>
       {hasArt&&<button type="button" role="tab" aria-selected={kind==='credit'} onClick={()=>setKind('credit')}>Demander un crédit</button>}
+      <button type="button" role="tab" aria-selected={kind==='ambiance'} onClick={()=>setKind('ambiance')}>Texte d’ambiance</button>
+      <button type="button" role="tab" aria-selected={kind==='signature'} onClick={()=>setKind('signature')}>Ma signature</button>
      </div>
-     {kind==='illustration'&&<label className="feedback-file"><ImagePlus size={16}/><span>{file?file.name:'Choisir une image (PNG, WebP, JPEG · 10 Mo max)'}</span><input type="file" accept="image/png,image/webp,image/jpeg" onChange={e=>setFile(e.target.files?.[0]??null)}/></label>}
+     {kind==='signature'&&<p className="admin-hint">Réservé à la personne qui joue ce personnage : l’administrateur le vérifie. Envoyez votre signature sur fond transparent (PNG). Une fois validée, des exemplaires signés de cette carte pourront tomber dans les boosters.</p>}
+     {(kind==='illustration'||kind==='signature')&&<label className="feedback-file"><ImagePlus size={16}/><span>{file?file.name:'Choisir une image (PNG, WebP, JPEG · 10 Mo max)'}</span><input type="file" accept="image/png,image/webp,image/jpeg" onChange={e=>setFile(e.target.files?.[0]??null)}/></label>}
      {kind==='credit'&&<label className="auth-field"><span>Nom à afficher sous l’illustration</span><input value={credit} onChange={e=>setCredit(e.target.value)} maxLength={80} placeholder="Votre nom d’artiste"/></label>}
-     <label className="auth-field"><span>{kind==='info'?'Qu’est-ce qui est faux ?':kind==='credit'?'Comment l’administrateur peut-il vérifier ? (facultatif)':'Un mot sur votre illustration (facultatif)'}</span>
-      <textarea rows={4} maxLength={1500} value={message} onChange={e=>setMessage(e.target.value)} placeholder={kind==='info'?'Ex. : le clan est Toréador, pas Ventrue.':kind==='credit'?'Ex. : lien vers mon portfolio, fichier source…':'Ex. : portrait réalisé par moi, fond transparent.'}/></label>
+     <label className="auth-field"><span>{kind==='info'?'Qu’est-ce qui est faux ?':kind==='credit'?'Comment l’administrateur peut-il vérifier ? (facultatif)':kind==='ambiance'?`Votre texte d’ambiance (${message.trim().length}/200)`:kind==='signature'?'Votre lien avec ce personnage (facultatif)':'Un mot sur votre illustration (facultatif)'}</span>
+      <textarea rows={4} maxLength={kind==='ambiance'?200:1500} value={message} onChange={e=>setMessage(e.target.value)} placeholder={kind==='info'?'Ex. : le clan est Toréador, pas Ventrue.':kind==='ambiance'?'Ex. : Elle sourit toujours avant de mordre, jamais après.':kind==='credit'?'Ex. : lien vers mon portfolio, fichier source…':'Ex. : portrait réalisé par moi, fond transparent.'}/></label>
      {kind==='illustration'&&<p className="admin-hint">En proposant une image, vous confirmez en avoir les droits et acceptez qu’elle soit utilisée dans Cartema.</p>}
      {error&&<p className="auth-error" role="alert">{error}</p>}
-     <button className="primary" disabled={busy||(kind==='info'?message.trim().length<5:kind==='credit'?credit.trim().length<2:!file)}>{busy?'Envoi…':'Envoyer'}</button>
+     <button className="primary" disabled={busy||(kind==='info'?message.trim().length<5:kind==='ambiance'?message.trim().length<10||message.trim().length>200:kind==='signature'?!file:kind==='credit'?credit.trim().length<2:!file)}>{busy?'Envoi…':'Envoyer'}</button>
     </form>}
   </Sheet>
  </>;

@@ -52,6 +52,7 @@ export function CardInspection({card,finishesSeen,characterId,onChanged,wishes,o
    <span className="eyebrow">Détail de la carte</span>
    <h2 id={title}>{card.known?card.name:'Identité voilée'}</h2>
    <span className="detail-rarity">{card.provisional?'Rareté à définir':card.unique?'Carte unique':card.rarity}</span>
+   {open&&card.known&&characterId&&<FlavorText characterId={characterId}/>}
    {card.known&&!card.unique&&options.length>1&&<div className="finish-preview"><span className="eyebrow">Aperçu des finitions</span><div className="finish-switch" aria-label="Prévisualiser une finition">{options.map(f=><button key={f} className={finish===f?'active':''} aria-pressed={finish===f} onClick={()=>setFinish(f)}>{f}</button>)}</div><small>{finishesSeen?'Finitions que vous avez obtenues.':'Comparaison visuelle de la même carte.'}</small></div>}
    <dl><div><dt>Numéro</dt><dd>{card.id}</dd></div><div><dt>Clan</dt><dd>{card.known?(card.clan!=='?'?card.clan:'À définir'):'À découvrir'}</dd></div>{card.known&&(version?version.credit:card.illustration&&card.credit)&&<div><dt>Illustration</dt><dd>{version?version.credit:card.credit}</dd></div>}{card.known&&card.event&&<div><dt>Origine</dt><dd>Carte de l’événement « {card.event} »</dd></div>}<div><dt>Titre / fonction</dt><dd>{card.known?card.role||'À définir':'Identité voilée'}</dd></div>{finishesSeen?card.known&&<div><dt>Finitions obtenues</dt><dd>{options.join(', ')||'—'}</dd></div>:<div><dt>Finition d’origine</dt><dd>{card.finish||'Standard'}</dd></div>}</dl>
    {card.known&&variants&&variants.length>0&&<div className="finish-preview"><span className="eyebrow">Versions d’illustration possédées</span><div className="finish-switch" aria-label="Choisir la version affichée"><button className={version?'':'active'} aria-pressed={!version} onClick={()=>setVersion(null)}>Officielle</button>{variants.map(v=><button key={v.label} className={version?.label===v.label?'active':''} aria-pressed={version?.label===v.label} onClick={()=>setVersion(v)}>{v.label} ×{v.count}</button>)}</div><small>Les exemplaires gardent l’illustration qu’ils avaient quand vous les avez obtenus.</small></div>}
@@ -61,6 +62,17 @@ export function CardInspection({card,finishesSeen,characterId,onChanged,wishes,o
    {card.provisional&&<p className="detail-note">Étude graphique de {card.name} · Clan et rareté à définir.</p>}
   </div>
  </div></dialog></>;
+}
+
+/** Texte d'ambiance validé de la carte (proposé par un joueur), seulement pour une carte découverte. */
+function FlavorText({characterId}:{characterId:string}){
+ const {client}=useAuth();
+ const [flavor,setFlavor]=useState<{text:string;author:string|null}|null>(null);
+ useEffect(()=>{if(!client)return;let alive=true;
+  void callRpc<{text:string;author:string|null}|null>(client,'get_card_flavor',{p_character_id:characterId}).then(f=>{if(alive)setFlavor(f);}).catch(()=>{});
+  return()=>{alive=false;};},[client,characterId]);
+ if(!flavor)return null;
+ return <blockquote className="flavor-text"><p>« {flavor.text} »</p>{flavor.author&&<cite>— {flavor.author}</cite>}</blockquote>;
 }
 
 function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardName:string;onChanged:()=>void}){
@@ -121,7 +133,7 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
   <div className="owned-head"><span className="eyebrow">Vos exemplaires</span><strong>{items.length}</strong></div>
   {items.length===0?<p className="muted">Vous ne possédez plus d’exemplaire de cette carte. Elle reste découverte dans votre album.</p>:<ul className="owned-list">{items.map(it=><li key={it.instance_id} className={`finish-${it.finish==='Dorée'?'gold':it.finish==='Sanglante'?'blood':'standard'} ${it.listing_id?'listed':''}`}>
    <div className="owned-top">
-    <span className="owned-finish">{it.finish}{it.variant&&<em className="owned-variant"> · {it.variant}</em>}<small>Obtenue le {new Date(it.acquired_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}</small></span>
+    <span className="owned-finish">{it.finish}{it.variant&&<em className="owned-variant"> · {it.variant}</em>}{it.signed&&<em className="owned-signed"> · Signée</em>}<small>Obtenue le {new Date(it.acquired_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}</small></span>
     {it.reserved&&!it.listing_id?<span className="listed-badge"><Gift size={12}/> {it.reserved_kind==='gift'?'Cadeau en attente':'Proposée en échange'}</span>:it.listing_id?<span className="listed-badge"><Tag size={12}/> {it.reserved_kind==='gift'?'Offerte':it.reserved_kind==='trade'?'Échange':it.listing_kind==='auction'?'Enchère':'En vente'} · {(it.listing_price??0).toLocaleString('fr-FR')}</span>
      :<button className={`lock-toggle ${it.locked?'on':''}`} disabled={busy} aria-pressed={it.locked} aria-label={it.locked?'Déverrouiller cet exemplaire':'Verrouiller cet exemplaire'} onClick={()=>void toggleLock(it)}>{it.locked?<Lock size={14}/>:<LockOpen size={14}/>}<span>{it.locked?'Verrouillée':'Verrouiller'}</span></button>}
    </div>

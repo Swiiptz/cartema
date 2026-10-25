@@ -191,6 +191,18 @@ describe('concours d’illustrations',()=>{
   });
 });
 
+describe('multiplicateurs réglables',()=>{
+  it('l’admin règle le ×2 des cartes à privilégier et le ×4 des Mythiques, entre 1 et 5 (25/10)',async()=>{
+    const id=await rpc<string>(db,admin,'admin_save_contest',[null,'Concours réglé',cam,new Date(Date.now()+40*86400e3).toISOString(),new Date(Date.now()+42*86400e3).toISOString(),null,'Réglages',null,true,3,5]);
+    const row=async()=>(await rpc<any[]>(db,admin,'admin_contests')).find(x=>x.id===id);
+    expect(await row()).toMatchObject({priority_multiplier:3,mythic_multiplier:5});
+    await rpc(db,admin,'admin_save_contest',[id,'Concours réglé',cam,new Date(Date.now()+40*86400e3).toISOString(),new Date(Date.now()+42*86400e3).toISOString(),null,'Inchangé']);
+    expect(await row()).toMatchObject({priority_multiplier:3,mythic_multiplier:5}); // non précisés : inchangés
+    await expectError(rpc(db,admin,'admin_save_contest',[id,'Concours réglé',cam,new Date(Date.now()+40*86400e3).toISOString(),new Date(Date.now()+42*86400e3).toISOString(),null,'Trop',null,null,6,null]),/check|invalid/);
+    await db.query('delete from public.contests where id=$1',[id]);
+  });
+});
+
 describe('versions alternatives retenues',()=>{
   it('valent un point plein ou un demi-point, multiplicateur compris, arrondi au supérieur sur le total (25/10)',async()=>{
     const id=await rpc<string>(db,admin,'admin_save_contest',[null,'Concours des versions',cam,new Date(Date.now()-3600e3).toISOString(),new Date(Date.now()+86400e3).toISOString(),null,'Versions']);

@@ -16,6 +16,8 @@ type Tab='cards'|'ranking'|'rules';
 type Filter='all'|'priority'|'entries'|'mine'|'empty';
 const dateFr=(iso:string)=>new Date(iso).toLocaleString('fr-FR',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
 const fr=(n:number)=>n.toLocaleString('fr-FR');
+/** Indications propres à une carte du concours (décision de Swiiptz), affichées dans sa fenêtre. */
+const CARD_HINTS:Record<string,string>={'CAM-231':'Illustration avec Guillaume de Flandres : bonus possible.'};
 
 export default function Concours(){
  const {configured,ready,session,client,player}=useAuth();
@@ -139,7 +141,9 @@ function CardEntries({card,contest,client,canSubmit,ask,onChanged,onError}:{card
    <div className="contest-sheet-info">
     <p className="muted">{card.rarity}{card.clan?` · ${card.clan}`:''}{card.discovered?'':' · carte non découverte : son illustration reste cachée'}</p>
     {contest.open?<>
-     <p className="muted small-note">Un dessin par joueur et par carte, un vote par carte (pas pour soi). Le dessin en tête rapporte 1 point à son auteur.</p>
+     <p className="muted small-note">Un dessin par joueur et par carte, un vote par carte (pas pour soi). Le dessin en tête rapporte {(card.multiplier??1)>1?`${card.multiplier} points`:'1 point'} à son auteur.
+      {(card.multiplier??1)>1&&<small className="card-bonus"><Flame size={11}/> Bonus ×{card.multiplier} : {card.rarity==='Mythique'?'Mythique, le dessin doit faire mythique':'carte sans illustration ou illustration IA'} (aussi sur le point « dessin retenu »).</small>}
+      {CARD_HINTS[card.code]&&<small className="card-bonus card-hint">✦ {CARD_HINTS[card.code]}</small>}</p>
      {canSubmit?<label className={`feedback-file primary ${busy?'is-busy':''}`}><ImagePlus size={15}/><span>{busy?'Envoi…':mine?'Remplacer mon dessin':'Proposer mon dessin'}</span><input type="file" accept="image/png,image/webp,image/jpeg" disabled={busy} onChange={e=>{const f=e.target.files?.[0];e.target.value='';if(f)void upload(f);}}/></label>
       :<p className="muted">Choisissez un pseudonyme dans votre profil pour proposer un dessin.</p>}
     </>:<p className="muted">Concours terminé : les votes sont clos.</p>}

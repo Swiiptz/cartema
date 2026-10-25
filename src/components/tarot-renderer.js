@@ -37,7 +37,7 @@ function silhouette(index,u){
  return `<g class="portrait-silhouette"><ellipse cx="101" cy="124" rx="57" ry="76" fill="#080a10" opacity=".2"/>${bust}<path d="M37 214Q100 197 164 214" fill="none" stroke="#7d8595" stroke-opacity=".08" stroke-width="8"/></g>`;
 }
 // unique : carte à exemplaire unique (Caïn), habillage propre une fois identifiée ; inconnue, elle garde le voile commun.
-export function renderCard(c,k,illustration,artLayout='portrait',provisional=false,artOffsetY=0,silhouetteIndex,unique=false){
+export function renderCard(c,k,illustration,artLayout='portrait',provisional=false,artOffsetY=0,silhouetteIndex,unique=false,signature){
  const[id,n,cl,role,ra,kn,fin]=c,[base,lv]=R[ra],u='g'+k+id;
  const color=fin==='gold'?'#d5b870':fin==='blood'?'#98733e':base;
  const light=fin==='gold'?'#fff2c5':fin==='blood'?'#e2c08a':lv===0?'#d7c6a5':lv===1?'#c8d8a3':lv===2?'#c7e7ef':lv===3?'#b5ece4':lv===4?'#e6bcf1':lv===5?'#ffe8aa':'#ffa38b';
@@ -56,8 +56,10 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  const name=kn?n:'Inconnu',clan=kn&&cl!=='?'?cl:'Clan inconnu';
  const title=kn?(role||'Chronique Camarilla'):'Identité voilée';
  const frame='M13 6H187Q194 6 194 13V287Q194 294 187 294H13Q6 294 6 287V13Q6 6 13 6Z';
+ // Carte signée : signature (image transparente) en bas à droite de l'illustration, légèrement inclinée, liseré doré.
+ const signed=kn&&signature?`<g class="card-signature" transform="rotate(-7 146 ${fa?196:178})"><image href="${signature}" x="102" y="${fa?172:154}" width="88" height="46" preserveAspectRatio="xMidYMid meet" filter="url(#signature-ink${u})"/></g>`:'';
  return `<div class="card crafted-card ${fin} rarity-${lv}${unique?' unique-veiled':''}"><svg viewBox="0 0 200 300" role="img" aria-label="${kn?n+', '+(provisional?'cadre de présentation':ra):'Personnage inconnu, '+ra}">
- <defs>${fa?`<filter id="text-shadow${u}" x="-20%" y="-50%" width="140%" height="220%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation=".85"/><feOffset dy=".7"/><feComponentTransfer><feFuncA type="linear" slope=".85"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>`:''}
+ <defs>${kn&&signature?`<filter id="signature-ink${u}" x="-10%" y="-20%" width="120%" height="140%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius=".9" result="edge"/><feFlood flood-color="#f1d99b" flood-opacity=".85"/><feComposite in2="edge" operator="in" result="gold"/><feGaussianBlur in="SourceAlpha" stdDeviation="1.4" result="glow"/><feFlood flood-color="#08080b" flood-opacity=".55"/><feComposite in2="glow" operator="in" result="shadow"/><feMerge><feMergeNode in="shadow"/><feMergeNode in="gold"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`:''}${fa?`<filter id="text-shadow${u}" x="-20%" y="-50%" width="140%" height="220%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation=".85"/><feOffset dy=".7"/><feComponentTransfer><feFuncA type="linear" slope=".85"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>`:''}
  ${fin==='blood'?bloodDefinitions(u):fin==='gold'?goldDefinitions(u,fa):''}
   <linearGradient id="metal${u}" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="${light}"/><stop offset=".28" stop-color="${color}"/><stop offset=".48" stop-color="${light}"/><stop offset=".65" stop-color="${color}"/><stop offset="1" stop-color="${light}"/></linearGradient>
   <radialGradient id="glass${u}" cx=".5" cy=".38" r=".75"><stop stop-color="${fin==='blood'?'#75152b':color}" stop-opacity="${fin==='blood'?'.2':'.23'}"/><stop offset=".6" stop-color="#141218"/><stop offset="1" stop-color="#06080a"/></radialGradient>
@@ -81,6 +83,7 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  ${art}<rect x="10" y="10" width="180" height="${fa?280:212}" fill="url(#shade${u})" opacity="${fa?'1':artLayout==='full'||artLayout==='cover'?'.15':'1'}"/>
  ${fin==='gold'?goldSurface(u):''}
  ${fin==='blood'?`<g class="blood-patina" fill="#430c18" opacity=".7"><path d="M11 12 28 13 22 20 26 31 18 44 21 59 16 68 18 84 11 103Z"/><path d="M189 17 180 25 184 40 177 47 180 67 174 84 180 96 177 118 185 132 189 153Z"/><path d="M11 154 17 162 14 177 23 185 18 198 25 209H11ZM189 168 181 181 185 193 173 205 189 213Z"/></g><g class="blood-etching" fill="none" stroke="#86303b" stroke-width=".7" stroke-linecap="round" opacity=".65"><path d="M20 17 18 32 21 43 17 57 19 75M181 22 178 41 182 56 175 73 177 91 173 109M15 174 19 182 17 191M185 182 179 195 181 207"/><path d="M23 25 28 29M177 67 169 72M19 184 26 188" stroke-width=".4"/></g><g class="blood-residue" fill="#7b1c2e" opacity=".5"><circle cx="26" cy="38" r=".8"/><circle cx="23" cy="48" r=".45"/><circle cx="171" cy="82" r=".9"/><circle cx="175" cy="96" r=".4"/><circle cx="23" cy="176" r=".6"/><circle cx="178" cy="188" r=".8"/></g><g class="blood-incense" fill="none" stroke="#78303f" stroke-width="7" opacity=".1"><path d="M12 214C38 182 12 160 29 132S12 77 20 50M188 218C163 185 191 162 175 129S190 81 179 54"/></g>`:''}
+ ${signed}
  <rect x="10" y="10" width="180" height="280" fill="url(#grain${u})"/>
  </g>
  <path d="${frame}" fill="none" stroke="${color}" stroke-opacity="${fin==='blood'?'.08':'.2'}" stroke-width="7"/>

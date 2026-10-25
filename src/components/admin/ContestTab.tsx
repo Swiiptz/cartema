@@ -12,7 +12,7 @@ import {defaultContestRulesText} from '@/lib/contest';
 type Act=(label:string,action:(c:SupabaseClient)=>Promise<unknown>)=>Promise<boolean>;
 type Reason=(message:string,confirmLabel?:string)=>Promise<string|null>;
 type Ask=(o:AskOptions)=>Promise<string|null>;
-type AdminContest={id:string;title:string;edition_id:string;starts_at:string;ends_at:string;rewards:ContestRewards;rewarded_at:string|null;rules:string|null;open:boolean;entries:number;reports:number;allow_mythic?:boolean};
+type AdminContest={id:string;title:string;edition_id:string;starts_at:string;ends_at:string;rewards:ContestRewards;rewarded_at:string|null;rules:string|null;open:boolean;entries:number;reports:number;allow_mythic?:boolean;priority_multiplier?:number;mythic_multiplier?:number};
 type Entry={entry_id:string;character_id:string;code:string;name:string;rarity:string;prefix:string;number:number;author:string;image_path:string;created_at:string;votes:number;leading:boolean;hidden:boolean;hidden_reason:string|null;reports:string[];selected:'main'|'alternate'|null;line_label:string|null;real_drawing:boolean;granted:boolean;half_point?:boolean};
 
 const DEFAULT_REWARDS:ContestRewards={places:[{from:1,to:1,deniers:3000,boosters:10},{from:2,to:2,deniers:2000,boosters:6},{from:3,to:3,deniers:1500,boosters:4},{from:4,to:10,deniers:500,boosters:2}],others:{deniers:200,boosters:1}};
@@ -51,16 +51,20 @@ function ContestForm({contest,catalog,act,reason,onDone}:{contest:AdminContest|n
  const [rules,setRules]=useState(contest?.rules??'');
  // Mythiques admises par défaut pour un nouveau concours (décision du 25/10).
  const [allowMythic,setAllowMythic]=useState(contest?!!contest.allow_mythic:true);
+ // Multiplicateurs des points : cartes à privilégier (×2) et Mythiques (×4), de 1 à 5.
+ const [prioMult,setPrioMult]=useState(String(contest?.priority_multiplier??2));
+ const [mythMult,setMythMult]=useState(String(contest?.mythic_multiplier??4));
+ const multOk=(v:string)=>/^[1-5]$/.test(v);
  const num=(v:string)=>Math.max(0,Number(v.replace(/\D/g,''))||0);
  const setPlace=(i:number,k:keyof ContestPlace,v:string)=>setPlaces(p=>p.map((x,j)=>j===i?{...x,[k]:num(v)}:x));
  const editionName=editions.find(e=>e.id===edition)?.name??'';
  const badDates=!!start&&!!end&&new Date(end)<=new Date(start);
- const bad=!title.trim()||!edition||!start||!end||badDates||places.some(p=>p.from<1||p.to<p.from)||rules.length>8000;
+ const bad=!title.trim()||!edition||!start||!end||badDates||places.some(p=>p.from<1||p.to<p.from)||rules.length>8000||!multOk(prioMult)||!multOk(mythMult);
  async function save(){
   const r=await reason(`${contest?'Modifier':'Créer'} « ${title} » : du ${when(new Date(start).toISOString())} au ${when(new Date(end).toISOString())}.`);
   if(r===null)return;
   let id:string|undefined;
-  if(await act(contest?'Concours mis à jour.':'Concours créé.',async c=>{id=await callRpc<string>(c,'admin_save_contest',{p_id:contest?.id??null,p_title:title,p_edition_id:edition,p_starts_at:new Date(start).toISOString(),p_ends_at:new Date(end).toISOString(),p_rewards:{places,others},p_reason:r,p_rules:rules,p_allow_mythic:allowMythic});}))onDone(id);
+  if(await act(contest?'Concours mis à jour.':'Concours créé.',async c=>{id=await callRpc<string>(c,'admin_save_contest',{p_id:contest?.id??null,p_title:title,p_edition_id:edition,p_starts_at:new Date(start).toISOString(),p_ends_at:new Date(end).toISOString(),p_rewards:{places,others},p_reason:r,p_rules:rules,p_allow_mythic:allowMythic,p_priority_multiplier:Number(prioMult),p_mythic_multiplier:Number(mythMult)});}))onDone(id);
  }
  return <section className="panel contest-form">
   <header className="contest-form-head"><span className="eyebrow">{contest?'Modifier le concours':'Nouveau concours'}</span><button className="icon-button" aria-label="Fermer" onClick={()=>onDone()}><X size={16}/></button></header>
@@ -72,7 +76,12 @@ function ContestForm({contest,catalog,act,reason,onDone}:{contest:AdminContest|n
     <label className="auth-field"><span>Début</span><input type="datetime-local" value={start} onChange={e=>setStart(e.target.value)}/></label>
     <label className="auth-field"><span>Fin</span><input type="datetime-local" value={end} onChange={e=>setEnd(e.target.value)}/></label>
    </div>
-   <label className="contest-check"><input type="checkbox" checked={allowMythic} onChange={e=>setAllowMythic(e.target.checked)}/> <span>Mythiques admises <small>(points ×4, le dessin doit faire mythique ; jamais la carte unique ; un dessin retenu offre la carte en Standard)</small></span></label>
+   <label className="contest-check"><input type="checkbox" checked={allowMythic} onChange={e=>setAllowMythic(e.target.checked)}/> <span>Mythiques admises <small>(points ×{mythMult||'?'}, le dessin doit faire mythique ; jamais la carte unique ; un dessin retenu offre la carte en Standard)</small></span></label>
+   <div className="contest-info-grid">
+    <label className="auth-field"><span>Cartes à privilégier ×</span><input inputMode="numeric" value={prioMult} onChange={e=>setPrioMult(e.target.value.replace(/\D/g,'').slice(0,1))}/><small>sans illustration ou illustration IA (1 à 5)</small></label>
+    <label className="auth-field"><span>Mythiques ×</span><input inputMode="numeric" value={mythMult} onChange={e=>setMythMult(e.target.value.replace(/\D/g,'').slice(0,1))}/><small>pas de cumul avec le précédent (1 à 5)</small></label>
+   </div>
+   {(!multOk(prioMult)||!multOk(mythMult))&&<p className="contest-error">Les multiplicateurs vont de 1 à 5.</p>}
    {badDates&&<p className="contest-error">La fin doit venir après le début.</p>}
   </fieldset>
   <fieldset className="contest-fieldset">

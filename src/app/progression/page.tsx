@@ -7,7 +7,7 @@ import {useAsk} from '@/components/AskDialog';
 import {Countdown,Skeleton} from '@/components/ui';
 import {MissionBonusBar,MissionList} from '@/components/MissionList';
 import {palette} from '@/components/Card';
-import {callRpc,TIER_COLORS,TIER_ROMAN,tierName,type Achievement,type Leaderboard,type Mission,type Missions} from '@/lib/game';
+import {callRpc,TIER_COLORS,TIER_ROMAN,tierName,type Achievement,type Leaderboard,type Mission,type Missions,type SeasonBoard} from '@/lib/game';
 
 type Tab='missions'|'achievements'|'ranking';
 const RANK_PAGE=50;const RANK_ALL=200;
@@ -24,12 +24,16 @@ export default function Progression(){
  // Les rechargements (session rafraîchie, mission réclamée) gardent le classement complet s'il est ouvert.
  const boardLimitRef=useRef(RANK_PAGE);
  const [boardBusy,setBoardBusy]=useState(false);
+ // Classement de saison : null tant qu'aucune saison n'a été démarrée (l'onglet Saison reste caché).
+ const [season,setSeason]=useState<SeasonBoard|null>(null);
+ const [rankView,setRankView]=useState<'general'|'season'>('general');
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState<{error?:string;notice?:string}>({});
 
  const load=useCallback(async()=>{
   if(!client)return;
-  try{const [m,a,b]=await Promise.all([callRpc<Missions>(client,'get_missions'),callRpc<Achievement[]>(client,'get_achievements'),callRpc<Leaderboard>(client,'get_leaderboard',{p_limit:boardLimitRef.current})]);setMissions(m);setAchievements(a);setBoard(b);}
+  try{const [m,a,b]=await Promise.all([callRpc<Missions>(client,'get_missions'),callRpc<Achievement[]>(client,'get_achievements'),callRpc<Leaderboard>(client,'get_leaderboard',{p_limit:boardLimitRef.current})]);setMissions(m);setAchievements(a);setBoard(b);
+   void callRpc<SeasonBoard|null>(client,'get_season_leaderboard',{p_limit:200}).then(setSeason).catch(()=>setSeason(null));}
   catch(e){setMessage({error:(e as Error).message});}
  },[client]);
  async function showMoreRanking(){
@@ -75,7 +79,12 @@ export default function Progression(){
 
   {tab==='achievements'&&(!achievements?<Skeleton style={{height:300}}/>:<Achievements list={achievements} unlocked={unlockedCount} currentTitle={player?.profile.title??null} busy={busy} onTitle={code=>void run(async()=>{const t=await callRpc<string|null>(client!,'set_title',{p_code:code});return t?`Vous portez désormais le titre « ${t} ».`:'Titre retiré.';})}/>)}
 
-  {tab==='ranking'&&(!board?<Skeleton style={{height:300}}/>:<section className="social-section">
+  {tab==='ranking'&&season&&<div className="segmented ranking-views" role="tablist" aria-label="Classement affiché">
+   <button role="tab" aria-selected={rankView==='general'} onClick={()=>setRankView('general')}><Trophy size={14}/> Général</button>
+   <button role="tab" aria-selected={rankView==='season'} onClick={()=>setRankView('season')}><Crown size={14}/> Saison</button>
+  </div>}
+  {tab==='ranking'&&season&&rankView==='season'&&<SeasonRanking board={season}/>}
+  {tab==='ranking'&&(!season||rankView==='general')&&(!board?<Skeleton style={{height:300}}/>:<section className="social-section">
    <p className="muted">Classement par nombre de succès obtenus, puis par personnages découverts en cas d’égalité. Les succès sont définitifs et une carte cédée reste découverte. Pour un succès de cartes (clan, rareté, édition, groupe de personnages), il faut posséder les cartes au moment de l’obtenir.</p>
    <ol className="ranking">{board.top.map((r,i)=><li key={`${r.handle}-${i}`} className={`rise ${r.me?'me':''} top-${r.position}`} style={{'--i':Math.min(i,15)} as React.CSSProperties}>
     <span className="rank-pos">{r.position<=3?<Crown size={16}/>:r.position}</span>
@@ -87,6 +96,24 @@ export default function Progression(){
   </section>)}
   </div>
  </div>;
+}
+
+/** Classement de la saison en cours (ou de la dernière close) : points d'activité de la saison. */
+function SeasonRanking({board}:{board:SeasonBoard}){
+ const s=board.season;
+ const day=(iso:string)=>new Date(iso).toLocaleDateString('fr-FR',{day:'numeric',month:'long'});
+ const fr=(n:number)=>n.toLocaleString('fr-FR');
+ const podium=s.rewards.places.filter(p=>p.from<=3);
+ return <section className="social-section">
+  <p className="muted"><strong>Saison « {s.name} »</strong> · {s.open?`depuis le ${day(s.starts_at)}`:`du ${day(s.starts_at)} au ${day(s.ends_at!)}${s.rewarded?' · récompenses distribuées':' · résultats en cours de validation'}`}. Points : +1 par visage découvert, +10 par succès (+5 par palier au-delà du premier), +2 par mission quotidienne et +5 par hebdomadaire réclamées pendant la saison. Podium : titre « Champion de la saison »{podium.length?` et ${podium.map(p=>`${fr(p.deniers)} Deniers`).join(' / ')}`:''}.</p>
+  {board.top.length===0?<p className="muted">Personne n’a encore de point cette saison.</p>
+   :<ol className="ranking">{board.top.map((r,i)=><li key={`${r.handle}-${i}`} className={`rise ${r.me?'me':''} top-${r.position}`} style={{'--i':Math.min(i,15)} as React.CSSProperties}>
+    <span className="rank-pos">{r.position<=3?<Crown size={16}/>:r.position}</span>
+    <Link className="person-name" href={`/joueur/?h=${encodeURIComponent(r.handle)}`}>{r.handle}</Link>
+    <span className="rank-scores"><strong className="rank-score">{fr(r.points)}<small> pts</small></strong><small>{r.faces} visage{r.faces>1?'s':''} · {r.achievements} succès · {r.missions} mission{r.missions>1?'s':''}</small></span>
+   </li>)}</ol>}
+  {board.me&&!board.top.some(r=>r.me)&&<p className="muted">Vous êtes {board.me.position}e avec {fr(board.me.points)} points.</p>}
+ </section>;
 }
 
 type Group={key:string;title:string;subgroups:{key:string;title:string;items:Achievement[]}[]};
