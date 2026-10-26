@@ -112,6 +112,47 @@ describe('God booster',()=>{
     await expectError(rpc(db,admin,'admin_save_god_settings',[1,0,20,2,'Test : trop',null,50]),/check|violates/);
   });
 
+  it('tire des personnages à skin et de vrais skins, jamais une ancienne officielle (27/10)',async()=>{
+    const gds=await seedEdition(db,{prefix:'GDS',perRarity:2});
+    // Dans chaque rareté, un seul des deux personnages a un skin ; tous ont une ancienne officielle active.
+    const {rows:chars}=await db.query<{id:string;rarity:string;skinned:boolean}>(
+      `select id,rarity,row_number() over (partition by rarity order by number)=1 skinned from public.characters where edition_id=$1`,[gds]);
+    const skins=new Set<string>();
+    for(const c of chars){
+      await db.query(`insert into public.card_arts (character_id,kind,label,art_path) values ($1,'legacy','Illustration d’origine','/illustrations/GDS/old.webp')`,[c.id]);
+      if(c.skinned){const {rows:[a]}=await db.query<{id:string}>(`insert into public.card_arts (character_id,kind,label,art_path) values ($1,'alternate','Skin GDS','/illustrations/GDS/skin.webp') returning id`,[c.id]);skins.add(a.id);}
+    }
+    const skinned=new Set(chars.filter(c=>c.skinned).map(c=>c.id));
+    expect((await db.query<{r:string[]|null}>('select private.with_skin($1::uuid[]) r',[chars.filter(c=>!c.skinned).map(c=>c.id)])).rows[0].r).toBeNull();
+    // Poids : un personnage à skin compte 3 fois.
+    const [a,b]=chars;
+    expect((await db.query<{r:string[]}>('select private.skin_weighted($1::uuid[],$2::uuid[],3) r',[[a.id,b.id],[a.id]])).rows[0].r.filter(x=>x===a.id)).toHaveLength(3);
+    await rpc(db,admin,'admin_save_god_settings',[1,0,20,2,'Test : emplacements',null,null,2,3,2]);
+    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({skin_slots:2,skin_weight:3,plain_slots:2});
+    const u=await player();await db.query('update public.booster_balances set purchased_count=30 where owner_id=$1',[u]);
+    let lowSkin=false;
+    for(let i=0;i<30;i++){
+      const o=await open(u,gds);
+      expect(o.god).toBe(true);
+      const {rows}=await db.query<{position:number;character_id:string;art_id:string|null}>(
+        'select position,character_id,art_id from public.pack_opening_cards where opening_id=$1 and position<=5',[o.opening_id]);
+      // 2 cartes à skin garanti et 2 cartes sans skin, placées au hasard ; jamais d'ancienne officielle.
+      const withSkin=rows.filter(r=>r.art_id!==null);
+      expect(withSkin.every(r=>skins.has(r.art_id!)&&skinned.has(r.character_id))).toBe(true);
+      expect(withSkin.length).toBeGreaterThanOrEqual(2);
+      expect(rows.length-withSkin.length).toBeGreaterThanOrEqual(2);
+      if(withSkin.some(r=>r.position<=2))lowSkin=true;
+    }
+    // Les skins ne sont pas réservés aux Rares ou mieux (cartes 3 à 5) : ils tombent aussi sur les cartes 1 et 2.
+    expect(lowSkin).toBe(true);
+    await expectError(rpc(db,admin,'admin_save_god_settings',[1,0,20,2,'Test : trop',null,null,6,3]),/check|violates/);
+    await expectError(rpc(db,admin,'admin_save_god_settings',[1,0,20,2,'Test : trop',null,null,3,3,3]),/check|violates/);
+    // Hors God booster, l'ancienne officielle peut toujours tomber.
+    const {rows:[{n}]}=await db.query<{n:number}>(`select count(*)::int n from public.card_arts a where a.kind='legacy' and a.label='Illustration d’origine'
+      and private.pick_alternate_art(a.character_id,1) = a.id and a.character_id = any($1::uuid[])`,[chars.filter(c=>!c.skinned).map(c=>c.id)]);
+    expect(n).toBe(chars.length/2);
+  });
+
   it('donne des cartes dorées, plus de Rares et le signale',async()=>{
     await rpc(db,admin,'admin_save_god_settings',[1,0,20,2,'Test : toujours']);
     const u=await player();await db.query('update public.booster_balances set purchased_count=3 where owner_id=$1',[u]);
@@ -125,7 +166,7 @@ describe('God booster',()=>{
     await rpc(db,admin,'admin_save_god_settings',[1,100,20,2,'Test : Sanglante']);
     await db.query('update public.booster_balances set purchased_count=1 where owner_id=$1',[u]);
     expect((await open(u,cam)).cards.every((c:any)=>c.finish==='Sanglante')).toBe(true);
-    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({odds:1,blood_pct:100,opened:8});
+    expect(await rpc(db,admin,'admin_god_settings')).toMatchObject({odds:1,blood_pct:100,opened:38});
     await rpc(db,admin,'admin_save_god_settings',[0,10,20,2,'Test : jamais']);
     await db.query('update public.booster_balances set purchased_count=1 where owner_id=$1',[u]);
     expect((await open(u,cam)).god).toBe(false);
