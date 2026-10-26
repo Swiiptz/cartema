@@ -1,12 +1,17 @@
 'use client';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {ArrowLeftRight,Coins,Heart,X,ZoomIn} from 'lucide-react';
+import {AlertTriangle,ArrowLeftRight,Coins,Heart,X,ZoomIn} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {TarotCard} from './Card';
 import {Sheet,Skeleton} from './ui';
 import {callRpc,socialToCard,type SocialCard,type TradeStatus,type WishItem,type Wishlist} from '@/lib/game';
 
 const MAX=10;
+/** Rappels des protections anti-prêt, affichés avant de proposer ou d'accepter un échange. */
+export const TRADE_WARN={
+ received:'Les cartes reçues seront bloquées 72 h : ni échange, ni cadeau, ni vente pendant ce délai.',
+ given:'Les cartes données ne pourront pas vous revenir avant 30 jours, ni par échange, ni par cadeau, ni au marché.',
+};
 export type TradeDraft={friendId:string;friendHandle:string;give?:string[];take?:string[];giveDeniers?:number;takeDeniers?:number;parentId?:string;theirCards?:SocialCard[]};
 
 /** Composition d'un échange (ou d'une contre-proposition) avec un ami. */
@@ -61,6 +66,10 @@ export function TradeComposer({client,myId,draft,onClose,onDone}:{client:Supabas
    {(gd>0||td>0)&&tax>0&&<p className="muted trade-tax">Taxe de {tax} % sur les Deniers reçus :{td>0&&<> vous recevrez <strong>{net(td).toLocaleString('fr-FR')}</strong>{gd>0?',':'.'}</>}{gd>0&&<> {draft.friendHandle} recevra <strong>{net(gd).toLocaleString('fr-FR')}</strong>.</>}</p>}
    {!!status?.trade_daily_limit&&<p className={(status.trades_today??0)>=status.trade_daily_limit?'auth-error':'muted trade-tax'}>Échanges conclus aujourd’hui : {status.trades_today??0}/{status.trade_daily_limit} (renouvelés à 6 h).</p>}
    {room!==null&&<p className={overCap?'auth-error':'muted trade-tax'}>{overCap?`Vous ne pouvez plus recevoir que ${room.toLocaleString('fr-FR')} Deniers par échange cette semaine.`:`Plafond : vous pouvez encore recevoir ${room.toLocaleString('fr-FR')} Deniers par échange cette semaine (sur ${cap.toLocaleString('fr-FR')}).`}</p>}
+   {(take.length>0||give.length>0)&&<div className="trade-warnings" role="note">
+    {take.length>0&&<p><AlertTriangle size={14}/> {TRADE_WARN.received}</p>}
+    {give.length>0&&<p><AlertTriangle size={14}/> {TRADE_WARN.given}</p>}
+   </div>}
    {error&&<p className="auth-error" role="alert">{error}</p>}
    <button className="primary" disabled={!valid||busy} onClick={()=>void submit()}><ArrowLeftRight size={15}/> {busy?'Envoi…':draft.parentId?'Envoyer la contre-proposition':'Proposer l’échange'}</button>
   </div>}
