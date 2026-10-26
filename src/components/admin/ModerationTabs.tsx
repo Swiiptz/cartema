@@ -4,7 +4,8 @@ import Link from 'next/link';
 import {Check,Gift,Trash2,X} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {Skeleton} from '@/components/ui';
-import {callRpc,type SocialCard} from '@/lib/game';
+import {TarotCard} from '@/components/Card';
+import {callRpc,socialToCard,type SocialCard} from '@/lib/game';
 import type {AdminCharacter} from '@/lib/admin';
 
 type Act=(label:string,action:(c:SupabaseClient)=>Promise<unknown>)=>Promise<boolean>;
@@ -39,7 +40,7 @@ export function ReportsTab({client,act,reason}:{client:SupabaseClient;act:Act;re
  </div>;
 }
 
-type OwnedCard=SocialCard&{locked:boolean;reserved_kind:string|null;acquired_at:string};
+type OwnedCard=SocialCard&{locked:boolean;reserved_kind:string|null;acquired_at:string;variant_kind?:string|null};
 const RESERVED:Record<string,string>={listing:'en vente',auction:'aux enchères',trade:'dans un échange',gift:'offerte'};
 
 /** Cartes d'un joueur dans sa fiche : don (personnage, finition, quantité) et retrait d'exemplaires. */
@@ -57,17 +58,21 @@ export function PlayerCards({client,act,reason,playerId,playerName,characters,on
   return()=>{alive=false;};},[pick,client]);
  const artLabel=arts.find(a=>a.id===art)?.label;
  const [filter,setFilter]=useState('');
+ // Exemplaires en version d'illustration (alternative ou ancienne officielle) seulement, et carte agrandie.
+ const [versionsOnly,setVersionsOnly]=useState(false);
+ const [zoom,setZoom]=useState<OwnedCard|null>(null);
  const load=useCallback(async()=>{setCards(await callRpc<OwnedCard[]>(client,'admin_player_cards',{p_id:playerId}).catch(()=>[]));},[client,playerId]);
- useEffect(()=>{setCards(null);void load();},[load]);
+ useEffect(()=>{setCards(null);setVersionsOnly(false);void load();},[load]);
  const matches=useMemo(()=>{const q=query.trim().toLowerCase();if(q.length<2)return [];return characters.filter(c=>c.status==='published'&&!c.is_unique&&(c.name.toLowerCase().includes(q)||String(c.number)===q)).slice(0,8);},[query,characters]);
- const shown=useMemo(()=>(cards??[]).filter(c=>!filter||c.name.toLowerCase().includes(filter.toLowerCase())||c.code.toLowerCase().includes(filter.toLowerCase())),[cards,filter]);
+ const shown=useMemo(()=>(cards??[]).filter(c=>(!versionsOnly||c.variant)&&(!filter||c.name.toLowerCase().includes(filter.toLowerCase())||c.code.toLowerCase().includes(filter.toLowerCase())||(c.variant??'').toLowerCase().includes(filter.toLowerCase()))),[cards,filter,versionsOnly]);
+ const versions=(cards??[]).filter(c=>c.variant).length;
  async function give(){
   if(!pick)return;const n=Number(quantity);
   const r=await reason(`Donner ${n} × ${pick.name} (${finish}${artLabel?` · ${artLabel}`:''}) à ${playerName} ?`,'Donner');if(r===null)return;
   if(await act(`${n} × ${pick.name} donné${n>1?'s':''} à ${playerName}.`,c=>callRpc(c,'admin_grant_card',{p_id:playerId,p_character_id:pick.id,p_finish:finish,p_quantity:n,p_reason:r,p_request_id:crypto.randomUUID(),p_art_id:art||null}))){setPick(null);setQuery('');setQuantity('1');void load();onChanged();}
  }
  async function remove(card:OwnedCard){
-  const r=await reason(`Retirer un exemplaire de ${card.name} (${card.finish}) à ${playerName} ? Il ne recevra pas de Deniers ; la découverte reste.`,'Retirer');if(r===null)return;
+  const r=await reason(`Retirer un exemplaire de ${card.name} (${card.finish}${card.variant?` · ${card.variant}`:''}) à ${playerName} ? Il ne recevra pas de Deniers ; la découverte reste.`,'Retirer');if(r===null)return;
   if(await act(`${card.name} retiré à ${playerName}.`,c=>callRpc(c,'admin_remove_card',{p_instance_id:card.instance_id,p_reason:r}))){void load();onChanged();}
  }
  return <div className="admin-moderation player-cards">
@@ -83,9 +88,18 @@ export function PlayerCards({client,act,reason,playerId,playerName,characters,on
     <button className="primary compact" disabled={!(Number(quantity)>=1&&Number(quantity)<=20)} onClick={()=>void give()}><Gift size={14}/> Donner</button></div>}
   </div>
   {!cards?<Skeleton style={{height:80}}/>:<>
-   <div className="owned-head"><span className="admin-hint">{cards.length} exemplaire{cards.length>1?'s':''}</span>{cards.length>8&&<input className="picker-search" placeholder="Filtrer…" value={filter} onChange={e=>setFilter(e.target.value)}/>}</div>
-   <ul className="owned-admin">{shown.map(c=><li key={c.instance_id}><span>{c.code} · <strong>{c.name}</strong>{c.finish!=='Standard'?` · ${c.finish}`:''}{c.locked?' · verrouillée':''}{c.reserved_kind?` · ${RESERVED[c.reserved_kind]??c.reserved_kind}`:''}</span>
+   <div className="owned-head"><span className="admin-hint">{cards.length} exemplaire{cards.length>1?'s':''}{versions>0?` · ${versions} en version d’illustration`:''}</span>
+    {versions>0&&<button type="button" className={`text-link ${versionsOnly?'on':''}`} aria-pressed={versionsOnly} onClick={()=>setVersionsOnly(v=>!v)}>{versionsOnly?'Toutes les cartes':'Versions seulement'}</button>}
+    {cards.length>8&&<input className="picker-search" placeholder="Filtrer…" value={filter} onChange={e=>setFilter(e.target.value)}/>}</div>
+   <ul className="owned-admin">{shown.map(c=><li key={c.instance_id} className={c.variant?'has-variant':undefined}>
+    {c.variant&&c.art_path&&<button type="button" className="owned-thumb" aria-label={`Voir ${c.name}, ${c.variant}`} onClick={()=>setZoom(c)}><img src={c.art_path.startsWith('/')?`${process.env.NEXT_PUBLIC_BASE_PATH??''}${c.art_path}`:c.art_path} alt=""/></button>}
+    <span>{c.code} · <strong>{c.name}</strong>{c.finish!=='Standard'?` · ${c.finish}`:''}{c.variant&&<em className="line-tag">{c.variant}{c.variant_kind==='legacy'?' · ancienne officielle':''}</em>}{c.signed?' · signée':''}{c.locked?' · verrouillée':''}{c.reserved_kind?` · ${RESERVED[c.reserved_kind]??c.reserved_kind}`:''}</span>
     <button className="icon-button" disabled={!!c.reserved_kind||c.unique} title={c.reserved_kind?'Engagée : annulez d’abord la vente ou l’échange':c.unique?'Carte unique':'Retirer cet exemplaire'} aria-label={`Retirer ${c.name}`} onClick={()=>void remove(c)}><Trash2 size={14}/></button></li>)}</ul>
   </>}
+  {zoom&&<div className="picker-zoom" role="dialog" aria-modal="true" aria-label={`${zoom.name}, ${zoom.variant}`} onClick={e=>{if(e.target===e.currentTarget)setZoom(null);}} onKeyDown={e=>{if(e.key==='Escape')setZoom(null);}}>
+   <div className="picker-zoom-card"><TarotCard card={socialToCard(zoom)}/></div>
+   <p className="admin-hint">{zoom.code} · {zoom.name} · {zoom.variant}{zoom.variant_kind==='legacy'?' (ancienne officielle)':''}{zoom.art_credit?` · ${zoom.art_credit}`:''}</p>
+   <button type="button" className="primary ghost" autoFocus onClick={()=>setZoom(null)}><X size={15}/> Fermer</button>
+  </div>}
  </div>;
 }

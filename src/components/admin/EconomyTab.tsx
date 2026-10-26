@@ -9,7 +9,7 @@ import {callRpc} from '@/lib/game';
 
 type Weighted={value:string;weight:number};
 type Settings={next_set_features?:number;signed_odds?:number;pity_epic_every?:number;pity_legend_every?:number;streak_booster_every?:number;streak_booster_count?:number;trade_cooldown_hours:number;trade_daily_limit:number;gift_daily_limit:number;trade_tax_pct:number;trade_weekly_deniers_cap:number;buyer_tax_pct:number;bid_refund_tax_pct:number;alternate_art_odds:number;booster_offers:Record<string,number>;daily_login_reward:number;discovery_reward:number;welcome_free_boosters:number;free_booster_capacity:number;
- market_commission_pct:number;mission_bonus_daily:number;mission_bonus_weekly:number;recycle_values:Record<Rarity,number>;finish_multipliers:Record<string,number>};
+ market_commission_pct:number;mission_bonus_daily:number;mission_bonus_weekly:number;recycle_values:Record<Rarity,number>;finish_multipliers:Record<string,number>;alternate_rarity_mult?:Record<Rarity,number>};
 type Economy={settings:{version:number;settings:Settings;created_at:string};settings_history:{version:number;created_at:string;by:string|null;active:boolean}[];
  ruleset:{version:number;slots:Weighted[][];finishes:Weighted[];unique_odds:number;notes:string;created_at:string};
  ruleset_history:{version:number;created_at:string;by:string|null;active:boolean;notes:string;openings:number}[]};
@@ -96,32 +96,63 @@ function GodSettings({client,act,reason}:{client:SupabaseClient;act:Act;reason:R
  </section>;
 }
 
-type ArtLine={legacy?:boolean;label:string;active:boolean;odds:number|null;arts:number;active_arts:number;characters:number;owned:number;
+type ArtLine={legacy?:boolean;label:string;active:boolean;odds:number|null;rarity_odds?:Partial<Record<Rarity,number>>;arts:number;active_arts:number;characters:number;owned:number;
  cards?:{art_id:string;code:string;name:string;rarity:string;art_path:string;active:boolean;owned:number}[]};
+type ArtLinesData={global_odds:number;rarity_mult?:Partial<Record<Rarity,number>>;lines:ArtLine[]};
 
-/** Lignes de versions alternatives (même nom de version) : activation et chance propre. */
+/** Lignes de versions alternatives (même nom de version) : activation, chance propre, chance par rareté et nom. */
 function ArtLines({client,act,reason}:{client:SupabaseClient;act:Act;reason:Reason}){
- const [data,setData]=useState<{global_odds:number;lines:ArtLine[]}|null>(null);
+ const [data,setData]=useState<ArtLinesData|null>(null);
  const [odds,setOdds]=useState<Record<string,string>>({});
- const load=useCallback(async()=>{const d=await callRpc<{global_odds:number;lines:ArtLine[]}>(client,'admin_art_lines');setData(d);setOdds(Object.fromEntries(d.lines.map(l=>[l.label,l.odds===null?'':String(l.odds)])));},[client]);
+ // Réglage à la main par rareté (vide = lissé par les multiplicateurs d'Économie).
+ const [manual,setManual]=useState<Record<string,Record<string,string>>>({});
+ const [renaming,setRenaming]=useState<{label:string;value:string}|null>(null);
+ const load=useCallback(async()=>{const d=await callRpc<ArtLinesData>(client,'admin_art_lines');setData(d);
+  setOdds(Object.fromEntries(d.lines.map(l=>[l.label,l.odds===null?'':String(l.odds)])));
+  setManual(Object.fromEntries(d.lines.map(l=>[l.label,Object.fromEntries(ALL_RARITIES.map(r=>[r,l.rarity_odds?.[r]===undefined?'':String(l.rarity_odds[r])]))])));},[client]);
  useEffect(()=>{void load().catch(()=>{});},[load]);
  const chance=(n:number)=>n>0?`1 sur ${n.toLocaleString('fr-FR')}`:'jamais';
- async function save(l:ArtLine,active:boolean){
-  const raw=(odds[l.label]??'').replace(/\s/g,'');const value=raw===''?null:Number(raw);
-  const r=await reason(`« ${l.label} » : ${active?`tombe avec une chance de ${chance(value??data!.global_odds)}${value===null?' (réglage global)':''}`:'ne tombe plus (les exemplaires possédés la gardent)'}.`,'Appliquer');
+ const clean=(s:string|undefined)=>(s??'').replace(/\s/g,'');
+ /** Chance lissée d'une rareté : chance de la ligne (ou globale) divisée par le multiplicateur, comme le serveur. */
+ const smooth=(lineOdds:number|null,r:Rarity)=>{if(lineOdds===0||!data)return 0;const base=lineOdds??data.global_odds;return base>0?Math.max(1,Math.round(base/(data.rarity_mult?.[r]||1))):0;};
+ const lineValue=(l:ArtLine)=>{const raw=clean(odds[l.label]);return raw===''?null:Number(raw);};
+ const manualOf=(l:ArtLine)=>Object.fromEntries(ALL_RARITIES.filter(r=>clean(manual[l.label]?.[r])!=='').map(r=>[r,Number(clean(manual[l.label][r]))]));
+ const summary=(l:ArtLine,m:Record<string,number>)=>ALL_RARITIES.map(r=>`${r} ${chance(lineValue(l)===0?0:m[r]??smooth(lineValue(l),r))}${m[r]!==undefined?' (à la main)':''}`).join(', ');
+ async function save(l:ArtLine,active:boolean,rarityOdds?:Record<string,number>){
+  const value=lineValue(l);const m=rarityOdds??manualOf(l);
+  const r=await reason(`« ${l.label} » : ${active?`chance de base ${chance(value??data!.global_odds)}${value===null?' (réglage global)':''}. Par rareté : ${summary(l,m)}.`:'ne tombe plus (les exemplaires possédés la gardent)'}`,'Appliquer');
   if(r===null)return;
-  if(await act('Ligne de versions enregistrée.',c=>callRpc(c,'admin_set_art_line',{p_label:l.label,p_active:active,p_odds:value,p_reason:r})))await load();
+  if(await act('Ligne de versions enregistrée.',c=>callRpc(c,'admin_set_art_line',{p_label:l.label,p_active:active,p_odds:value,p_reason:r,p_rarity_odds:m})))await load();
+ }
+ async function rename(l:ArtLine){
+  const next=renaming?.value.trim()??'';
+  const r=await reason(`Renommer « ${l.label} » en « ${next} » : ses ${l.arts} version${l.arts>1?'s':''} et son réglage suivent. Les joueurs verront le nouveau nom sur leurs exemplaires.`,'Renommer');
+  if(r===null)return;
+  if(await act('Ligne renommée.',c=>callRpc(c,'admin_rename_art_line',{p_label:l.label,p_new_label:next,p_reason:r}))){setRenaming(null);await load();}
  }
  return <section className="panel admin-edition eco-section">
   <div className="section-header"><div><span className="eyebrow">Versions alternatives</span><h2>Lignes de versions</h2></div></div>
-  <p className="admin-hint">Une ligne regroupe les versions qui portent le même nom : versions alternatives, et anciennes illustrations officielles (« Illustration d’origine »…), qui tombent de la même façon. Chaque ligne d’un personnage tiré est tentée avec sa chance ; laissez vide pour la chance globale ({data?chance(data.global_odds):'…'}), 0 pour jamais. Une version seule se désactive depuis la fiche du personnage.</p>
+  <p className="admin-hint">Une ligne regroupe les versions qui portent le même nom : versions alternatives, et anciennes illustrations officielles (« Illustration d’origine »…), qui tombent de la même façon. Chaque ligne d’un personnage tiré est tentée avec sa chance ; laissez vide pour la chance globale ({data?chance(data.global_odds):'…'}), 0 pour jamais. Par rareté, la chance est divisée par le multiplicateur réglé dans Économie ; une case remplie à la main l’emporte, « Lisser » vide toutes les cases. Une version seule se désactive depuis la fiche du personnage.</p>
   {!data?<Skeleton style={{height:120}}/>:data.lines.length===0?<p className="muted">Aucune version alternative pour l’instant.</p>
-   :<ul className="arts-list">{data.lines.map(l=>{const raw=(odds[l.label]??'').replace(/\s/g,'');const bad=raw!==''&&!/^\d+$/.test(raw);const dirty=raw!==(l.odds===null?'':String(l.odds));
+   :<ul className="arts-list">{data.lines.map(l=>{const raw=clean(odds[l.label]);const m=manual[l.label]??{};
+    const bad=(raw!==''&&!/^\d+$/.test(raw))||ALL_RARITIES.some(r=>clean(m[r])!==''&&!/^\d+$/.test(clean(m[r])));
+    const dirty=raw!==(l.odds===null?'':String(l.odds))||ALL_RARITIES.some(r=>clean(m[r])!==(l.rarity_odds?.[r]===undefined?'':String(l.rarity_odds[r])));
+    const hasManual=Object.keys(l.rarity_odds??{}).length>0;const value=lineValue(l);
     return <li key={l.label} className={`line-row ${l.active?'':'off'}`}>
-     <span><strong>{l.label}</strong>{l.legacy&&<em className="line-tag">anciennes officielles</em>}<small>{l.active?`tirable · ${chance(l.odds??data.global_odds)}${l.odds===null?' (global)':''}`:'désactivée'} · {l.active_arts}/{l.arts} version{l.arts>1?'s':''} active{l.active_arts>1?'s':''} · {l.characters} personnage{l.characters>1?'s':''} · {l.owned} exemplaire{l.owned>1?'s':''}</small></span>
+     <span><strong>{l.label}</strong>{l.legacy&&<em className="line-tag">anciennes officielles</em>}<small>{l.active?`tirable · ${chance(l.odds??data.global_odds)}${l.odds===null?' (global)':''}${hasManual?' · réglée à la main':''}`:'désactivée'} · {l.active_arts}/{l.arts} version{l.arts>1?'s':''} active{l.active_arts>1?'s':''} · {l.characters} personnage{l.characters>1?'s':''} · {l.owned} exemplaire{l.owned>1?'s':''}</small></span>
      <span className="art-actions"><label className="auth-field"><span>1 sur N</span><input inputMode="numeric" aria-label={`Chance de ${l.label}`} placeholder={String(data.global_odds)} value={odds[l.label]??''} onChange={e=>setOdds(o=>({...o,[l.label]:e.target.value}))}/></label>
       <button type="button" className="primary ghost compact" disabled={bad||!dirty} onClick={()=>void save(l,l.active)}>Enregistrer</button>
-      <button type="button" className="text-link" disabled={bad} onClick={()=>void save(l,!l.active)}>{l.active?'Désactiver':'Activer'}</button></span>
+      <button type="button" className="text-link" disabled={bad} onClick={()=>void save(l,!l.active)}>{l.active?'Désactiver':'Activer'}</button>
+      <button type="button" className="text-link" onClick={()=>setRenaming(renaming?.label===l.label?null:{label:l.label,value:l.label})}>Renommer</button></span>
+     {renaming?.label===l.label&&<form className="line-rename" onSubmit={e=>{e.preventDefault();void rename(l);}}>
+      <label className="auth-field"><span>Nouveau nom</span><input autoFocus maxLength={80} value={renaming.value} onChange={e=>setRenaming({label:l.label,value:e.target.value})}/></label>
+      <button className="primary ghost compact" disabled={!renaming.value.trim()||renaming.value.trim()===l.label}>Valider</button>
+      <button type="button" className="text-link" onClick={()=>setRenaming(null)}>Annuler</button></form>}
+     <div className="line-rarities" aria-label={`Chance de ${l.label} par rareté`}>
+      {ALL_RARITIES.map(r=><label key={r} className="auth-field"><span><i className="eco-dot" style={{background:palette[r]}}/>{r}</span>
+       <input inputMode="numeric" aria-label={`${l.label}, ${r}, 1 sur N`} placeholder={value===0?'jamais':String(smooth(value,r))} value={m[r]??''} onChange={e=>setManual(x=>({...x,[l.label]:{...x[l.label],[r]:e.target.value}}))}/></label>)}
+      <button type="button" className="text-link" disabled={bad||!hasManual&&ALL_RARITIES.every(r=>clean(m[r])==='')} onClick={()=>{setManual(x=>({...x,[l.label]:Object.fromEntries(ALL_RARITIES.map(r=>[r,'']))}));void save(l,l.active,{});}}>Lisser</button>
+     </div>
      {l.cards&&l.cards.length>0&&<details className="line-cards"><summary>Voir les {l.cards.length} carte{l.cards.length>1?'s':''} de la ligne</summary>
       <ul>{l.cards.map(c=><li key={c.art_id} className={c.active?'':'off'}><img src={c.art_path.startsWith('/')?`${process.env.NEXT_PUBLIC_BASE_PATH??''}${c.art_path}`:c.art_path} alt=""/>
        <span><strong>{c.code} · {c.name}</strong><small>{c.rarity} · {c.active?'tirable':'version désactivée'} · {c.owned} exemplaire{c.owned>1?'s':''}</small></span></li>)}</ul>
@@ -137,7 +168,9 @@ function SettingsForm({eco,act,reason,onSaved}:{eco:Economy;act:Act;reason:Reaso
   offers:Object.fromEntries(Object.entries(cur.booster_offers).map(([k,v])=>[k,String(v)])) as Record<string,string>,
   recycle:Object.fromEntries(ALL_RARITIES.map(r=>[r,String(cur.recycle_values[r]??0)])) as Record<string,string>,
   gold:String(cur.finish_multipliers['Dorée']),blood:String(cur.finish_multipliers['Sanglante']),
+  altMult:Object.fromEntries(ALL_RARITIES.map(r=>[r,String(cur.alternate_rarity_mult?.[r]??1).replace('.',',')])) as Record<string,string>,
  }));
+ const num=(s:string)=>Number(s.replace(',','.'));
  const int=(s:string)=>Number(s.replace(/\s/g,''));
  // Changements par rapport à la version active : seules ces clés sont envoyées.
  const changes=useMemo(()=>{
@@ -149,15 +182,19 @@ function SettingsForm({eco,act,reason,onSaved}:{eco:Economy;act:Act;reason:Reaso
   if(ALL_RARITIES.some(r=>recycle[r]!==cur.recycle_values[r])){out.recycle_values=recycle;for(const r of ALL_RARITIES)if(recycle[r]!==cur.recycle_values[r])lines.push(`Recyclage ${r} : ${cur.recycle_values[r]} → ${recycle[r]}`);}
   const mult={Standard:1,'Dorée':Number(form.gold.replace(',','.')),Sanglante:Number(form.blood.replace(',','.'))};
   if(mult['Dorée']!==cur.finish_multipliers['Dorée']||mult.Sanglante!==cur.finish_multipliers['Sanglante']){out.finish_multipliers=mult;lines.push(`Multiplicateurs Dorée / Sanglante : ×${cur.finish_multipliers['Dorée']} / ×${cur.finish_multipliers['Sanglante']} → ×${mult['Dorée']} / ×${mult.Sanglante}`);}
+  const altMult=Object.fromEntries(ALL_RARITIES.map(r=>[r,num(form.altMult[r])])) as Record<Rarity,number>;
+  const curMult=(r:Rarity)=>cur.alternate_rarity_mult?.[r]??1;
+  if(ALL_RARITIES.some(r=>altMult[r]!==curMult(r))){out.alternate_rarity_mult=altMult;for(const r of ALL_RARITIES)if(altMult[r]!==curMult(r))lines.push(`Versions alternatives ${r} : ×${curMult(r)} → ×${altMult[r]}`);}
   return {out,lines};
  },[form,cur]);
- const invalid=[...Object.values(form.fields),...Object.values(form.offers),...Object.values(form.recycle)].some(v=>!/^\d+$/.test(v.replace(/\s/g,'')));
+ const invalid=[...Object.values(form.fields),...Object.values(form.offers),...Object.values(form.recycle)].some(v=>!/^\d+$/.test(v.replace(/\s/g,'')))
+  ||Object.values(form.altMult).some(v=>!(/^\d+([.,]\d+)?$/.test(v)&&num(v)>=1&&num(v)<=1000));
  async function save(){
   const r=await reason(`Nouvelle version des réglages (v${eco.settings.version+1}). Changements : ${changes.lines.join(' · ')}. Ils s’appliquent immédiatement à tous les joueurs.`,'Appliquer');
   if(r===null)return;
   if(await act(`Réglages enregistrés (v${eco.settings.version+1}).`,c=>callRpc(c,'admin_save_settings',{p_changes:changes.out,p_reason:r})))await onSaved();
  }
- const setField=(group:'fields'|'offers'|'recycle',k:string,v:string)=>setForm(f=>({...f,[group]:{...f[group],[k]:v}}));
+ const setField=(group:'fields'|'offers'|'recycle'|'altMult',k:string,v:string)=>setForm(f=>({...f,[group]:{...f[group],[k]:v}}));
  return <section className="panel admin-edition eco-section">
   <div className="section-header"><div><span className="eyebrow">Réglages · version {eco.settings.version} du {fmtDate(eco.settings.created_at)}</span><h2>Économie</h2></div></div>
   <h3 className="eco-sub">Boutique</h3>
@@ -168,8 +205,11 @@ function SettingsForm({eco,act,reason,onSaved}:{eco:Economy;act:Act;reason:Reaso
   <div className="eco-grid">{ALL_RARITIES.map(r=><label key={r} className="auth-field"><span><i className="eco-dot" style={{background:palette[r]}}/>{r}</span><input inputMode="numeric" value={form.recycle[r]} onChange={e=>setField('recycle',r,e.target.value)}/></label>)}
    <label className="auth-field"><span>Multiplicateur Dorée</span><input inputMode="decimal" value={form.gold} onChange={e=>setForm(f=>({...f,gold:e.target.value}))}/></label>
    <label className="auth-field"><span>Multiplicateur Sanglante</span><input inputMode="decimal" value={form.blood} onChange={e=>setForm(f=>({...f,blood:e.target.value}))}/></label></div>
+  <h3 className="eco-sub">Versions alternatives par rareté</h3>
+  <p className="admin-hint">La chance « 1 sur N » d’une ligne est divisée par ce multiplicateur selon la rareté de la carte tirée (×5 : 1 sur 1 000 devient 1 sur 200). De 1 à 1 000. Une ligne réglée à la main pour une rareté garde son réglage.</p>
+  <div className="eco-grid">{ALL_RARITIES.map(r=>{const v=num(form.altMult[r]);return <label key={r} className="auth-field"><span><i className="eco-dot" style={{background:palette[r]}}/>{r}</span><input inputMode="decimal" value={form.altMult[r]} onChange={e=>setField('altMult',r,e.target.value)}/><small>× · 1 sur 1 000 devient {v>=1?`1 sur ${Math.max(1,Math.round(1000/v)).toLocaleString('fr-FR')}`:'—'}</small></label>;})}</div>
   {changes.lines.length>0&&<ul className="eco-diff">{changes.lines.map(l=><li key={l}>{l}</li>)}</ul>}
-  <div className="admin-actions"><button className="primary" disabled={invalid||!changes.lines.length} onClick={()=>void save()}><Save size={15}/> Enregistrer une nouvelle version</button>{invalid&&<span className="admin-hint">Nombres entiers uniquement.</span>}</div>
+  <div className="admin-actions"><button className="primary" disabled={invalid||!changes.lines.length} onClick={()=>void save()}><Save size={15}/> Enregistrer une nouvelle version</button>{invalid&&<span className="admin-hint">Nombres entiers uniquement (multiplicateurs des versions : de 1 à 1 000).</span>}</div>
   <History rows={eco.settings_history.map(h=>({v:h.version,date:h.created_at,by:h.by,active:h.active}))}/>
  </section>;
 }

@@ -98,6 +98,64 @@ describe('lignes de versions',()=>{
   });
 });
 
+describe('chances par rareté (26/10)',()=>{
+  const odds=async(line:number|null,manual:object,global:number,rarity:string)=>(await db.query<{o:number}>(
+    'select private.alt_line_odds($1,$2,$3,$4) o',[line,JSON.stringify(manual),global,rarity])).rows[0].o;
+  it('divise la chance par le multiplicateur de la rareté, sauf réglage à la main',async()=>{
+    const mult=(await rpc(db,admin,'admin_art_lines')).rarity_mult;
+    expect(mult).toEqual({Commun:1,'Peu commun':1,Rare:2,'Très rare':3,'Épique':5,'Légendaire':10,Mythique:20});
+    expect(await odds(null,{},1000,'Commun')).toBe(1000);
+    expect(await odds(null,{},1000,'Épique')).toBe(200);
+    expect(await odds(700,{},1000,'Mythique')).toBe(35);
+    expect(await odds(100,{},1000,'Très rare')).toBe(33);
+    expect(await odds(null,{},1,'Mythique')).toBe(1);          // jamais en dessous de 1 sur 1
+    expect(await odds(0,{'Épique':5},1000,'Épique')).toBe(0);  // ligne à 0 : jamais, même réglée à la main
+    expect(await odds(null,{'Épique':50},1000,'Épique')).toBe(50);
+    expect(await odds(null,{'Épique':0},1000,'Épique')).toBe(0);
+    expect(await odds(null,{'Épique':50},1000,'Rare')).toBe(500);
+    expect(await odds(null,{},0,'Épique')).toBe(0);
+  });
+  it('réglage à la main par ligne, lissage et multiplicateurs modifiables',async()=>{
+    const c=await char(6); // Légendaire
+    const art=await rpc<string>(db,admin,'admin_add_card_art',[c,PAINT,{},'Ligne Légende','Test']);
+    const pick=async()=>(await db.query<{a:string|null}>('select private.pick_alternate_art($1,1000000) a',[c])).rows[0].a;
+    expect(await pick()).toBeNull(); // 1 sur 100 000 : quasi jamais
+    await rpc(db,admin,'admin_set_art_line',['Ligne Légende',true,null,'À la main',{'Légendaire':1}]);
+    expect(await pick()).toBe(art);
+    const line=(await rpc(db,admin,'admin_art_lines')).lines.find((l:any)=>l.label==='Ligne Légende');
+    expect(line.rarity_odds).toEqual({'Légendaire':1});
+    // Sans p_rarity_odds, le réglage à la main est gardé ; {} le retire (lissage).
+    await rpc(db,admin,'admin_set_art_line',['Ligne Légende',true,null,'Chance globale']);
+    expect(await pick()).toBe(art);
+    await rpc(db,admin,'admin_set_art_line',['Ligne Légende',true,null,'Lisser',{}]);
+    expect(await pick()).toBeNull();
+    await expectError(rpc(db,admin,'admin_set_art_line',['Ligne Légende',true,null,'x',{Inconnue:3}]),/invalid_odds/);
+    await expectError(rpc(db,admin,'admin_set_art_line',['Ligne Légende',true,null,'x',{Rare:-1}]),/invalid_odds/);
+    // Multiplicateurs : toutes les raretés, de 1 à 1 000.
+    const all={Commun:1,'Peu commun':1,Rare:2,'Très rare':3,'Épique':5,'Légendaire':10,Mythique:20};
+    await expectError(rpc(db,admin,'admin_save_settings',[{alternate_rarity_mult:{...all,Mythique:0}},'x']),/invalid_setting/);
+    await expectError(rpc(db,admin,'admin_save_settings',[{alternate_rarity_mult:{Rare:2}},'x']),/invalid_setting/);
+    await rpc(db,admin,'admin_save_settings',[{alternate_rarity_mult:{...all,'Légendaire':100}},'Plus de légendes']);
+    expect(await odds(null,{},1000,'Légendaire')).toBe(10);
+    await rpc(db,admin,'admin_save_settings',[{alternate_rarity_mult:all},'Retour']);
+  });
+  it('renomme une ligne partout, réglages compris',async()=>{
+    const c1=await char(1),c2=await char(2);
+    await rpc(db,admin,'admin_add_card_art',[c1,PAINT,{},'Ligne Brouillon','Test']);
+    await rpc(db,admin,'admin_add_card_art',[c2,PAINT,{},'Ligne Brouillon','Test']);
+    await rpc(db,admin,'admin_add_card_art',[c2,PAINT,{},'Ligne Prise','Test']);
+    await rpc(db,admin,'admin_set_art_line',['Ligne Brouillon',true,250,'Réglage',{Rare:40}]);
+    await expectError(rpc(db,admin,'admin_rename_art_line',['Ligne Brouillon','Ligne Prise','x']),/line_exists/);
+    await expectError(rpc(db,admin,'admin_rename_art_line',['Ligne Brouillon','  ','x']),/invalid_label/);
+    await expectError(rpc(db,admin,'admin_rename_art_line',['Inconnue','Autre','x']),/not_found/);
+    await expectError(rpc(db,await player('curieux_renom'),'admin_rename_art_line',['Ligne Brouillon','Pirate','x']),/./);
+    await rpc(db,admin,'admin_rename_art_line',['Ligne Brouillon',' Ligne Aube ','Nom définitif']);
+    const lines=(await rpc(db,admin,'admin_art_lines')).lines;
+    expect(lines.find((l:any)=>l.label==='Ligne Brouillon')).toBeUndefined();
+    expect(lines.find((l:any)=>l.label==='Ligne Aube')).toMatchObject({odds:250,rarity_odds:{Rare:40},arts:2,characters:2});
+  });
+});
+
 describe('contributions des joueurs',()=>{
   it('propose une illustration, l’admin accepte avec récompense, l’auteur est prévenu',async()=>{
     const u=await player('artiste');const c=await char(4);
