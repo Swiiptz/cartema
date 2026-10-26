@@ -25,7 +25,8 @@ export const TarotCard=memo(function TarotCard({card}:{card:DemoCard}){
  return renderCard(tuple,id,illustration,card.artLayout==='full'||card.artLayout==='cover'||card.artLayout==='fullart'?card.artLayout:'portrait',!!card.provisional,Number.isFinite(card.artOffsetY)?Math.max(-40,Math.min(40,card.artOffsetY!)):0,card.silhouette,!!card.unique,card.signature?escape(resolveIllustration(card.signature)??''):undefined);
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[id,card.id,card.name,card.clan,card.role,card.rarity,card.known,card.finish,card.illustration,card.artLayout,card.artOffsetY,card.provisional,card.silhouette,card.unique,card.signature]);
- const face=<article className="tarot-card" style={{'--rarity-color':palette[card.rarity]} as React.CSSProperties} aria-label={`${card.known?card.name:'Personnage non découvert'}, ${card.provisional?'cadre de présentation':card.unique?'carte unique':card.rarity}${card.artistCopy?', exemplaire de l’artiste':''}`} dangerouslySetInnerHTML={{__html:html}}/>;
+ const label=`${card.known?card.name:'Personnage non découvert'}, ${card.provisional?'cadre de présentation':card.unique?'carte unique':card.id.startsWith('ETER-')?`carte éternelle, ${card.rarity}`:card.rarity}`;
+ const face=<article className="tarot-card" style={{'--rarity-color':palette[card.rarity]} as React.CSSProperties} aria-label={label} dangerouslySetInnerHTML={{__html:html}}/>;
  return card.artistCopy?<div className="artist-copy-card">{face}<span className="artist-pill" aria-hidden="true">Exemplaire de l’artiste</span></div>:face;
 },(a,b)=>sameCard(a.card,b.card));
 export function CardBack({pack=false}:{pack?:boolean}){

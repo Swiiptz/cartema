@@ -1433,3 +1433,79 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 .notice-cards li{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border:1px solid #c9a45c44;border-radius:10px;background:#1c1220;font:400 14px var(--ui)}
 .notice-cards small{color:var(--gold2)}
 .notice-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+/* Révélation d'une éternelle : la carte tourne sur elle-même et ralentit, éclair blanc et couronne de feu d'argent (26/10). */
+.eternal-spin .flip-inner{transition:transform 3.4s cubic-bezier(.1,.62,.12,1)}
+.eternal-spin .is-revealed .flip-inner{transform:rotateY(1620deg)}
+.eternal-spin .flip-card.is-revealed{animation:eter-lift 3.4s cubic-bezier(.2,.7,.2,1) both}
+@keyframes eter-lift{0%{transform:translateY(0) scale(.9)}45%{transform:translateY(-18px) scale(1.12)}100%{transform:translateY(0) scale(1)}}
+.eternal-spin.slot-revealed .flip-card{filter:drop-shadow(0 0 22px #eef3f8aa) drop-shadow(0 0 4px #ffffff)}
+.eternal-flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,#ffffff 0,#f4f7fa99 18%,transparent 55%);animation:eter-flash 1.1s ease-out both}
+@keyframes eter-flash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.eternal-spin .flip-inner{transition:none}.eternal-spin .flip-card.is-revealed{animation:none}.eternal-flash{display:none}}
+/* Cartes éternelles (ETER), style illustré : flammes qui ondulent, volutes, gemmes, reflet (26/10). */
+.tarot-card .eternal-card{box-shadow:0 0 0 1px #eef1f455,0 0 16px #dfe6ee2e}
+.eternal-card svg{overflow:visible}
+.eternal-card .eter-flame{transform-box:fill-box;transform-origin:50% 100%;animation:eter-sway var(--d,1.6s) ease-in-out infinite alternate;animation-delay:calc(var(--f) * -.31s)}
+.eternal-card .eter-flame-in{transform-box:fill-box;transform-origin:50% 100%;animation:eter-lick calc(var(--d,1.6s) * .62) ease-in-out infinite alternate;animation-delay:calc(var(--f) * -.19s)}
+.eternal-card .eter-wisp{transform-box:fill-box;transform-origin:50% 100%;animation:eter-wisp 2.8s ease-out infinite;animation-delay:calc(var(--w) * -.43s);opacity:0}
+.eternal-card .eter-gem{animation:eter-gem 3.2s ease-in-out infinite alternate}
+.eternal-card .eter-halo{animation:eter-breathe 3.4s ease-in-out infinite alternate}
+.eternal-card .eter-sweep{animation:eter-sweep 5.5s ease-in-out infinite}
+@keyframes eter-sway{0%{transform:rotate(-7deg) scale(.94,.86)}50%{transform:rotate(2deg) scale(1.04,1.08)}100%{transform:rotate(6deg) scale(.98,.95)}}
+@keyframes eter-lick{0%{transform:skewX(6deg) scaleY(.9)}100%{transform:skewX(-6deg) scaleY(1.08)}}
+@keyframes eter-wisp{0%{transform:translateY(0) scale(.6);opacity:0}20%{opacity:.95}100%{transform:translateY(-22px) scale(.25);opacity:0}}
+@keyframes eter-gem{from{filter:brightness(.9)}to{filter:brightness(1.35)}}
+@keyframes eter-breathe{from{opacity:.08}to{opacity:.26}}
+@keyframes eter-sweep{0%,35%{transform:translateX(0)}75%,100%{transform:translateX(330px)}}
+/* À la révélation, les flammes s'embrasent avant de reprendre leur taille. */
+.eternal-spin.slot-revealed .eter-flames{transform-origin:100px 150px;animation:eter-blaze 3.4s cubic-bezier(.2,.7,.2,1) both}
+@keyframes eter-blaze{0%{transform:scale(.9);opacity:.4}35%{transform:scale(1.14);opacity:1}100%{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.eternal-card .eter-flame,.eternal-card .eter-flame-in,.eternal-card .eter-wisp,.eternal-card .eter-gem,.eternal-card .eter-halo,.eternal-card .eter-sweep,.eternal-spin.slot-revealed .eter-flames{animation:none}}
+/* ETER : langues de feu illustrées qui dansent, cœur qui ondule à contretemps, gouttes qui montent (26/10). */
+.eternal-card .eter-tongue{transform-box:fill-box;transform-origin:50% 100%;animation:eter-dance var(--d,1.8s) ease-in-out infinite alternate;animation-delay:calc(var(--t) * -.29s)}
+.eternal-card .eter-tongue-in{transform-box:fill-box;transform-origin:50% 100%;animation:eter-core calc(var(--d,1.8s) * .58) ease-in-out infinite alternate;animation-delay:calc(var(--t) * -.17s)}
+.eternal-card .eter-drop{transform-box:fill-box;transform-origin:50% 100%;animation:eter-drop 2.6s ease-out infinite;animation-delay:calc(var(--p) * -.41s);opacity:0}
+@keyframes eter-dance{0%{transform:skewX(7deg) scale(1,.9)}35%{transform:skewX(-4deg) scale(.95,1.08)}70%{transform:skewX(3deg) scale(1.03,.97)}100%{transform:skewX(-7deg) scale(.97,1.1)}}
+@keyframes eter-core{0%{transform:skewX(-8deg) scaleY(.88)}100%{transform:skewX(8deg) scaleY(1.1)}}
+@keyframes eter-drop{0%{transform:translateY(4px) scale(.5) rotate(-10deg);opacity:0}20%{opacity:1}100%{transform:translateY(-26px) scale(.2) rotate(14deg);opacity:0}}
+@media(prefers-reduced-motion:reduce){.eternal-card .eter-tongue,.eternal-card .eter-tongue-in,.eternal-card .eter-drop{animation:none}.eternal-card .eter-drop{opacity:.8}}
+/* ETER : éclat de lumière qui parcourt l'orfèvrerie d'argent (26/10). */
+.eternal-card .eter-glint{animation:eter-glint 3.6s linear infinite;opacity:.9}
+@keyframes eter-glint{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){.eternal-card .eter-glint{animation:none;opacity:0}}
+/* ETER : particules d'argent qui montent en dérivant (26/10). */
+.eternal-card .eter-motes circle{transform-box:fill-box;transform-origin:center;opacity:0;animation:eter-mote 6.5s ease-in-out infinite;animation-delay:calc(var(--m) * -.73s)}
+.eternal-card .eter-motes circle:nth-child(3n){animation-duration:8.5s}
+.eternal-card .eter-motes circle:nth-child(4n+1){animation-duration:5.2s}
+@keyframes eter-mote{0%{transform:translate(0,0) scale(.6);opacity:0}15%{opacity:1}50%{transform:translate(4px,-38px) scale(1.15)}85%{opacity:.7}100%{transform:translate(-3px,-80px) scale(.5);opacity:0}}
+@media(prefers-reduced-motion:reduce){.eternal-card .eter-motes circle{animation:none;opacity:.6}}
+/* Carte éternelle offerte : invitation puis révélation en plein écran (26/10). */
+.eternal-invite{display:grid;justify-items:center;gap:12px;text-align:center}
+.eternal-invite-card{width:min(150px,40vw);filter:drop-shadow(0 0 18px #e9eef266);animation:eter-invite 2.4s ease-in-out infinite alternate}
+@keyframes eter-invite{from{transform:translateY(0) rotate(-2deg)}to{transform:translateY(-6px) rotate(2deg)}}
+.eternal-gift{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px;background:radial-gradient(circle at 50% 42%,#1d1f26 0,#0a0a0e 70%)}
+.eternal-gift-stage{position:relative;z-index:1;width:min(260px,64vw);perspective:1000px}
+.eternal-gift-stage .reveal-slot{animation:none}
+.eternal-gift-caption{position:relative;z-index:1;min-height:1.4em;margin:0;color:var(--text);font:400 15px var(--ui);text-align:center;opacity:0;transition:opacity .6s}
+.eternal-gift-caption strong{font:600 18px var(--display);color:#f4f6f8}
+.eternal-gift .eternal-gift-done{position:relative;z-index:1;opacity:0;visibility:hidden;transition:opacity .6s,visibility 0s .6s}
+.eternal-gift .eternal-gift-done.on{opacity:1;visibility:visible;transition:opacity .6s}
+.eternal-gift-caption.on{opacity:1}
+@media(prefers-reduced-motion:reduce){.eternal-invite-card{animation:none}}
+/* Révélation de Caïn : encre et sang, fissures pourpres, Marque qui bat, gouttes, secousse (26/10). */
+.cain-ink{position:absolute;inset:0;overflow:hidden}
+.cain-ink i{position:absolute;left:calc(50% + (var(--k) - 3) * 9vmin);top:calc(42% + sin(var(--k) * 1.7rad) * 12vmin);width:34vmin;height:30vmin;margin:-15vmin 0 0 -17vmin;border-radius:58% 42% 61% 39%/45% 57% 43% 55%;background:radial-gradient(closest-side,#0d0b0cee,#2a050ccc 55%,#5c0a1799 72%,transparent);transform:scale(0) rotate(calc(var(--k) * 47deg));animation:cain-ink 2.6s calc(var(--k) * 60ms) cubic-bezier(.15,.8,.2,1) both}
+@keyframes cain-ink{0%{transform:scale(0) rotate(calc(var(--k) * 47deg));opacity:0}20%{opacity:.95}100%{transform:scale(2.2) rotate(calc(var(--k) * 47deg + 20deg));opacity:0}}
+.cain-veins{position:absolute;inset:0;width:100%;height:100%;fill:none;stroke:#c4182f;stroke-width:.9;stroke-linecap:round;filter:drop-shadow(0 0 3px #c4182f);stroke-dasharray:100;stroke-dashoffset:100;animation:cain-veins 2.4s .15s cubic-bezier(.3,.7,.2,1) both}
+@keyframes cain-veins{0%{stroke-dashoffset:100;opacity:1}55%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+.cain-mark{position:absolute;left:50%;top:42%;width:62vmin;height:62vmin;margin:-31vmin 0 0 -31vmin;animation:cain-beat 2.6s ease-out both}
+.cain-mark svg{width:100%;height:100%;fill:none;stroke:#c4182f;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 8px #c4182f);stroke-dasharray:100;animation:cain-draw 1s .1s ease-out both}
+@keyframes cain-draw{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+@keyframes cain-beat{0%{transform:scale(.5);opacity:0}12%{transform:scale(1.05);opacity:.9}20%{transform:scale(.96)}30%{transform:scale(1.1)}42%{transform:scale(.98)}60%{transform:scale(1.04);opacity:.6}100%{transform:scale(1.2);opacity:0}}
+.cain-drops{position:absolute;inset:0;overflow:hidden}
+.cain-drops i{position:absolute;top:-6%;left:calc(4% + var(--k) * 7%);width:5px;height:13px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:linear-gradient(#5c0a17,#a3132a);box-shadow:0 0 4px #c4182f88;opacity:0;animation:cain-drop 1.8s calc(.2s + var(--k) * 61ms) cubic-bezier(.5,0,.9,.6) both}
+.cain-drops i:nth-child(3n){width:4px;height:10px;animation-duration:2.2s}
+@keyframes cain-drop{0%{transform:translateY(0);opacity:0}10%{opacity:1}100%{transform:translateY(110vh);opacity:.7}}
+.cain-reveal.slot-revealed .flip-card{animation:cain-shake .55s .05s cubic-bezier(.36,.07,.19,.97) both}
+@keyframes cain-shake{10%,90%{transform:translate(-1px,0)}20%,80%{transform:translate(3px,1px)}30%,50%,70%{transform:translate(-6px,-1px) rotate(-.6deg)}40%,60%{transform:translate(6px,1px) rotate(.6deg)}}
+@media(prefers-reduced-motion:reduce){.cain-ink,.cain-veins,.cain-drops{display:none}.cain-mark,.cain-mark svg,.cain-reveal.slot-revealed .flip-card{animation:none}.cain-mark{opacity:.4}}

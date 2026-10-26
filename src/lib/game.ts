@@ -275,8 +275,10 @@ export async function callRpc<T>(client:SupabaseClient,fn:string,args?:Record<st
 // carte unique toujours en tout dernier.
 // Affichage seulement : l'historique serveur conserve les positions du tirage.
 const FINISH_ORDER=['Standard','Dorée','Sanglante'];
-export function revealOrder<C extends {rarity:Rarity;finish?:string;unique?:boolean}>(cards:readonly C[]):C[]{
- return cards.map((card,i)=>({card,i})).sort((a,b)=>Number(!!a.card.unique)-Number(!!b.card.unique)||ALL_RARITIES.indexOf(a.card.rarity)-ALL_RARITIES.indexOf(b.card.rarity)||FINISH_ORDER.indexOf(a.card.finish??'Standard')-FINISH_ORDER.indexOf(b.card.finish??'Standard')||a.i-b.i).map(x=>x.card);
+/** Ordre de révélation : rareté croissante, puis les éternelles (ETER), la carte unique en tout dernier. */
+export function revealOrder<C extends {rarity:Rarity;finish?:string;unique?:boolean;id?:string}>(cards:readonly C[]):C[]{
+ const last=(c:C)=>c.unique?2:c.id?.startsWith('ETER-')?1:0;
+ return cards.map((card,i)=>({card,i})).sort((a,b)=>last(a.card)-last(b.card)||ALL_RARITIES.indexOf(a.card.rarity)-ALL_RARITIES.indexOf(b.card.rarity)||FINISH_ORDER.indexOf(a.card.finish??'Standard')-FINISH_ORDER.indexOf(b.card.finish??'Standard')||a.i-b.i).map(x=>x.card);
 }
 
 /** Concours d'illustrations (voir supabase/migrations/20261022260000_art_contest.sql). */
