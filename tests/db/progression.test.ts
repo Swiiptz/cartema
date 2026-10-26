@@ -335,16 +335,20 @@ describe('De l’or à la lie',()=>{
     const trio=async(n:number)=>{const ids:string[]=[];for(const f of ['Standard','Dorée','Sanglante'])ids.push((await own(n,f)).rows[0].id);return ids;};
     const tiers=async()=>(await rpc<any[]>(db,u,'get_achievements')).filter(a=>a.series==='trio').sort((a,b)=>a.tier-b.tier);
     let s=await tiers();
-    expect(s.map(a=>[a.code,a.rarity])).toEqual([['trio_commun','Commun'],['trio_rare','Rare'],['trio_tres_rare','Très rare'],['trio_epique','Épique'],['trio_legendaire','Légendaire'],['trio_mythique','Mythique']]);
+    expect(s.map(a=>[a.code,a.rarity,a.tier])).toEqual([['trio_commun','Commun',1],['trio_peu_commun','Peu commun',2],['trio_rare','Rare',3],['trio_tres_rare','Très rare',4],['trio_epique','Épique',5],['trio_legendaire','Légendaire',6],['trio_mythique','Mythique',7]]);
     // Une Épique dans ses trois finitions débloque seulement le palier Épique.
     const epic=await trio(await num('Épique'));
     s=await tiers();
-    expect(s.map(a=>!!a.unlocked_at)).toEqual([false,false,false,true,false,false]);
+    expect(s.map(a=>!!a.unlocked_at)).toEqual([false,false,false,false,true,false,false]);
     await trio(await num('Commun'));
     expect((await tiers())[0].unlocked_at).not.toBeNull();
+    // Palier Peu commune (ajouté le 26/10) : « Deniers souillés », 1 000 Deniers et 2 boosters, sans titre.
+    await trio(await num('Peu commun'));
+    expect((await tiers())[1]).toMatchObject({label:'Deniers souillés',reward_deniers:1000,reward_boosters:2,title:null});
+    expect((await tiers())[1].unlocked_at).not.toBeNull();
     // Il faut les posséder au moment du déblocage : une Légendaire incomplète ne compte pas.
     const leg=await num('Légendaire');await own(leg,'Standard');await own(leg,'Dorée');
-    expect((await tiers())[4]).toMatchObject({progress:0,unlocked_at:null,owned_rule:true});
+    expect((await tiers())[5]).toMatchObject({progress:0,unlocked_at:null,owned_rule:true});
     expect(epic).toHaveLength(3);
   });
 });
