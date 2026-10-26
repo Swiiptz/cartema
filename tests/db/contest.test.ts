@@ -7,7 +7,7 @@ const card=async(rarity:string)=>(await db.query<{id:string}>(`select id from pu
 async function player(h:string){const id=await createUser(db,{createdAt:'2026-01-01T00:00:00Z'});await rpc(db,id,'set_handle',[h]);return id;}
 const submit=(u:string,c:string)=>rpc<string>(db,u,'submit_contest_entry',[c,`${u}/${randomUUID()}.webp`]);
 const vote=(u:string,e:string)=>rpc(db,u,'vote_contest_entry',[e,true]);
-const board=async()=>Object.fromEntries((await rpc<any[]>(db,admin,'get_contest_leaderboard')).map(r=>[r.handle,r.points]));
+const board=async()=>Object.fromEntries((await db.query<{handle:string;points:string}>('select handle,points from private.contest_ranking($1)',[contest])).rows.map(r=>[r.handle,Number(r.points)]));
 beforeAll(async()=>{
   db=await createDb();cam=await seedEdition(db,{prefix:'CAM',perRarity:1});
   admin=await createUser(db);await rpc(db,admin,'set_handle',['jury']);
@@ -148,6 +148,11 @@ describe('concours d’illustrations',()=>{
     await db.query(`update public.contests set ends_at=now()-interval '1 minute', starts_at=now()-interval '2 days' where id=$1`,[contest]);
     await expectError(submit(p,rare),/contest_closed/);
     await expectError(vote(w,er),/contest_closed/);
+    // Page des soumissions masquée dès la clôture : ni concours, ni dessins, ni classement détaillé (26/10).
+    expect(await rpc(db,w,'get_contest')).toBeNull();
+    expect((await rpc(db,w,'get_player_state')).contest??null).toBeNull();
+    await expectError(rpc(db,w,'get_contest_card',[rare]),/not_found/);
+    expect(await rpc(db,w,'get_contest_leaderboard')).toEqual([]);
     // Principale pour l'Épique : carte Dorée offerte avec la nouvelle illustration officielle.
     const d1=await rpc(db,admin,'admin_decide_contest_entry',[ep,'main',null,true,'/illustrations/CAM/concours.webp',{},'Superbe']);
     expect(d1.finish).toBe('Dorée');
@@ -164,7 +169,7 @@ describe('concours d’illustrations',()=>{
     expect((await rpc(db,q,'create_listing',[gift.id,500,randomUUID()])).listing_id).toBeTruthy();
     // Galerie : dessins retenus visibles dès les choix faits, podium seulement après la distribution.
     const g0=(await rpc<any[]>(db,w,'get_contest_gallery')).find(x=>x.id===contest);
-    expect(g0).toMatchObject({title:'Concours d’automne',final:false,podium:[]});
+    expect(g0).toMatchObject({title:'Concours d’automne',final:false,podium:[],ranking:[]});
     expect(g0.selected.map((s:any)=>[s.author,s.kind])).toEqual(expect.arrayContaining([['artiste_or','main'],['artiste_argent','alternate']]));
     expect(g0.selected.find((s:any)=>s.kind==='main').card).toMatchObject({art_path:'/illustrations/CAM/concours.webp'});
     expect(g0.selected.find((s:any)=>s.kind==='alternate')).toMatchObject({line_label:'Ligne Concours'});
@@ -183,6 +188,9 @@ describe('concours d’illustrations',()=>{
     const g1=(await rpc<any[]>(db,w,'get_contest_gallery')).find(x=>x.id===contest);
     expect(g1.final).toBe(true);
     expect(g1.podium[0]).toMatchObject({place:1,handle:'artiste_or',points:3});
+    // Classement complet après la distribution : place, pseudo et points, rien d'autre (26/10).
+    expect(g1.ranking).toEqual(expect.arrayContaining([{place:1,handle:'artiste_or',points:3},{place:3,handle:'artiste_argent',points:1}]));
+    expect(g1.ranking.every((x:any)=>Object.keys(x).sort().join()==='handle,place,points')).toBe(true);
   });
 });
 
@@ -220,7 +228,45 @@ describe('versions alternatives retenues',()=>{
   });
 });
 
+describe('ex aequo',()=>{
+  it('partagent la place, et le suivant prend la place juste après (1, 1, 2) : classement, galerie et récompenses (26/10)',async()=>{
+    const id=await rpc<string>(db,admin,'admin_save_contest',[null,'Concours serré',cam,new Date(Date.now()-7200e3).toISOString(),new Date(Date.now()-3600e3).toISOString(),
+      {places:[{from:1,to:1,deniers:100,boosters:0},{from:2,to:2,deniers:50,boosters:0}],others:{deniers:0,boosters:0}},'Serré',null,false]);
+    const a=await player('egal_un'),b=await player('egal_deux'),c=await player('suivant_serre');
+    const give=async(u:string,rarity:string)=>db.query("insert into public.contest_entries (contest_id,character_id,author_id,image_path,selected) values ($1,$2,$3,$4,'main')",[id,await card(rarity),u,`${u}/${randomUUID()}.webp`]);
+    await give(a,'Commun');await give(a,'Rare');await give(b,'Commun');await give(b,'Rare');await give(c,'Commun');
+    const wallet=async(u:string)=>Number((await db.query<{b:string}>('select balance b from public.wallets where owner_id=$1',[u])).rows[0].b);
+    const before=[await wallet(a),await wallet(b),await wallet(c)];
+    await rpc(db,admin,'admin_reward_contest',[id,'Fin du concours serré']);
+    expect([await wallet(a)-before[0],await wallet(b)-before[1],await wallet(c)-before[2]]).toEqual([100,100,50]);
+    const g=(await rpc<any[]>(db,a,'get_contest_gallery')).find(x=>x.id===id);
+    expect(g.ranking).toEqual([{place:1,handle:'egal_deux',points:2},{place:1,handle:'egal_un',points:2},{place:2,handle:'suivant_serre',points:1}]);
+    expect(g.podium.map((x:any)=>x.place)).toEqual([1,1,2]);
+    // Titre du podium : les trois places, ex aequo compris.
+    const {rows}=await db.query('select owner_id from public.achievement_unlocks where code=$1',[`contest:${id}`]);
+    expect(rows).toHaveLength(3);
+    await db.query('delete from public.contests where id=$1',[id]);
+  });
+});
+
 describe('galerie',()=>{
+  it('montre chaque Mythique avec son officielle et toutes ses versions alternatives actives (26/10)',async()=>{
+    const u=await player('amateur_mythes');
+    const myth=await card('Mythique');
+    const id=await rpc<string>(db,admin,'admin_save_contest',[null,'Concours des mythes',cam,new Date(Date.now()-7200e3).toISOString(),new Date(Date.now()-3600e3).toISOString(),null,'Mythes',null,true]);
+    const add=(label:string,active:boolean)=>db.query(`insert into public.card_arts (character_id,kind,label,art_path,credit,active) values ($1,'alternate',$2,$3,'artiste_x',$4)`,[myth,label,`/illustrations/CAM/${label}.webp`,active]);
+    await add('Ligne A',true);await add('Ligne B',true);await add('Retirée',false);
+    const g=(await rpc<any[]>(db,u,'get_contest_gallery')).find(x=>x.id===id);
+    const m=g.mythics.find((x:any)=>x.character_id===myth);
+    const names=m.versions.map((v:any)=>v.variant);
+    expect(names[0]).toBeNull(); // l'officielle d'abord
+    expect(names.slice(-2)).toEqual(['Ligne A','Ligne B']);
+    expect(names).not.toContain('Retirée');
+    expect(m.versions.find((v:any)=>v.variant==='Ligne A')).toMatchObject({art_path:'/illustrations/CAM/Ligne A.webp',art_credit:'artiste_x',rarity:'Mythique'});
+    expect(g.ranking).toEqual([]); // pas encore distribué
+    await db.query("delete from public.card_arts where character_id=$1 and credit='artiste_x'",[myth]);
+    await db.query('delete from public.contests where id=$1',[id]);
+  });
   it('ne montre pas un concours encore ouvert',async()=>{
     const u=await player('visiteur_galerie');
     const open=await rpc<string>(db,admin,'admin_save_contest',[null,'Concours ouvert',cam,new Date(Date.now()-3600e3).toISOString(),new Date(Date.now()+86400e3).toISOString(),null,'Ouvert']);

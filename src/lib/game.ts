@@ -289,8 +289,11 @@ export type ContestPlace={from:number;to:number;deniers:number;boosters:number};
 export type ContestRewards={places:ContestPlace[];others:{deniers:number;boosters:number}};
 /** Galerie : concours clos, dessins retenus (carte rendue avec l'illustration) et podium une fois distribué. */
 export type ContestGalleryItem={entry_id:string;character:string;code:string;rarity:Rarity;author:string|null;kind:'main'|'alternate';line_label:string|null;real_drawing:boolean;image_path:string;card:SocialCard};
+export type ContestGalleryMythic={character_id:string;character:string;code:string;versions:SocialCard[]};
 export type ContestGallery={id:string;title:string;edition:string;starts_at:string;ends_at:string;final:boolean;entries:number;artists:number;
- podium:{place:number;handle:string;points:number;selected:number;leads:number}[];selected:ContestGalleryItem[]};
+ podium:{place:number;handle:string;points:number;selected:number;leads:number}[];selected:ContestGalleryItem[];
+ /** Classement complet après la distribution (place, pseudo, points), et Mythiques avec toutes leurs versions (26/10). */
+ ranking?:{place:number;handle:string;points:number}[];mythics?:ContestGalleryMythic[]};
 export type Contest={id:string;title:string;starts_at:string;ends_at:string;open:boolean;rewarded:boolean;edition:string;rewards:ContestRewards;submissions_end_at?:string|null;submissions_open?:boolean;rules?:string|null;upcoming?:boolean;priority_multiplier?:number;allow_mythic?:boolean;mythic_multiplier?:number;my_entries:number;my_points:number;cards:ContestCard[]};
 export type ContestEntry={entry_id:string;image_path:string;author:string;votes:number;leading:boolean;mine:boolean;my_vote:boolean;selected:'main'|'alternate'|null;created_at:string};
 export type ContestRank={position:number;handle:string;leads:number;selected:number;real:number;points:number;me:boolean};

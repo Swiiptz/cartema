@@ -52,7 +52,7 @@ export default function Concours(){
  if(!configured||!ready)return <div className="page"><Skeleton style={{height:40,width:'40%'}}/><Skeleton style={{height:260,marginTop:16}}/></div>;
  if(!session)return <div className="page auth-screen"><section className="panel auth-panel"><span className="eyebrow">Concours</span><h1>Le concours d’illustrations.</h1><p className="muted">Connectez-vous pour proposer vos dessins et voter.</p><Link className="primary" href="/connexion/">Se connecter</Link></section></div>;
  if(contest===undefined)return <div className="page"><Skeleton style={{height:40,width:'40%'}}/><Skeleton style={{height:260,marginTop:16}}/></div>;
- if(contest===null)return <div className="page"><section className="panel album-empty"><Palette size={28}/><h2>Aucun concours en cours.</h2><p className="muted">Le prochain concours d’illustrations sera annoncé ici.</p><Link className="primary" href="/concours/galerie/"><Images size={15}/> Voir la galerie</Link><Link className="primary ghost" href="/">Retour à l’accueil</Link></section></div>;
+ if(contest===null)return <div className="page"><section className="panel album-empty"><Palette size={28}/><h2>Aucun concours en cours.</h2><p className="muted">Le prochain concours d’illustrations sera annoncé ici. Les résultats des concours terminés sont dans la galerie.</p><Link className="primary" href="/concours/galerie/"><Images size={15}/> Voir les résultats</Link><Link className="primary ghost" href="/">Retour à l’accueil</Link></section></div>;
 
  const me=ranking?.find(r=>r.me);
  return <div className="page contest-page">
