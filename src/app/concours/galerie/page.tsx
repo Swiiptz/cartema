@@ -52,7 +52,7 @@ export default function Galerie(){
    <div key={`${c.id}-${current}`} className="tab-panel">
    {current==='official'&&(officials.length===0?<p className="muted">Aucune illustration officielle retenue pour l’instant.</p>
     :<ul className="gallery-grid">{officials.map(s=><li key={s.entry_id} className="gallery-item">
-     <button className="gallery-card" onClick={()=>setZoom({src:contestImageUrl(s.image_path)??'',caption:`${s.character} · par ${s.author??'un ancien joueur'}`})} aria-label={`Voir le dessin de ${s.author??'un ancien joueur'} pour ${s.character}`}><TarotCard card={socialToCard(s.card)}/></button>
+     <button className="gallery-card" onClick={()=>setZoom({src:contestImageUrl(s.image_path)??'',caption:`${s.character} · par ${s.author??'un ancien joueur'}`})} aria-label={`Voir le dessin de ${s.author??'un ancien joueur'} pour ${s.character}`}><TarotCard card={socialToCard({...s.card,artist_copy:false})}/></button>
      <div className="gallery-caption"><strong>{s.character}</strong>
       <small>par {s.author?<Link href={`/joueur/?h=${encodeURIComponent(s.author)}`}>{s.author}</Link>:'un ancien joueur'}</small></div>
     </li>)}</ul>)}

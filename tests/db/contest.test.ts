@@ -167,6 +167,13 @@ describe('concours d’illustrations',()=>{
     const copy=(await rpc<any[]>(db,q,'get_inventory',[rare])).find(x=>x.instance_id===gift.id);
     expect(copy).toMatchObject({artist_copy:true,artist_until:null,cooldown_until:null});
     expect((await rpc(db,q,'create_listing',[gift.id,500,randomUUID()])).listing_id).toBeTruthy();
+    // Mention visible des autres joueurs (marché, échanges, cadeaux, vitrine : card_json), et groupe à part au marché (26/10).
+    expect((await db.query<{c:any}>("select private.card_json(character_id,finish,id) c from public.inventory_items where id=$1",[gift.id])).rows[0].c).toMatchObject({artist_copy:true});
+    const {rows:[same]}=await db.query<{id:string}>('insert into public.inventory_items (owner_id,character_id,finish,art_id) select owner_id,character_id,finish,art_id from public.inventory_items where id=$1 returning id',[gift.id]);
+    expect((await db.query<{c:any}>("select private.card_json(character_id,finish,id) c from public.inventory_items where id=$1",[same.id])).rows[0].c).toMatchObject({artist_copy:false});
+    await rpc(db,q,'create_listing',[same.id,400,randomUUID()]);
+    const mb=(await rpc<any>(db,w,'get_market_board',['fixed'])).items.filter((x:any)=>x.card.character_id===rare);
+    expect(mb.map((x:any)=>[x.card.artist_copy,x.offers]).sort()).toEqual([[false,1],[true,1]]);
     // Galerie : dessins retenus visibles dès les choix faits, podium seulement après la distribution.
     const g0=(await rpc<any[]>(db,w,'get_contest_gallery')).find(x=>x.id===contest);
     expect(g0).toMatchObject({title:'Concours d’automne',final:false,podium:[],ranking:[]});

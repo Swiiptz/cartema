@@ -8,10 +8,12 @@ export type DemoCard={id:string;name:string;clan:string;role:string;rarity:Rarit
  /** Découverte par l'ouverture en cours (pastille « Nouveau »). */
  fresh?:boolean;
  /** Exemplaire signé : image de la signature posée sur l'illustration. */
- signature?:string};
+ signature?:string;
+ /** Exemplaire offert à l'auteur d'un dessin retenu au concours : pastille sur la carte. */
+ artistCopy?:boolean};
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const sameCard=(a:DemoCard,b:DemoCard)=>a.id===b.id&&a.name===b.name&&a.clan===b.clan&&a.role===b.role&&a.rarity===b.rarity&&a.known===b.known&&a.finish===b.finish
- &&a.illustration===b.illustration&&a.artLayout===b.artLayout&&a.artOffsetY===b.artOffsetY&&a.provisional===b.provisional&&a.silhouette===b.silhouette&&a.unique===b.unique&&a.signature===b.signature;
+ &&a.illustration===b.illustration&&a.artLayout===b.artLayout&&a.artOffsetY===b.artOffsetY&&a.provisional===b.provisional&&a.silhouette===b.silhouette&&a.unique===b.unique&&a.signature===b.signature&&!!a.artistCopy===!!b.artistCopy;
 /** Carte dessinée en SVG ; mémorisée car la collection en affiche des centaines. */
 export const TarotCard=memo(function TarotCard({card}:{card:DemoCard}){
  const id=useId().replace(/[^a-zA-Z0-9_-]/g,'');
@@ -23,7 +25,8 @@ export const TarotCard=memo(function TarotCard({card}:{card:DemoCard}){
  return renderCard(tuple,id,illustration,card.artLayout==='full'||card.artLayout==='cover'||card.artLayout==='fullart'?card.artLayout:'portrait',!!card.provisional,Number.isFinite(card.artOffsetY)?Math.max(-40,Math.min(40,card.artOffsetY!)):0,card.silhouette,!!card.unique,card.signature?escape(resolveIllustration(card.signature)??''):undefined);
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[id,card.id,card.name,card.clan,card.role,card.rarity,card.known,card.finish,card.illustration,card.artLayout,card.artOffsetY,card.provisional,card.silhouette,card.unique,card.signature]);
- return <article className="tarot-card" style={{'--rarity-color':palette[card.rarity]} as React.CSSProperties} aria-label={`${card.known?card.name:'Personnage non découvert'}, ${card.provisional?'cadre de présentation':card.unique?'carte unique':card.rarity}`} dangerouslySetInnerHTML={{__html:html}}/>;
+ const face=<article className="tarot-card" style={{'--rarity-color':palette[card.rarity]} as React.CSSProperties} aria-label={`${card.known?card.name:'Personnage non découvert'}, ${card.provisional?'cadre de présentation':card.unique?'carte unique':card.rarity}${card.artistCopy?', exemplaire de l’artiste':''}`} dangerouslySetInnerHTML={{__html:html}}/>;
+ return card.artistCopy?<div className="artist-copy-card">{face}<span className="artist-pill" aria-hidden="true">Exemplaire de l’artiste</span></div>:face;
 },(a,b)=>sameCard(a.card,b.card));
 export function CardBack({pack=false}:{pack?:boolean}){
  const id=useId().replace(/[^a-zA-Z0-9_-]/g,'');

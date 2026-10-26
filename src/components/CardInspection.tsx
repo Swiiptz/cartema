@@ -135,7 +135,7 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
   <div className="owned-head"><span className="eyebrow">Vos exemplaires</span><strong>{items.length}</strong></div>
   {items.length===0?<p className="muted">Vous ne possédez plus d’exemplaire de cette carte. Elle reste découverte dans votre album.</p>:<ul className="owned-list">{items.map(it=><li key={it.instance_id} className={`finish-${it.finish==='Dorée'?'gold':it.finish==='Sanglante'?'blood':'standard'} ${it.listing_id?'listed':''}`}>
    <div className="owned-top">
-    <span className="owned-finish">{it.finish}{it.variant&&<em className="owned-variant"> · {it.variant}</em>}{it.signed&&<em className="owned-signed"> · Signée</em>}<small>Obtenue le {new Date(it.acquired_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}</small></span>
+    <span className="owned-finish">{it.finish}{it.variant&&<em className="owned-variant"> · {it.variant}</em>}{it.signed&&<em className="owned-signed"> · Signée</em>}{it.artist_copy&&<span className="detail-rarity artist-badge">Exemplaire de l’artiste</span>}<small>Obtenue le {new Date(it.acquired_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}</small></span>
     {it.reserved&&!it.listing_id?<span className="listed-badge"><Gift size={12}/> {it.reserved_kind==='gift'?'Cadeau en attente':'Proposée en échange'}</span>:it.listing_id?<span className="listed-badge"><Tag size={12}/> {it.reserved_kind==='gift'?'Offerte':it.reserved_kind==='trade'?'Échange':it.listing_kind==='auction'?'Enchère':'En vente'} · {(it.listing_price??0).toLocaleString('fr-FR')}</span>
      :<button className={`lock-toggle ${it.locked?'on':''}`} disabled={busy} aria-pressed={it.locked} aria-label={it.locked?'Déverrouiller cet exemplaire':'Verrouiller cet exemplaire'} onClick={()=>void toggleLock(it)}>{it.locked?<Lock size={14}/>:<LockOpen size={14}/>}<span>{it.locked?'Verrouillée':'Verrouiller'}</span></button>}
    </div>
@@ -146,7 +146,6 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
       <button className="action-btn" disabled={busy||it.locked||it.reserved||!!it.cooldown_until||!!it.artist_until} title={it.artist_until?`Exemplaire de l’artiste : vous pourrez l’offrir ou l’échanger ${until(it.artist_until)}`:it.cooldown_until?`Reçue récemment : vous pourrez l’offrir ou l’échanger ${until(it.cooldown_until)}`:undefined} onClick={()=>setGifting(it)}><Gift size={14}/> Offrir</button>
       {it.artist_until?<span className="owned-note artist-note">Exemplaire de l’artiste · échangeable et vendable {until(it.artist_until)}</span>
        :it.cooldown_until&&<span className="owned-note">Reçue récemment · échangeable et vendable {until(it.cooldown_until)}</span>}
-      {it.artist_copy&&!it.artist_until&&<span className="owned-note artist-note">Exemplaire de l’artiste</span>}
       <span className="action-sep" aria-hidden="true"/>
       {it.unique?<span className="owned-note">Indestructible</span>:<button className="action-btn recycle" disabled={busy||it.locked||it.reserved} onClick={()=>void recycle([it])}><Recycle size={14}/> Recycler <b>+{it.value.toLocaleString('fr-FR')}</b></button>}</>}
    </div>

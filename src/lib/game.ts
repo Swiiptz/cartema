@@ -40,9 +40,9 @@ export type AlbumCard=DemoCard&{variants?:ArtVariant[];characterId?:string;editi
 export type InventoryItem={cooldown_until?:string|null;
  /** Exemplaire de l'artiste (concours) : mention gardée ; artist_until n'est plus renseigné depuis le 26/10 (plus de délai). */
  artist_copy?:boolean;artist_until?:string|null;signed?:boolean;variant?:string|null;variant_kind?:string|null;instance_id:string;finish:Finish;locked:boolean;reserved:boolean;reserved_kind?:string|null;listing_id?:string|null;listing_price?:number|null;listing_kind?:'fixed'|'auction'|null;acquired_at:string;unique:boolean;value:number};
-export type ListingCard={variant?:string|null;art_credit?:string|null;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
+export type ListingCard={artist_copy?:boolean;variant?:string|null;art_credit?:string|null;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
 export type Listing={buyer_tax?:number;min_next_tax?:number;listing_id:string;price:number;net:number;status:'active'|'sold'|'cancelled'|'expired';kind:'fixed'|'auction';ends_at:string|null;current_bid:number|null;bid_count:number;min_next_bid:number;leading:boolean;won:boolean;created_at:string;closed_at:string|null;mine:boolean;seller:string|null;buyer:string|null;finish:Finish;discovered:boolean;card:ListingCard};
-export type SocialCard={instance_id:string|null;finish:Finish;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;art_credit?:string|null;variant?:string|null;
+export type SocialCard={artist_copy?:boolean;instance_id:string|null;finish:Finish;character_id:string;code:string;number:number;name:string;role_title:string;clan:string|null;rarity:Rarity;unique:boolean;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null;art_credit?:string|null;variant?:string|null;
  /** Exemplaire signé et image de la signature du personnage. */
  signed?:boolean;signature?:string|null;
  /** Choix de la vitrine : exemplaires possédés de cette version (au plus 5 identifiants). */
@@ -53,7 +53,7 @@ export type Friends={friends:Friend[];incoming:FriendRequest[];outgoing:FriendRe
 export type Gift={gift_id:string;status:'pending'|'accepted'|'declined'|'cancelled'|'expired';incoming:boolean;other:string|null;created_at:string;expires_at:string;closed_at:string|null;card:SocialCard};
 export type Trade={trade_id:string;status:'pending'|'accepted'|'declined'|'cancelled'|'expired'|'countered';incoming:boolean;other_id:string;other:string|null;proposer_deniers:number;recipient_deniers:number;created_at:string;expires_at:string;closed_at:string|null;proposer_cards:SocialCard[];recipient_cards:SocialCard[]};
 export type Social={gifts:Gift[];trades:Trade[];pending_count:number};
-export function socialToCard(c:SocialCard):DemoCard{return {credit:c.art_credit??undefined,id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish:c.finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),signature:c.signed?c.signature??undefined:undefined,...art(c.art_meta)};}
+export function socialToCard(c:SocialCard):DemoCard{return {artistCopy:!!c.artist_copy,credit:c.art_credit??undefined,id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish:c.finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),signature:c.signed?c.signature??undefined:undefined,...art(c.art_meta)};}
 export type Mission={assignment_id:string;kind:'daily'|'weekly';label:string;target:number;reward:number;progress:number;claimed:boolean;ends_at:string;replaceable?:boolean};
 export type MissionBonus={boosters:number;claimed:boolean};
 export type Missions={daily:Mission[];weekly:Mission[];replacement_available:boolean;daily_reset:string;weekly_reset:string;daily_bonus?:MissionBonus;weekly_bonus?:MissionBonus};
@@ -93,7 +93,7 @@ export type Leaderboard={top:{position:number;handle:string;title:string|null;sc
 export type TradeStatus={handle_missing?:boolean;verified?:boolean;allowed:boolean;blocked:boolean;available_at:string|null;commission_pct:number;trade_tax_pct?:number;trade_cap?:number;trade_received_week?:number;trade_daily_limit?:number;trades_today?:number;gift_daily_limit?:number;gifts_sent_today?:number;gifts_received_today?:number};
 export function listingToCard(l:Listing):DemoCard{return marketCard(l.card,l.finish);}
 /** Carte du marché (annonce ou entrée regroupée), avec sa version d'illustration. */
-export function marketCard(c:ListingCard,finish:Finish):DemoCard{return {variant:c.variant??undefined,credit:c.art_credit??undefined,id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
+export function marketCard(c:ListingCard,finish:Finish):DemoCard{return {artistCopy:!!c.artist_copy,variant:c.variant??undefined,credit:c.art_credit??undefined,id:c.code,name:c.name,clan:c.clan??'?',role:c.role_title,rarity:c.rarity,unique:c.unique,known:true,finish,illustration:c.art_path??undefined,silhouette:silhouetteIndex(c.silhouette_key),...art(c.art_meta)};}
 /** Offre d'une carte regroupée au marché (prix fixe). */
 export type MarketOffer={listing_id:string;price:number;buyer_tax:number;seller:string|null;mine:boolean;created_at:string};
 export type MarketGroup={max_price?:number;best?:MarketOffer|null;key:string;offers:number;min_price:number;discovered:boolean;finish:Finish;card:ListingCard;listings:MarketOffer[]};
