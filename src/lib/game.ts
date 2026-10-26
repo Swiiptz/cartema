@@ -79,7 +79,9 @@ export type Wishlist={visible:boolean;items:WishItem[]};
 export const EVENT_METRICS:Record<string,string>={open_boosters:'Boosters ouverts',open_days:'Jours avec un booster ouvert',discover:'Visages découverts',discover_days:'Jours avec une découverte',
  rare_pull:'Cartes Rare ou mieux',very_rare_pull:'Cartes Très rare ou mieux',epic_pull:'Cartes Épique ou mieux',recycle:'Cartes recyclées',market_sell:'Ventes au marché',market_buy:'Achats au marché',
  market_list:'Mises en vente',auction_bid:'Enchères placées',trade_done:'Échanges conclus',gift_send:'Cartes offertes',daily_login:'Jours de connexion'};
-export type GameEvent={id:string;name:string;description:string;starts_at:string;ends_at:string;active:boolean;finish_multiplier:number;deniers_multiplier:number;bonus_boosters:number;free_interval_hours:number|null;claimed:boolean};
+export type GameEvent={id:string;name:string;description:string;starts_at:string;ends_at:string;active:boolean;finish_multiplier:number;deniers_multiplier:number;bonus_boosters:number;free_interval_hours:number|null;claimed:boolean;
+ /** Trêve des échanges : ni délai de 72 h, ni délai avant retour pendant l'événement. */
+ trade_truce?:boolean};
 export type NotificationPrefs={friends:boolean;social:boolean;market:boolean;achievements:boolean};
 export type AppNotification={id:string;kind:string;created_at:string;read:boolean;payload:{character?:string;title?:string;public?:boolean;position?:number;deniers?:number;boosters?:number;podium?:boolean;event?:string;rank?:number;accepted?:boolean;kind?:string;note?:string|null;target?:string;category?:string;from?:string;card?:string;finish?:string;status?:string;counter?:boolean;price?:number;amount?:number;auction?:boolean;buyer?:string;label?:string;reward_deniers?:number;reward_boosters?:number;quantity?:number;version?:string|null}};
 export type Notifications={items:AppNotification[];unread:number;prefs:NotificationPrefs};
@@ -228,7 +230,7 @@ const messages:Record<string,string>={
  own_suggestion:'On ne vote pas pour sa propre idée.',
  card_cooldown:'Carte reçue récemment : elle ne peut pas être échangée, offerte ni vendue avant 72 h.',
  artist_copy:'Exemplaire de l’artiste : il ne peut être ni vendu, ni échangé, ni offert pendant 30 jours après le concours.',
- card_returning:'Cette carte a appartenu à ce joueur il y a moins de 30 jours : elle ne peut pas encore lui revenir.',
+ card_returning:'Cette carte a appartenu à ce joueur il y a moins de 7 jours : elle ne peut pas encore lui revenir.',
  trade_daily_limit:'Limite d’échanges du jour atteinte (pour vous ou votre ami). Elle se renouvelle à 6 h.',
  gift_daily_limit:'Vous avez envoyé tous vos cadeaux du jour. La limite se renouvelle à 6 h.',
  gift_received_limit:'Vous avez reçu tous les cadeaux possibles aujourd’hui. Réessayez après 6 h (le cadeau reste en attente 48 h).',

@@ -10,7 +10,7 @@ const MAX=10;
 /** Rappels des protections anti-prêt, affichés avant de proposer ou d'accepter un échange. */
 export const TRADE_WARN={
  received:'Les cartes reçues seront bloquées 72 h : ni échange, ni cadeau, ni vente pendant ce délai.',
- given:'Les cartes données ne pourront pas vous revenir avant 30 jours, ni par échange, ni par cadeau, ni au marché.',
+ given:'Les cartes données ne pourront pas vous revenir avant 7 jours, ni par échange, ni par cadeau, ni au marché.',
 };
 export type TradeDraft={friendId:string;friendHandle:string;give?:string[];take?:string[];giveDeniers?:number;takeDeniers?:number;parentId?:string;theirCards?:SocialCard[]};
 

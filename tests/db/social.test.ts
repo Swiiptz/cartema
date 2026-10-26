@@ -49,7 +49,7 @@ describe('cadeaux',()=>{
     await expectError(rpc(db,b.id,'respond_gift',[gift_id,true]),/gift_unavailable/);
     await expectError(rpc(db,b.id,'send_gift',[a.id,card,randomUUID()]),/card_cooldown/); // reçue à l'instant
     await db.query(`update public.inventory_items set social_received_at=now()-interval '73 hours' where id=$1`,[card]);
-    await expectError(rpc(db,b.id,'send_gift',[a.id,card,randomUUID()]),/card_returning/); // a l'a cédée il y a moins de 30 jours
+    await expectError(rpc(db,b.id,'send_gift',[a.id,card,randomUUID()]),/card_returning/); // a l'a cédée il y a moins de 7 jours
     await db.query(`update public.gifts set closed_at=now()-interval '31 days' where id=$1`,[gift_id]);
     const back=await rpc(db,b.id,'send_gift',[a.id,card,randomUUID()]);
     await rpc(db,a.id,'respond_gift',[back.gift_id,false]);
@@ -239,7 +239,7 @@ describe('délai après réception',()=>{
 
 describe('fin des prêts',()=>{
   const age=(i:string)=>db.query(`update public.inventory_items set social_received_at=now()-interval '73 hours' where id=$1`,[i]);
-  it('une carte ne revient pas avant 30 jours à qui l’a cédée, même par un troisième ami',async()=>{
+  it('une carte ne revient pas avant 7 jours à qui l’a cédée, même par un troisième ami',async()=>{
     const a=await player();const b=await player();const c=await player();
     await befriend(a,b);await befriend(b,c);await befriend(c,a);
     const card=await give(a.id);
@@ -254,8 +254,10 @@ describe('fin des prêts',()=>{
     const g=await rpc(db,b.id,'send_gift',[c.id,card,randomUUID()]);await rpc(db,c.id,'respond_gift',[g.gift_id,true]);await age(card);
     await expectError(rpc(db,c.id,'send_gift',[a.id,card,randomUUID()]),/card_returning/);
     await expectError(rpc(db,c.id,'send_gift',[b.id,card,randomUUID()]),/card_returning/);
-    // Passé 30 jours, plus de blocage.
-    await db.query(`update public.trades set closed_at=now()-interval '31 days' where id=$1`,[t.trade_id]);
+    // Encore bloquée à 6 jours ; passé 7 jours, plus de blocage (26/10 : 30 jours ramenés à 7).
+    await db.query(`update public.trades set closed_at=now()-interval '6 days' where id=$1`,[t.trade_id]);
+    await expectError(rpc(db,c.id,'send_gift',[a.id,card,randomUUID()]),/card_returning/);
+    await db.query(`update public.trades set closed_at=now()-interval '8 days' where id=$1`,[t.trade_id]);
     await rpc(db,c.id,'send_gift',[a.id,card,randomUUID()]);
   });
   it('bloque aussi le rachat au marché et les mises',async()=>{
@@ -269,6 +271,24 @@ describe('fin des prêts',()=>{
     await rpc(db,b.id,'cancel_listing',[back.listing_id]);
     const auction=await rpc(db,b.id,'create_auction',[card,5,24,randomUUID()]);
     await expectError(rpc(db,a.id,'place_bid',[auction.listing_id,5,randomUUID()]),/card_returning/);
+  });
+});
+
+describe('trêve des échanges',()=>{
+  it('pendant un événement « trêve », ni délai de 72 h ni 7 jours sans retour ; tout revient après (26/10)',async()=>{
+    const a=await player();const b=await player();await befriend(a,b);
+    const card=await give(a.id);
+    const g=await rpc(db,a.id,'send_gift',[b.id,card,randomUUID()]);await rpc(db,b.id,'respond_gift',[g.gift_id,true]);
+    await expectError(rpc(db,b.id,'send_gift',[a.id,card,randomUUID()]),/card_cooldown|card_returning/);
+    const {rows:[e]}=await db.query<{id:string}>(`insert into public.events (name,starts_at,ends_at,trade_truce)
+      values ('Trêve des échanges',now()-interval '1 minute',now()+interval '12 hours',true) returning id`);
+    expect((await rpc<any[]>(db,b.id,'get_events')).find(x=>x.id===e.id)).toMatchObject({active:true,trade_truce:true});
+    expect((await rpc(db,a.id,'get_friend_cards',[b.id])).some((x:any)=>x.instance_id===card)).toBe(true);
+    const back=await rpc(db,b.id,'send_gift',[a.id,card,randomUUID()]);await rpc(db,a.id,'respond_gift',[back.gift_id,true]);
+    expect((await owner(card)).owner_id).toBe(a.id);
+    // Fin de la trêve : les protections reprennent.
+    await db.query(`update public.events set ends_at=now()-interval '1 second', starts_at=now()-interval '1 hour' where id=$1`,[e.id]);
+    await expectError(rpc(db,a.id,'send_gift',[b.id,card,randomUUID()]),/card_cooldown|card_returning/);
   });
 });
 

@@ -1,17 +1,18 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
 import Link from 'next/link';
-import {ArrowRight,Clock,Coins,Gift,Hourglass,Sparkles} from 'lucide-react';
+import {ArrowLeftRight,ArrowRight,Clock,Coins,Gift,Hourglass,Sparkles} from 'lucide-react';
 import {useAuth} from './AuthProvider';
 import {Countdown} from './ui';
 import {callRpc,type GameEvent} from '@/lib/game';
 
 /** Effets d'un événement en phrases courtes. */
-export function eventEffects(e:Pick<GameEvent,'finish_multiplier'|'deniers_multiplier'|'bonus_boosters'|'free_interval_hours'>){
+export function eventEffects(e:Pick<GameEvent,'finish_multiplier'|'deniers_multiplier'|'bonus_boosters'|'free_interval_hours'|'trade_truce'>){
  const out:{icon:typeof Sparkles;text:string}[]=[];
  if(e.finish_multiplier>1)out.push({icon:Sparkles,text:`Finitions Dorée et Sanglante ×${String(e.finish_multiplier).replace('.',',')}`});
  if(e.deniers_multiplier>1)out.push({icon:Coins,text:`Deniers ×${String(e.deniers_multiplier).replace('.',',')} (connexion et missions)`});
  if(e.free_interval_hours)out.push({icon:Hourglass,text:`Un booster gratuit toutes les ${e.free_interval_hours} h`});
+ if(e.trade_truce)out.push({icon:ArrowLeftRight,text:'Échanges libres : ni délai de 72 h, ni délai avant qu’une carte revienne'});
  if(e.bonus_boosters>0)out.push({icon:Gift,text:`${e.bonus_boosters} booster${e.bonus_boosters>1?'s':''} offert${e.bonus_boosters>1?'s':''}`});
  return out;
 }
@@ -40,7 +41,7 @@ export function EventBanner({compact=false}:{compact?:boolean}){
   <ul className="event-effects">{eventEffects(e).map(({icon:I,text})=><li key={text}><I size={13}/> {text}</li>)}</ul>
   {e.active&&e.bonus_boosters>0&&(e.claimed?<p className="event-claimed">Cadeau récupéré.</p>
    :<button className="primary compact" disabled={busy} onClick={()=>void claim(e)}><Gift size={14}/> Récupérer {e.bonus_boosters} booster{e.bonus_boosters>1?'s':''}</button>)}
-  <Link className="text-link event-more" href={`/evenement/?id=${e.id}`}>Missions, défi et classement <ArrowRight size={13}/></Link>
+  {!e.trade_truce&&<Link className="text-link event-more" href={`/evenement/?id=${e.id}`}>Missions, défi et classement <ArrowRight size={13}/></Link>}
   {notice&&i===0&&<p className="event-claimed" role="status">{notice}</p>}
  </section>)}</div>;
 }

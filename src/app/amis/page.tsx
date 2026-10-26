@@ -6,6 +6,7 @@ import {TarotCard} from '@/components/Card';
 import {useAuth} from '@/components/AuthProvider';
 import {useAsk} from '@/components/AskDialog';
 import {Countdown,Skeleton} from '@/components/ui';
+import {EventBanner} from '@/components/EventBanner';
 import {TRADE_WARN,TradeComposer,type TradeDraft} from '@/components/TradeComposer';
 import {callRpc,socialToCard,type Friends,type Social,type SocialCard,type Trade} from '@/lib/game';
 
@@ -56,6 +57,7 @@ export default function Amis(){
  return <div className="page social-page">
   {askNode}
   <header className="market-head rise"><div><span className="eyebrow">Cercle</span><h1>Amis &amp; échanges</h1></div></header>
+  {session&&<EventBanner compact/>}
   <div className="segmented social-tabs" role="tablist">{([['friends','Amis',Users],['gifts','Cadeaux',GiftIcon],['trades','Échanges',ArrowLeftRight]] as const).map(([k,l,I])=><button key={k} role="tab" aria-selected={tab===k} onClick={()=>setTab(k)}><I size={15}/> {l}{counts[k]>0&&<b className="tab-count">{counts[k]}</b>}</button>)}</div>
   <div className="admin-toast" aria-live="polite">{message.error&&<p className="auth-error" role="alert">{message.error}<button className="icon-button" aria-label="Fermer" onClick={()=>setMessage({})}><X size={16}/></button></p>}{message.notice&&<p className="auth-notice">{message.notice}</p>}</div>
 
