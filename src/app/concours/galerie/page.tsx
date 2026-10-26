@@ -60,9 +60,9 @@ export default function Galerie(){
    {current==='mythics'&&<div className="gallery-mythics">{mythics.map(m=><section key={m.character_id} className="gallery-mythic">
     <h3>{m.character} <small className="muted">{m.code} · {m.versions.length} version{m.versions.length>1?'s':''}</small></h3>
     <ul className="gallery-grid">{m.versions.map((v,i)=><li key={`${i}-${v.art_path}`} className="gallery-item">
-     <button className="gallery-card" disabled={!v.art_path} onClick={()=>v.art_path&&setZoom({src:v.art_path,caption:`${m.character} · ${v.variant??'Illustration officielle'}${v.art_credit?` · par ${v.art_credit}`:''}`})} aria-label={`Voir la version ${v.variant??'officielle'} de ${m.character}`}><TarotCard card={socialToCard(v)}/></button>
+     <button className="gallery-card" disabled={!v.art_path} onClick={()=>v.art_path&&setZoom({src:v.art_path,caption:`${m.character} · ${v.variant?'Version alternative':'Illustration officielle'}${v.art_credit?` · par ${v.art_credit}`:''}`})} aria-label={`Voir ${v.variant?'une version alternative':'l’illustration officielle'} de ${m.character}`}><TarotCard card={socialToCard(v)}/></button>
      <div className="gallery-caption">
-      <span className={`gallery-kind ${v.variant?'alternate':'main'}`}>{v.variant??'Illustration officielle'}</span>
+      <span className={`gallery-kind ${v.variant?'alternate':'main'}`}>{v.variant?'Version alternative':'Illustration officielle'}</span>
       {v.art_credit&&<small>par {v.art_credit}</small>}</div>
     </li>)}</ul>
    </section>)}</div>}

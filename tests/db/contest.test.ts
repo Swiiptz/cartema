@@ -153,6 +153,9 @@ describe('concours d’illustrations',()=>{
     expect((await rpc(db,w,'get_player_state')).contest??null).toBeNull();
     await expectError(rpc(db,w,'get_contest_card',[rare]),/not_found/);
     expect(await rpc(db,w,'get_contest_leaderboard')).toEqual([]);
+    // L'admin garde le classement de n'importe quel concours, clos compris, avant de distribuer (26/10).
+    expect((await rpc<any[]>(db,admin,'admin_contest_ranking',[contest])).map(x=>x.handle)).toContain('artiste_or');
+    await expectError(rpc(db,w,'admin_contest_ranking',[contest]),/forbidden|admin/);
     // Principale pour l'Épique : carte Dorée offerte avec la nouvelle illustration officielle.
     const d1=await rpc(db,admin,'admin_decide_contest_entry',[ep,'main',null,true,'/illustrations/CAM/concours.webp',{},'Superbe']);
     expect(d1.finish).toBe('Dorée');

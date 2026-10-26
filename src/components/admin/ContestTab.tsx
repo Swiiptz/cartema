@@ -124,7 +124,7 @@ function ContestReview({contest,client,act,reason,ask,onChanged}:{contest:AdminC
  const [busy,setBusy]=useState<string|null>(null);
  const closed=new Date(contest.ends_at)<=new Date();
  const load=useCallback(async()=>{
-  const [e,r]=await Promise.all([callRpc<Entry[]>(client,'admin_contest_entries',{p_contest_id:contest.id}).catch(()=>[]),callRpc<ContestRank[]>(client,'get_contest_leaderboard').catch(()=>[])]);
+  const [e,r]=await Promise.all([callRpc<Entry[]>(client,'admin_contest_entries',{p_contest_id:contest.id}).catch(()=>[]),callRpc<ContestRank[]>(client,'admin_contest_ranking',{p_contest_id:contest.id}).catch(()=>[])]);
   setEntries(e);setRanking(r);
  },[client,contest.id]);
  useEffect(()=>{void load();},[load]);
@@ -196,7 +196,7 @@ function ContestReview({contest,client,act,reason,ask,onChanged}:{contest:AdminC
    <div className="section-header"><div><span className="eyebrow">Classement final</span><h2>Récompenses</h2></div></div>
    {!ranking?<Skeleton style={{height:120}}/>:ranking.length===0?<p className="muted">Personne n’a de point.</p>
    :<ol className="ranking">{ranking.map(r=><li key={r.handle} className={`top-${r.position}`}><span className="rank-pos">{r.position<=3?<Crown size={16}/>:r.position}</span><span className="person-name">{r.handle}<small className="rank-title">{r.leads} en tête · {r.selected} retenu(s) · {r.real} vrai(s) dessin(s)</small></span><span className="rank-scores"><strong className="rank-score">{r.points}<small> pts</small></strong></span></li>)}</ol>}
-   <p className="admin-hint">Le classement affiché est celui du concours en cours ou terminé depuis moins de 14 jours. Le 1er crée sa carte éternelle : ajoutez-la dans l’édition ETER (onglet Personnages) puis donnez-la-lui depuis sa fiche joueur.</p>
+   <p className="admin-hint">Classement de ce concours (ex aequo à la même place, le suivant juste après). Le 1er crée sa carte éternelle : ajoutez-la dans l’édition ETER (onglet Personnages) puis donnez-la-lui depuis sa fiche joueur.</p>
    <div className="admin-actions"><button className="primary" disabled={!!busy||!!contest.rewarded_at||!ranking?.length} onClick={()=>void distribute()}><Gift size={15}/> {contest.rewarded_at?'Récompenses distribuées':'Distribuer les récompenses'}</button></div>
   </section>}
  </>;

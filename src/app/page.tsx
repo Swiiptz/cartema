@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
-import {ArrowRight,BookOpen,Coins,Eye,Flame,Lightbulb,Moon,Sparkles,Users} from 'lucide-react';
+import {ArrowRight,BookOpen,Coins,Eye,Flame,Images,Lightbulb,Moon,Sparkles,Users} from 'lucide-react';
 import {TarotCard,palette} from '@/components/Card';
 import {BoosterSkin} from '@/components/BoosterSkin';
 import {useAuth} from '@/components/AuthProvider';
@@ -116,7 +116,8 @@ function Dashboard(){
     :<p className="muted">Vos cartes apparaîtront ici après votre première ouverture.</p>}
   </section>
 
-  <Link href="/doleances/" className="panel ideas-invite rise" style={{'--i':5} as React.CSSProperties}><Lightbulb size={20}/><span><strong>Une idée, une carte rêvée, un souci ?</strong><small>Écrivez-nous dans la boîte à doléances : l’équipe lit tout et répond.</small></span><ArrowRight size={16}/></Link>
+  <Link href="/concours/galerie/" className="panel ideas-invite rise" style={{'--i':5} as React.CSSProperties}><Images size={20}/><span><strong>Galerie des concours</strong><small>Les illustrations retenues, toutes les versions des Mythiques et le classement de chaque concours.</small></span><ArrowRight size={16}/></Link>
+  <Link href="/doleances/" className="panel ideas-invite rise" style={{'--i':6} as React.CSSProperties}><Lightbulb size={20}/><span><strong>Une idée, une carte rêvée, un souci ?</strong><small>Écrivez-nous dans la boîte à doléances : l’équipe lit tout et répond.</small></span><ArrowRight size={16}/></Link>
  </div>;
 }
 
