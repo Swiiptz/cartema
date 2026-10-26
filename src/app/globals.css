@@ -1404,3 +1404,24 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 .idea-vote.down{border-color:#8a94a855;background:#8a94a80d;color:#c4cad6}
 .idea-vote.down.on{background:#8a94a82b;border-color:#aab3c4;color:#e6e9ef}
 .idea-vote.static.down{border-color:var(--line);background:none;color:var(--muted)}
+/* Admin › Lignes de versions : chance par rareté et renommage (26/10). */
+.line-rarities{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;align-items:end;margin-top:8px}
+.line-rarities .auth-field span{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.line-rarities input{min-width:0}
+.line-rename{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin-top:8px}
+.line-rename .auth-field{flex:1 1 180px}
+/* Admin › fiche joueur : versions d’illustration visibles (26/10). */
+.owned-admin li.has-variant{justify-content:flex-start;background:#1c1220}
+.owned-admin li>.icon-button{margin-left:auto;flex:none}
+.owned-admin li>span{min-width:0;overflow-wrap:anywhere}
+.owned-admin .line-tag{margin-left:6px}
+.owned-thumb{flex:none;width:30px;height:42px;padding:0;border:1px solid #c9a45c66;border-radius:5px;overflow:hidden;background:#0b070b;cursor:zoom-in}
+.owned-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.owned-thumb:hover{border-color:var(--gold)}
+.owned-head .text-link.on{color:var(--gold)}
+/* Fenêtre unique : versions rares rendues après le bug des doublons (26/10). */
+.player-notice{display:grid;gap:12px}
+.notice-cards{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:40vh;overflow:auto}
+.notice-cards li{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border:1px solid #c9a45c44;border-radius:10px;background:#1c1220;font:400 14px var(--ui)}
+.notice-cards small{color:var(--gold2)}
+.notice-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}

@@ -93,9 +93,11 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
  const toggleLock=(it:InventoryItem)=>run(async()=>{await callRpc(client!,'set_cards_locked',{p_instance_ids:[it.instance_id],p_locked:!it.locked});return null;});
  const recycle=(list:InventoryItem[])=>run(async()=>{
   const total=list.reduce((s,i)=>s+i.value,0);
-  const special=list.some(i=>i.finish!=='Standard');
-  const ok=await ask({title:list.length>1?`Recycler ${list.length} exemplaires ?`:`Recycler cet exemplaire${special?` ${list[0].finish.toLowerCase()}`:''} ?`,
-   message:`Vous recevrez ${total.toLocaleString('fr-FR')} Deniers. C’est définitif, mais le personnage reste découvert dans votre album.${special?' Attention : finition rare, introuvable autrement qu’en booster.':''}`,
+  // Finition rare ou version d'illustration : même confirmation (le serveur l'exige aussi).
+  const rareFinish=list.some(i=>i.finish!=='Standard');const version=list.find(i=>i.variant);
+  const special=rareFinish||!!version;
+  const ok=await ask({title:list.length>1?`Recycler ${list.length} exemplaires ?`:`Recycler cet exemplaire${rareFinish?` ${list[0].finish.toLowerCase()}`:''}${version&&list.length===1?` « ${version.variant} »`:''} ?`,
+   message:`Vous recevrez ${total.toLocaleString('fr-FR')} Deniers. C’est définitif, mais le personnage reste découvert dans votre album.${rareFinish?' Attention : finition rare, introuvable autrement qu’en booster.':''}${version?` Attention : version d’illustration rare (« ${version.variant} »), introuvable autrement qu’en booster.`:''}`,
    confirmLabel:`Recycler · +${total.toLocaleString('fr-FR')}`});
   if(ok===null)return null;
   const r=await callRpc<RecycleResult>(client!,'recycle_cards',{p_instance_ids:list.map(i=>i.instance_id),p_request_id:crypto.randomUUID(),p_confirm_special:special});

@@ -78,6 +78,66 @@ describe('recyclage rapide des doublons',()=>{
     expect(left).toHaveLength(5);
     expect(await rpc(db,u,'preview_duplicates',[])).toMatchObject({count:0,total:0});
   });
+  it('traite les versions d’illustration comme les finitions rares (26/10)',async()=>{
+    const u=await createUser(db);const c=await charId('Très rare');
+    const {rows:[art]}=await db.query<{id:string}>(`insert into public.card_arts (character_id,kind,label,art_path) values ($1,'alternate','Version test','/illustrations/CAM/version-test.webp') returning id`,[c]);
+    // Une version plus ancienne que l'exemplaire normal : elle ne doit ni partir ni compter comme l'exemplaire gardé.
+    const [alt,alt2]=await give(u,'Très rare','Standard',2);
+    await db.query(`update public.inventory_items set art_id=$1 where id = any($2)`,[art.id,[alt,alt2]]);
+    const normal=await give(u,'Très rare','Standard',2);
+    expect(await rpc(db,u,'preview_duplicates',[])).toMatchObject({count:1});
+    expect((await rpc(db,u,'recycle_duplicates',[randomUUID()])).count).toBe(1);
+    const left=await asUser<{id:string}>(db,u,`select id from public.inventory_items where recycled_at is null`);
+    expect(left.map(x=>x.id).sort()).toEqual([alt,alt2,normal[0]].sort());
+    // Recyclage manuel : confirmation demandée, comme pour une Dorée ou une Sanglante.
+    await expectError(rpc(db,u,'recycle_cards',[[alt],randomUUID()]),/confirm_special_finish/);
+    expect((await rpc(db,u,'recycle_cards',[[alt],randomUUID(),true])).count).toBe(1);
+  });
+});
+
+describe('restitution des versions recyclées par lot (26/10)',()=>{
+  it('rend la version, reprend les Deniers, prévient une seule fois',async()=>{
+    const u=await createUser(db);const c=await charId('Rare');
+    const {rows:[art]}=await db.query<{id:string}>(`insert into public.card_arts (character_id,kind,label,art_path) values ($1,'alternate','Version perdue','/illustrations/CAM/version-perdue.webp') returning id`,[c]);
+    const [alt]=await give(u,'Rare');await db.query(`update public.inventory_items set art_id=$1 where id=$2`,[art.id,alt]);
+    const [other]=await give(u,'Commun');
+    const [alone]=await give(u,'Rare');await db.query(`update public.inventory_items set art_id=$1 where id=$2`,[art.id,alone]);
+    // Version redevenue l'illustration officielle : rien à rendre.
+    const p=await charId('Peu commun');await db.query(`update public.characters set art_path='/illustrations/CAM/officielle.webp' where id=$1`,[p]);
+    const {rows:[same]}=await db.query<{id:string}>(`insert into public.card_arts (character_id,kind,label,art_path,active) values ($1,'legacy','Illustration d’origine','/illustrations/CAM/officielle.webp',false) returning id`,[p]);
+    const [old]=await give(u,'Peu commun');await db.query(`update public.inventory_items set art_id=$1 where id=$2`,[same.id,old]);
+    // Lot de doublons (plusieurs personnages d'un coup) : involontaire. Recyclage d'une seule carte : voulu.
+    const lot=await rpc(db,u,'recycle_cards',[[alt,other,old],randomUUID(),true]);
+    await rpc(db,u,'recycle_cards',[[alone],randomUUID(),true]);
+    const before=await balance(u);
+    const r=await db.query<{r:any}>('select private.restore_bulk_recycled_versions() r');
+    expect(r.rows[0].r).toMatchObject({players:1,cards:1});
+    const {rows:back}=await db.query<{art_id:string;finish:string}>(`select art_id,finish from public.inventory_items where owner_id=$1 and recycled_at is null`,[u]);
+    expect(back).toEqual([{art_id:art.id,finish:'Standard'}]);
+    expect(await balance(u)).toBe(before-40); // valeur de recyclage d'une Rare Standard
+    expect(lot.total).toBeGreaterThan(40);
+    // Fenêtre unique : visible jusqu'à ce que le joueur la ferme.
+    const notice=await rpc(db,u,'get_player_notice');
+    expect(notice).toMatchObject({kind:'versions_restored',payload:{deniers:40,cards:[{version:'Version perdue',rarity:'Rare'}]}});
+    expect(await rpc(db,u,'get_player_notice')).toMatchObject({id:notice.id});
+    await rpc(db,u,'dismiss_player_notice',[notice.id]);
+    expect(await rpc(db,u,'get_player_notice')).toBeNull();
+    await expectError(rpc(db,await createUser(db),'dismiss_player_notice',[notice.id]),/not_found/);
+    // Relancer ne rend rien de plus.
+    expect((await db.query<{r:any}>('select private.restore_bulk_recycled_versions() r')).rows[0].r).toMatchObject({players:0,cards:0});
+  });
+  it('ne fait jamais passer un solde sous zéro',async()=>{
+    const u=await createUser(db);const c=await charId('Très rare');
+    const {rows:[art]}=await db.query<{id:string}>(`insert into public.card_arts (character_id,kind,label,art_path) values ($1,'alternate','Version fauchée','/illustrations/CAM/version-fauchee.webp') returning id`,[c]);
+    const [alt]=await give(u,'Très rare');await db.query(`update public.inventory_items set art_id=$1 where id=$2`,[art.id,alt]);
+    const [other]=await give(u,'Commun');
+    await rpc(db,u,'recycle_cards',[[alt,other],randomUUID(),true]);
+    const b=await balance(u);
+    await db.query(`select private.apply_wallet_delta($1,$2,'test','test',null,'vider')`,[u,-b]);
+    await db.query('select private.restore_bulk_recycled_versions()');
+    expect(await balance(u)).toBe(0);
+    expect((await rpc(db,u,'get_player_notice')).payload.deniers).toBe(0);
+  });
 });
 
 describe('bonus de connexion',()=>{
