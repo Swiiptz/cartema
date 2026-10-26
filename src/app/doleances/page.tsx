@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
 import Link from 'next/link';
-import {Bug,Flame,ImagePlus,Lightbulb,MessageSquareQuote,Send,Sparkles,SquarePen,Users,X} from 'lucide-react';
+import {Bug,Flame,ImagePlus,Lightbulb,MessageSquareQuote,Send,Sparkles,SquarePen,ThumbsDown,Users,X} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {useSignedSubmission} from '@/lib/signed';
 import {useAuth} from '@/components/AuthProvider';
@@ -21,7 +21,7 @@ function IdeaImage({client,path}:{client:SupabaseClient|null;path:string}){
 }
 
 /** Une doléance : catégorie, statut, texte et réponse de l'équipe. */
-function Idea({s,onVote,busy,client}:{s:Suggestion;onVote?:(s:Suggestion)=>void;busy?:boolean;client:SupabaseClient|null}){
+function Idea({s,onVote,busy,client}:{s:Suggestion;onVote?:(s:Suggestion,value:1|-1)=>void;busy?:boolean;client:SupabaseClient|null}){
  const Icon=ICONS[s.category];
  return <li className={`panel idea-item rise status-${s.status}`}>
   <div className="idea-head"><span className="idea-cat"><Icon size={13}/> {SUGGESTION_CATEGORIES[s.category]}</span><span className={`idea-status ${s.status}`}>{SUGGESTION_STATUS[s.status]}</span>{s.public&&s.mine&&<span className="idea-public"><Users size={12}/> Publique</span>}</div>
@@ -30,8 +30,10 @@ function Idea({s,onVote,busy,client}:{s:Suggestion;onVote?:(s:Suggestion)=>void;
   {s.image_path&&<IdeaImage client={client} path={s.image_path}/>}
   {s.reply&&<blockquote className="idea-reply"><span>Réponse de l’équipe</span>{s.reply}</blockquote>}
   <div className="idea-foot"><small className="muted">{s.mine?'Votre idée':`Par ${s.author??'un joueur'}`} · {when(s.created_at)}</small>
-   {s.public&&(onVote&&!s.mine?<button className={`idea-vote ${s.my_vote?'on':''}`} disabled={busy} aria-pressed={s.my_vote} onClick={()=>onVote(s)}><Flame size={14}/> {s.my_vote?'Soutenue':'Soutenir'}<b>{s.votes}</b></button>
-    :<span className="idea-vote static"><Flame size={14}/><b>{s.votes}</b></span>)}</div>
+   {/* Vote contre : seulement si l'équipe l'a autorisé pour cette idée (26/10). */}
+   {s.public&&(onVote&&!s.mine?<span className="idea-votes"><button className={`idea-vote ${s.my_vote?'on':''}`} disabled={busy} aria-pressed={s.my_vote} onClick={()=>onVote(s,1)}><Flame size={14}/> {s.my_vote?'Soutenue':'Soutenir'}<b>{s.votes}</b></button>
+     {s.allow_downvotes&&<button className={`idea-vote down ${s.my_downvote?'on':''}`} disabled={busy} aria-pressed={!!s.my_downvote} aria-label={`Voter contre (${s.downvotes??0})`} onClick={()=>onVote(s,-1)}><ThumbsDown size={14}/> Contre<b>{s.downvotes??0}</b></button>}</span>
+    :<span className="idea-votes"><span className="idea-vote static" title="Votes pour"><Flame size={14}/><b>{s.votes}</b></span>{s.allow_downvotes&&<span className="idea-vote static down" title="Votes contre"><ThumbsDown size={14}/><b>{s.downvotes??0}</b></span>}</span>)}</div>
  </li>;
 }
 
@@ -66,9 +68,11 @@ export default function Doleances(){
    await callRpc(client,'submit_suggestion',{p_category:category,p_title:title,p_body:body,p_image_path:path});setTitle('');setBody('');setFile(null);setMessage({notice:'Merci ! Votre doléance est arrivée sur le bureau de l’équipe.'});await load();}
   catch(e){setMessage({error:(e as Error).message});}finally{setBusy(false);}
  }
- async function vote(s:Suggestion){
+ // Un seul vote par joueur : recliquer sur son vote le retire, cliquer sur l'autre le remplace.
+ async function vote(s:Suggestion,value:1|-1){
   if(!client)return;setBusy(true);
-  try{await callRpc(client,'vote_suggestion',{p_id:s.id,p_on:!s.my_vote});await load();}catch(e){setMessage({error:(e as Error).message});}finally{setBusy(false);}
+  const already=value===1?s.my_vote:!!s.my_downvote;
+  try{await callRpc(client,'vote_suggestion',{p_id:s.id,p_on:!already,p_value:value});await load();}catch(e){setMessage({error:(e as Error).message});}finally{setBusy(false);}
  }
 
  if(!configured||!ready)return <div className="page"><Skeleton style={{height:40,width:'40%'}}/><Skeleton style={{height:260,marginTop:16}}/></div>;
@@ -96,7 +100,7 @@ export default function Doleances(){
   </>:<>
    <p className="muted">Les idées retenues par l’équipe pour un vote. Soutenez celles que vous voulez voir arriver en premier.</p>
    {!data?<Skeleton style={{height:200}}/>:data.public.length===0?<section className="panel album-empty"><Lightbulb size={28}/><h2>Aucune idée publique pour l’instant.</h2><p className="muted">Proposez la vôtre : elle sera peut-être la première soumise au vote.</p></section>
-   :<ul className="idea-list">{data.public.map(s=><Idea key={s.id} s={s} onVote={s=>void vote(s)} busy={busy} client={client}/>)}</ul>}
+   :<ul className="idea-list">{data.public.map(s=><Idea key={s.id} s={s} onVote={(s,v)=>void vote(s,v)} busy={busy} client={client}/>)}</ul>}
   </>}
   </div>
  </div>;

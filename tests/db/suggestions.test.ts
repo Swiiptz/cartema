@@ -54,6 +54,50 @@ describe('doléances',()=>{
     expect((await rpc(db,c,'get_suggestions')).public.find((s:any)=>s.id===id)).toMatchObject({votes:1,my_vote:false});
     expect((await rpc<any[]>(db,admin,'admin_suggestions',[null])).find(s=>s.id===id)).toMatchObject({votes:1,author:'idee_c',public:true});
   });
+  it('votes négatifs : refusés sauf si l’admin les autorise, un seul vote par joueur, modifiable (26/10)',async()=>{
+    const a=await player('idee_neg_a');const b=await player('idee_neg_b');const c=await player('idee_neg_c');const d=await player('idee_neg_d');
+    const id=await send(a,'Une idée qui divise');
+    await rpc(db,admin,'admin_answer_suggestion',[id,'new',true,null,'Tri']);
+    const view=async(u:string)=>(await rpc(db,u,'get_suggestions')).public.find((s:any)=>s.id===id);
+    // Option coupée par défaut : seul le vote pour existe.
+    expect(await view(b)).toMatchObject({allow_downvotes:false,votes:0,downvotes:0,my_vote:false,my_downvote:false});
+    await expectError(rpc(db,b,'vote_suggestion',[id,true,-1]),/downvotes_disabled/);
+    await expectError(rpc(db,b,'vote_suggestion',[id,true,0]),/invalid_vote/);
+    await rpc(db,b,'vote_suggestion',[id,true]); // ancien appel à 2 paramètres
+    expect(await view(b)).toMatchObject({votes:1,downvotes:0,my_vote:true,my_downvote:false});
+    // L'admin autorise les votes négatifs (nouveau paramètre, en dernier).
+    await rpc(db,admin,'admin_answer_suggestion',[id,'new',true,null,'Tri',true]);
+    await rpc(db,c,'vote_suggestion',[id,true,-1]);await rpc(db,d,'vote_suggestion',[id,true,-1]);
+    await rpc(db,d,'vote_suggestion',[id,true,-1]); // idempotent
+    expect(await view(c)).toMatchObject({allow_downvotes:true,votes:1,downvotes:2,my_vote:false,my_downvote:true});
+    await expectError(rpc(db,a,'vote_suggestion',[id,true,-1]),/own_suggestion/);
+    // Un seul vote par joueur : passer de pour à contre, puis le retirer.
+    await rpc(db,b,'vote_suggestion',[id,true,-1]);
+    expect(await view(b)).toMatchObject({votes:0,downvotes:3,my_vote:false,my_downvote:true});
+    await rpc(db,c,'vote_suggestion',[id,true,1]);
+    expect(await view(c)).toMatchObject({votes:1,downvotes:2,my_vote:true,my_downvote:false});
+    await rpc(db,d,'vote_suggestion',[id,false]);
+    expect(await view(d)).toMatchObject({votes:1,downvotes:1,my_vote:false,my_downvote:false});
+    expect((await db.query(`select count(*)::int n from public.suggestion_votes where suggestion_id=$1`,[id])).rows[0]).toEqual({n:2});
+    expect((await rpc<any[]>(db,admin,'admin_suggestions',[null])).find(s=>s.id===id)).toMatchObject({allow_downvotes:true,votes:1,downvotes:1});
+    // Enregistrer sans le nouveau paramètre ne change pas l'option.
+    await rpc(db,admin,'admin_answer_suggestion',[id,'planned',true,null,'Tri']);
+    expect(await view(b)).toMatchObject({allow_downvotes:true,downvotes:1});
+    // Option recoupée : les votes contre ne comptent plus et ne s'acceptent plus.
+    await rpc(db,admin,'admin_answer_suggestion',[id,'planned',true,null,'Tri',false]);
+    expect(await view(b)).toMatchObject({allow_downvotes:false,votes:1,downvotes:0,my_downvote:false});
+    await expectError(rpc(db,d,'vote_suggestion',[id,true,-1]),/downvotes_disabled/);
+  });
+  it('idées publiques classées par solde (pour moins contre) quand les votes négatifs sont autorisés',async()=>{
+    const a=await player('idee_solde_a');const v=[await player('idee_solde_b'),await player('idee_solde_c'),await player('idee_solde_d')];
+    const x=await send(a,'Idée contestée');const y=await send(a,'Idée tiède');
+    await rpc(db,admin,'admin_answer_suggestion',[x,'new',true,null,'Tri',true]);
+    await rpc(db,admin,'admin_answer_suggestion',[y,'new',true,null,'Tri']);
+    await rpc(db,v[0],'vote_suggestion',[x,true,1]);await rpc(db,v[1],'vote_suggestion',[x,true,-1]);await rpc(db,v[2],'vote_suggestion',[x,true,-1]);
+    await rpc(db,v[0],'vote_suggestion',[y,true]);
+    const ids=(await rpc(db,v[0],'get_suggestions')).public.map((s:any)=>s.id);
+    expect(ids.indexOf(y)).toBeLessThan(ids.indexOf(x));
+  });
   it('une demande de personnage peut joindre une illustration, visible seulement par l’auteur et l’admin',async()=>{
     const a=await player('idee_art');const b=await player('idee_voisin');
     const path=`${a}/perso.webp`;

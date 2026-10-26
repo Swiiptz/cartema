@@ -1398,3 +1398,9 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 /* Échanges : rappels du délai de 72 h et des 30 jours sans retour (26/10). */
 .trade-warnings{display:grid;gap:6px;padding:10px 12px;border:1px solid #c9a45c66;border-radius:10px;background:#c9a45c14;color:#f0c27a;font:400 13px var(--ui)}
 .trade-warnings p{display:flex;gap:7px;align-items:flex-start;margin:0}.trade-warnings svg{flex:none;margin-top:2px}
+/* Doléances : vote contre, quand l'équipe l'autorise (26/10). */
+.idea-foot{flex-wrap:wrap}
+.idea-votes{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto}
+.idea-vote.down{border-color:#8a94a855;background:#8a94a80d;color:#c4cad6}
+.idea-vote.down.on{background:#8a94a82b;border-color:#aab3c4;color:#e6e9ef}
+.idea-vote.static.down{border-color:var(--line);background:none;color:var(--muted)}

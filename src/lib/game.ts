@@ -228,6 +228,8 @@ const messages:Record<string,string>={
  invalid_suggestion:'Titre de 3 à 80 caractères, description de 2 000 caractères au plus.',
  suggestion_limit:'Vous avez envoyé 5 doléances aujourd’hui. Revenez demain, après 6 h.',
  own_suggestion:'On ne vote pas pour sa propre idée.',
+ downvotes_disabled:'Cette idée ne se vote que pour, pas contre.',
+ invalid_vote:'Vote invalide.',
  card_cooldown:'Carte reçue récemment : elle ne peut pas être échangée, offerte ni vendue avant 72 h.',
  artist_copy:'Exemplaire de l’artiste : il ne peut être ni vendu, ni échangé, ni offert pendant 30 jours après le concours.',
  card_returning:'Cette carte a appartenu à ce joueur il y a moins de 7 jours : elle ne peut pas encore lui revenir.',
@@ -296,6 +298,6 @@ export type ContestRank={position:number;handle:string;leads:number;selected:num
 /** Doléances (voir supabase/migrations/20261022330000_suggestions_tiers.sql). */
 export type SuggestionCategory='feature'|'card'|'bug'|'other';
 export type SuggestionStatus='new'|'planned'|'done'|'declined';
-export type Suggestion={id:string;category:SuggestionCategory;title:string;body:string;status:SuggestionStatus;public:boolean;reply:string|null;created_at:string;replied_at:string|null;mine:boolean;author:string|null;votes:number;my_vote:boolean;image_path?:string|null};
+export type Suggestion={id:string;category:SuggestionCategory;title:string;body:string;status:SuggestionStatus;public:boolean;reply:string|null;created_at:string;replied_at:string|null;mine:boolean;author:string|null;votes:number;my_vote:boolean;image_path?:string|null;allow_downvotes?:boolean;downvotes?:number;my_downvote?:boolean};
 export const SUGGESTION_CATEGORIES:Record<SuggestionCategory,string>={feature:'Fonctionnalité',card:'Carte',bug:'Correction',other:'Autre'};
 export const SUGGESTION_STATUS:Record<SuggestionStatus,string>={new:'Reçue',planned:'Prévue',done:'Faite',declined:'Écartée'};
