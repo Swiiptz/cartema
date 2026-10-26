@@ -134,14 +134,16 @@ describe('God booster',()=>{
     for(let i=0;i<30;i++){
       const o=await open(u,gds);
       expect(o.god).toBe(true);
-      const {rows}=await db.query<{position:number;character_id:string;art_id:string|null}>(
-        'select position,character_id,art_id from public.pack_opening_cards where opening_id=$1 and position<=5',[o.opening_id]);
+      const {rows}=await db.query<{position:number;character_id:string;art_id:string|null;rarity:string}>(
+        'select position,character_id,art_id,rarity from public.pack_opening_cards where opening_id=$1 and position<=5',[o.opening_id]);
       // 2 cartes à skin garanti et 2 cartes sans skin, placées au hasard ; jamais d'ancienne officielle.
       const withSkin=rows.filter(r=>r.art_id!==null);
       expect(withSkin.every(r=>skins.has(r.art_id!)&&skinned.has(r.character_id))).toBe(true);
       expect(withSkin.length).toBeGreaterThanOrEqual(2);
       expect(rows.length-withSkin.length).toBeGreaterThanOrEqual(2);
       if(withSkin.some(r=>r.position<=2))lowSkin=true;
+      // Au moins une Épique ou mieux.
+      expect(rows.some(r=>['Épique','Légendaire','Mythique'].includes(r.rarity))).toBe(true);
     }
     // Les skins ne sont pas réservés aux Rares ou mieux (cartes 3 à 5) : ils tombent aussi sur les cartes 1 et 2.
     expect(lowSkin).toBe(true);
