@@ -286,6 +286,16 @@ describe('missions longues et bonus',()=>{
       expect(ms).toHaveLength(3);expect(new Set(ms).size).toBe(3);
     }
   });
+  it('le lundi, les hebdomadaires ne prennent pas la place des quotidiennes (26/10)',async()=>{
+    // Le lundi à 06 h, les deux périodes commencent au même instant : on le simule n'importe quel jour.
+    const u=await player('lundi');
+    await db.query(`insert into public.mission_assignments (owner_id,template_code,kind,period_start,period_end)
+      select $1,t.code,'weekly',p.period_start,p.period_end from private.mission_period('daily') p,
+        (select code from public.mission_templates where kind='weekly' and active and requires is null order by code limit 3) t`,[u]);
+    await db.query(`select private.ensure_missions($1,'daily')`,[u]);
+    const {rows:[c]}=await db.query<{n:number}>(`select count(*)::int n from public.mission_assignments where owner_id=$1 and kind='daily' and replaced_at is null`,[u]);
+    expect(c.n).toBe(3);
+  });
   it('garde « Venir 5 jours » dans les hebdomadaires, sans remplacement possible',async()=>{
     await db.query(`update public.mission_templates set active = fixed or code like 'w\_%days%' or code in ('w_open_25','w_rare_15') or kind='daily'`);
     const u=await player('assidu');
