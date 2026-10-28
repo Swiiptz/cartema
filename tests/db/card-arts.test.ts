@@ -248,3 +248,28 @@ describe('succès sur une version d’illustration et retrait d’une version (2
   });
 });
 
+
+describe('demande de crédit sur une version alternative (28/10)',()=>{
+  it('vise la version possédée ; l’admin voit la version et y pose le crédit',async()=>{
+    const u=await player('dessinatrice_alt');const c=await char(4);
+    const art=await rpc<string>(db,admin,'admin_add_card_art',[c,PAINT,{},'Ligne Crédit','Test']);
+    const other=await rpc<string>(db,admin,'admin_add_card_art',[await char(3),PAINT,{},'Ligne Ailleurs','Test']);
+    const {rows:[it]}=await db.query<{id:string}>(`insert into public.inventory_items (owner_id,character_id,finish,art_id) values ($1,$2,'Standard',$3) returning id`,[u,c,art]);
+    await db.query(`insert into public.discoveries (owner_id,character_id) values ($1,$2) on conflict do nothing`,[u,c]);
+    // L'identifiant de la version est donné avec l'exemplaire.
+    expect((await rpc<any[]>(db,u,'get_inventory',[c])).find(x=>x.instance_id===it.id)).toMatchObject({art_id:art,variant:'Ligne Crédit'});
+    await expectError(rpc(db,u,'submit_card_feedback',['CAM-004','credit','',null,'Plume Grise',other]),/not_found/);
+    const {rows:[noOwn]}=await db.query<{id:string}>(`insert into public.card_arts (character_id,kind,label,art_path) values ($1,'alternate','Ligne Inconnue','/illustrations/CAM/x.webp') returning id`,[c]);
+    await expectError(rpc(db,u,'submit_card_feedback',['CAM-004','credit','',null,'Plume Grise',noOwn.id]),/version_not_owned/);
+    await expectError(rpc(db,u,'submit_card_feedback',['CAM-004','info','Le titre est faux.',null,null,art]),/invalid_kind/);
+    const id=await rpc<string>(db,u,'submit_card_feedback',['CAM-004','credit','Mon dessin, voir mon compte',null,'Plume Grise',art]);
+    // Une demande sur l'illustration officielle reste possible en même temps.
+    await rpc(db,u,'submit_card_feedback',['CAM-004','credit','',null,'Plume Grise']);
+    const s=(await rpc<any[]>(db,admin,'admin_submissions',['pending'])).find(x=>x.id===id);
+    expect(s).toMatchObject({kind:'credit',credit_name:'Plume Grise',art_id:art,version:'Ligne Crédit',version_art_path:PAINT,version_credit:null});
+    await rpc(db,admin,'admin_set_art_credit',[c,art,s.credit_name,'Crédit validé']);
+    await rpc(db,admin,'admin_decide_submission',[id,true,0,0,'Merci !']);
+    expect((await rpc<any[]>(db,u,'get_inventory',[c])).find(x=>x.instance_id===it.id)).toMatchObject({art_id:art});
+    expect((await rpc<any[]>(db,admin,'admin_submissions',['all'])).find(x=>x.id===id)).toMatchObject({version_credit:'Plume Grise'});
+  });
+});

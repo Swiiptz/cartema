@@ -58,7 +58,7 @@ export function CardInspection({card,finishesSeen,characterId,onChanged,wishes,o
    {card.known&&variants&&variants.length>0&&<div className="finish-preview"><span className="eyebrow">Versions d’illustration possédées</span><div className="finish-switch" aria-label="Choisir la version affichée"><button className={version?'':'active'} aria-pressed={!version} onClick={()=>setVersion(null)}>Officielle</button>{variants.map(v=><button key={v.label} className={version?.label===v.label?'active':''} aria-pressed={version?.label===v.label} onClick={()=>setVersion(v)}>{v.label} ×{v.count}</button>)}</div><small>Les exemplaires gardent l’illustration qu’ils avaient quand vous les avez obtenus.</small></div>}
    {wishes&&onWish&&!card.unique&&<WishPicker code={card.id} keys={wishes} onToggle={onWish}/>}
    {open&&card.known&&characterId&&onChanged&&<OwnedCopies characterId={characterId} cardName={card.name} onChanged={onChanged}/>}
-   {characterId&&card.known&&!card.unique&&<CardFeedback code={card.id} name={card.name} hasArt={!!card.illustration}/>}
+   {characterId&&card.known&&!card.unique&&<CardFeedback code={card.id} name={card.name} hasArt={!!card.illustration} characterId={characterId}/>}
    {card.provisional&&<p className="detail-note">Étude graphique de {card.name} · Clan et rareté à définir.</p>}
   </div>
  </div></dialog></>;

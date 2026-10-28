@@ -10,7 +10,9 @@ import type {Rarity} from '@/lib/draw';
 
 type Act=(label:string,action:(c:SupabaseClient)=>Promise<unknown>)=>Promise<boolean>;
 type Reason=(message:string,confirmLabel?:string)=>Promise<string|null>;
-type Submission={credit_name:string|null;art_credit:string|null;id:string;kind:'info'|'illustration'|'credit'|'ambiance'|'signature';status:'pending'|'accepted'|'rejected';message:string;image_path:string|null;created_at:string;decided_at:string|null;admin_note:string|null;
+type Submission={credit_name:string|null;art_credit:string|null;
+ /** Demande de crédit sur une version d'illustration (null = officielle) : nom, image et crédit actuel de la version. */
+ art_id?:string|null;version?:string|null;version_art_path?:string|null;version_credit?:string|null;id:string;kind:'info'|'illustration'|'credit'|'ambiance'|'signature';status:'pending'|'accepted'|'rejected';message:string;image_path:string|null;created_at:string;decided_at:string|null;admin_note:string|null;
  reward_deniers:number;reward_boosters:number;author:string|null;character_id:string;name:string;number:number;prefix:string;rarity:Rarity;role_title:string;clan:string|null;art_path:string|null;art_meta:ArtMeta;silhouette_key:string|null};
 type Art={credit:string|null;id:string;kind:'legacy'|'alternate';label:string;art_path:string;art_meta:ArtMeta;active:boolean;owned:number};
 const FRAMES:Record<string,string>={fullart:'Plein cadre (full art)',cover:'Remplir la fenêtre',portrait:'Portrait',full:'Image entière, centrée'};
@@ -45,19 +47,21 @@ function SubmissionItem({s,client,act,reason,catalog,onDone}:{s:Submission;clien
  const [boosters,setBoosters]=useState(s.kind==='illustration'&&!s.art_path?'1':'0');
  // Crédit de l'illustration appliquée : le pseudo de l'auteur par défaut.
  const [credit,setCredit]=useState(s.author??'');
+ // Demande de crédit : le nom à poser, prérempli avec celui demandé et modifiable avant d'appliquer.
+ const [creditName,setCreditName]=useState(s.credit_name??'');
  const [busy,setBusy]=useState(false);
  const code=`${s.prefix}-${String(s.number).padStart(3,'0')}`;
- const card={id:code,name:s.name,clan:s.clan??'?',role:s.role_title,rarity:s.rarity,known:true,illustration:s.art_path??undefined,silhouette:silhouetteIndex(s.silhouette_key),artLayout:layout(s.art_meta),artOffsetY:Number(s.art_meta?.offsetY)||undefined};
+ const card={id:code,name:s.name,clan:s.clan??'?',role:s.role_title,rarity:s.rarity,known:true,illustration:s.version_art_path??s.art_path??undefined,silhouette:silhouetteIndex(s.silhouette_key),artLayout:s.version_art_path?undefined:layout(s.art_meta),artOffsetY:s.version_art_path?undefined:Number(s.art_meta?.offsetY)||undefined,variant:s.version??undefined};
  async function imageFile(){
   const blob=await (await fetch(image!)).blob();
   return new File([blob],s.image_path!.split('/').pop()!,{type:blob.type||'image/png'});
  }
  async function decide(accept:boolean,apply?:'official'|'alternate'|'credit'|'signature'){
-  const note=await reason(accept?`Accepter la proposition de ${s.author} pour ${s.name}${apply==='official'?' et remplacer l’illustration officielle':apply==='alternate'?' et l’ajouter en version alternative':apply==='credit'?` et créditer « ${s.credit_name} »`:apply==='signature'?' et publier sa signature (des exemplaires signés pourront tomber)':''} ? Récompense : ${Number(deniers)||0} Deniers, ${Number(boosters)||0} booster(s).${(apply==='official'||apply==='alternate')&&credit.trim()?` Crédit : « ${credit.trim()} ».`:''} Note pour le joueur :`:`Refuser la proposition de ${s.author} : raison (envoyée au joueur) ?`,accept?'Accepter':'Refuser');
+  const note=await reason(accept?`Accepter la proposition de ${s.author} pour ${s.name}${apply==='official'?' et remplacer l’illustration officielle':apply==='alternate'?' et l’ajouter en version alternative':apply==='credit'?` et créditer « ${creditName.trim()} »${s.version?` sur la version « ${s.version} »`:''}`:apply==='signature'?' et publier sa signature (des exemplaires signés pourront tomber)':''} ? Récompense : ${Number(deniers)||0} Deniers, ${Number(boosters)||0} booster(s).${(apply==='official'||apply==='alternate')&&credit.trim()?` Crédit : « ${credit.trim()} ».`:''} Note pour le joueur :`:`Refuser la proposition de ${s.author} : raison (envoyée au joueur) ?`,accept?'Accepter':'Refuser');
   if(note===null)return;
   setBusy(true);
   const ok=await act(accept?'Proposition acceptée.':'Proposition refusée.',async c=>{
-   if(accept&&apply==='credit')await callRpc(c,'admin_set_art_credit',{p_character_id:s.character_id,p_art_id:null,p_credit:s.credit_name,p_reason:note});
+   if(accept&&apply==='credit')await callRpc(c,'admin_set_art_credit',{p_character_id:s.character_id,p_art_id:s.art_id??null,p_credit:creditName.trim(),p_reason:note});
    else if(accept&&apply==='signature'){
     // Signature publiée dans le stockage public, puis rattachée au personnage (cartes signées).
     const {path}=await uploadIllustration(c,await imageFile(),{prefix:s.prefix,number:s.number});
@@ -81,12 +85,13 @@ function SubmissionItem({s,client,act,reason,catalog,onDone}:{s:Submission;clien
  return <li className={`panel report-item contribution ${s.status}`}>
   <div className="report-head"><span className="status-chip">{s.kind==='illustration'?(s.art_path?'Autre illustration':'Nouvelle illustration'):s.kind==='credit'?'Demande de crédit':s.kind==='ambiance'?'Texte d’ambiance':s.kind==='signature'?'Signature':'Information erronée'}</span><strong>{code} · {s.name}</strong><small>{when(s.created_at)} · par {s.author??'—'}</small></div>
   <div className="contribution-body">
-   <div className="contribution-card"><span className="admin-hint">Actuelle</span><TarotCard card={card}/></div>
+   <div className="contribution-card"><span className="admin-hint">{s.version?`Version « ${s.version} »`:'Actuelle'}</span><TarotCard card={card}/></div>
    {(s.kind==='illustration'||s.kind==='signature')&&<div className="contribution-card"><span className="admin-hint">Proposée</span>{image?<a href={image} target="_blank" rel="noreferrer"><img src={image} alt={`Illustration proposée pour ${s.name}`}/></a>:<Skeleton className="skeleton-card"/>}
     {image&&<TarotCard card={{...card,illustration:image,artLayout:undefined,artOffsetY:undefined}}/>}</div>}
    <div className="contribution-text">{s.message?<p className="report-message">{s.message}</p>:<p className="muted">Sans message.</p>}
     {s.kind==='info'&&<p className="admin-hint">Corrigez la fiche dans l’onglet Personnages, puis acceptez.</p>}
-    {s.kind==='credit'&&<p className="credit-ask">Nom demandé : <strong>{s.credit_name}</strong>{s.art_credit?` · crédit actuel : ${s.art_credit}`:' · aucun crédit actuellement'}</p>}</div>
+    {s.kind==='credit'&&<><p className="credit-ask">{s.version?<>Version <strong>« {s.version} »</strong> · </>:<>Illustration officielle · </>}Nom demandé : <strong>{s.credit_name}</strong>{(s.version?s.version_credit:s.art_credit)?` · crédit actuel : ${s.version?s.version_credit:s.art_credit}`:' · aucun crédit actuellement'}</p>
+     {s.status==='pending'&&<label className="auth-field"><span>Nom à créditer</span><input value={creditName} maxLength={80} onChange={e=>setCreditName(e.target.value)}/></label>}</>}</div>
   </div>
   {s.status==='pending'?<>
    <div className="admin-row give-row"><label className="auth-field"><span>Deniers</span><input inputMode="numeric" value={deniers} onChange={e=>setDeniers(e.target.value.replace(/\D/g,''))}/></label>
@@ -95,7 +100,7 @@ function SubmissionItem({s,client,act,reason,catalog,onDone}:{s:Submission;clien
    <div className="admin-actions">
     {s.kind==='illustration'&&<><button className="primary compact" disabled={busy||!image} onClick={()=>void decide(true,'official')}><Replace size={14}/> {s.art_path?'Remplacer l’officielle':'Appliquer'}</button>
      <button className="primary ghost compact" disabled={busy||!image} onClick={()=>void decide(true,'alternate')}><Layers size={14}/> Version alternative</button></>}
-    {s.kind==='credit'&&<button className="primary compact" disabled={busy} onClick={()=>void decide(true,'credit')}><Check size={14}/> Créditer et accepter</button>}
+    {s.kind==='credit'&&<button className="primary compact" disabled={busy||creditName.trim().length<2} onClick={()=>void decide(true,'credit')}><Check size={14}/> Créditer et accepter</button>}
     {s.kind==='signature'&&<button className="primary compact" disabled={busy||!image} onClick={()=>void decide(true,'signature')}><Check size={14}/> Publier la signature</button>}
     <button className="primary ghost compact" disabled={busy} onClick={()=>void decide(true)}><Check size={14}/> Accepter{s.kind==='illustration'?' sans appliquer':s.kind==='credit'?' sans créditer':''}</button>
     <button className="primary ghost compact danger" disabled={busy} onClick={()=>void decide(false)}><X size={14}/> Refuser</button>
@@ -112,6 +117,8 @@ export function CardArtsPanel({client,act,reason,characterId,prefix,number,offic
  const [label,setLabel]=useState('');
  const [credit,setCredit]=useState('');
  const [official,setOfficial]=useState<string|null>(null);
+ // Crédit d'une version existante en cours de saisie (id de la version → nom).
+ const [artCredits,setArtCredits]=useState<Record<string,string>>({});
  const [frame,setFrame]=useState<'auto'|'fullart'|'cover'|'portrait'>('fullart');
  // Aperçu sur la carte : une version existante (son id) ou le fichier choisi ('new').
  const [preview,setPreview]=useState<string|null>(null);
@@ -125,7 +132,7 @@ export function CardArtsPanel({client,act,reason,characterId,prefix,number,offic
  }
  async function saveCredit(artId:string|null,value:string){
   const r=await reason(value?`Créditer « ${value} » ?`:'Retirer le crédit ?','Enregistrer');if(r===null)return;
-  if(await act('Crédit enregistré.',c=>callRpc(c,'admin_set_art_credit',{p_character_id:characterId,p_art_id:artId,p_credit:value,p_reason:r}))){setOfficial(null);void load();}
+  if(await act('Crédit enregistré.',c=>callRpc(c,'admin_set_art_credit',{p_character_id:characterId,p_art_id:artId,p_credit:value,p_reason:r}))){setOfficial(null);setArtCredits(x=>{const y={...x};if(artId)delete y[artId];return y;});void load();}
  }
  async function setLayout(a:Art,layout:string){
   const r=await reason(`Cadrage de « ${a.label} » : ${FRAMES[layout]}.`,'Appliquer');if(r===null)return;
@@ -150,7 +157,9 @@ export function CardArtsPanel({client,act,reason,characterId,prefix,number,offic
    :<ul className="arts-list">{arts.map(a=><li key={a.id} className={`${a.active?'':'off'} ${preview===a.id?'previewed':''}`}><button type="button" className="art-thumb" aria-pressed={preview===a.id} title="Aperçu sur la carte" onClick={()=>setPreview(p=>p===a.id?null:a.id)}><img src={a.art_path.startsWith('/')?`${process.env.NEXT_PUBLIC_BASE_PATH??''}${a.art_path}`:a.art_path} alt=""/><Eye size={14}/></button>
     <span><strong>{a.label}</strong><small>{a.kind==='legacy'?'ancienne officielle · ':''}{a.active?'tirable':'désactivée'} · {a.owned} exemplaire{a.owned>1?'s':''}{a.credit?` · par ${a.credit}`:''}</small></span>
     <span className="art-actions"><select aria-label={`Cadrage de ${a.label}`} value={a.art_meta?.layout??'portrait'} onChange={e=>void setLayout(a,e.target.value)}>{Object.entries(FRAMES).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select>
-    <button type="button" className="text-link" onClick={()=>void toggle(a)}>{a.active?'Désactiver':'Activer'}</button>{(a.active||a.owned>0)&&<button type="button" className="text-link danger" onClick={()=>void retire(a)}>Retirer partout</button>}</span></li>)}</ul>}
+    <button type="button" className="text-link" onClick={()=>void toggle(a)}>{a.active?'Désactiver':'Activer'}</button>{(a.active||a.owned>0)&&<button type="button" className="text-link danger" onClick={()=>void retire(a)}>Retirer partout</button>}</span>
+    <span className="art-credit-edit"><label className="auth-field"><span>Crédit de la version</span><input value={artCredits[a.id]??a.credit??''} maxLength={80} placeholder="Nom de l’artiste" onChange={e=>setArtCredits(x=>({...x,[a.id]:e.target.value}))}/></label>
+     <button type="button" className="primary ghost compact" disabled={artCredits[a.id]===undefined||artCredits[a.id].trim()===(a.credit??'')} onClick={()=>void saveCredit(a.id,artCredits[a.id].trim())}>Enregistrer</button></span></li>)}</ul>}
   {shown&&<div className="art-preview"><TarotCard key={`${preview}-${shown.artLayout}-${shown.illustration}`} card={shown}/><p className="admin-hint">{preview==='new'?'Aperçu du fichier choisi, avec le cadrage sélectionné. Rien n’est enregistré tant que vous n’ajoutez pas.':'Aperçu tel que les joueurs verront cette version.'} <button type="button" className="text-link" onClick={()=>setPreview(null)}>Fermer</button></p></div>}
   <div className="admin-row give-row"><label className="feedback-file"><ImagePlus size={15}/><span>{file?file.name:'Image de la version'}</span><input type="file" accept="image/png,image/webp,image/jpeg" onChange={e=>setFile(e.target.files?.[0]??null)}/></label>
    <label className="auth-field"><span>Nom de la version</span><input value={label} onChange={e=>setLabel(e.target.value)} placeholder="Version Paint"/></label>
