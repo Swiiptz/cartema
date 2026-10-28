@@ -1519,3 +1519,6 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 /* Admin › versions d'illustration : crédit modifiable sur une version existante (28/10). */
 .arts-list li .art-credit-edit{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px}
 .arts-list li .art-credit-edit .auth-field{flex:1 1 180px;margin:0}
+
+/* Série de succès : palier plus bas encore manquant */
+.ach-missing{color:var(--gold)}

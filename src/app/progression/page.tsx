@@ -183,7 +183,9 @@ function Achievements({list,unlocked,currentTitle,busy,onTitle}:{list:Achievemen
     {next?<div className="ach-progress"><div className="meter"><i style={{'--v':`${next.target?Math.min(100,(next.progress??0)/next.target*100):0}%`} as React.CSSProperties}/></div><small>{next.progress??0}/{next.target}</small></div>
      :<small className="ach-reward">Tous les paliers obtenus</small>}
     <div className="tier-pips">{tiers.map(a=><i key={a.code} title={`${tierName(a)} : ${a.label}`} className={a.unlocked_at?'on':''} style={{'--tc':tierColor(a)} as React.CSSProperties}/>)}</div>
-    {next&&reward(next)&&<small className="ach-reward">Prochain palier ({tierName(next)}) : {reward(next)}</small>}
+    {/* Un palier plus bas peut manquer alors qu'un plus haut est obtenu : la barre vise alors ce palier oublié. */}
+    {next&&top&&(next.tier??0)<level?<small className="ach-reward ach-missing">Palier {tierName(next)} encore à obtenir : {next.description}{reward(next)?` · ${reward(next)}`:''}</small>
+     :next&&reward(next)&&<small className="ach-reward">Prochain palier ({tierName(next)}) : {reward(next)}</small>}
    </div>
   </li>;};
  const render=(items:Achievement[])=>bySeries(items).map((x,i)=>Array.isArray(x)?series(x,i):item(x,i));
