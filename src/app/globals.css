@@ -1509,3 +1509,13 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 .cain-reveal.slot-revealed .flip-card{animation:cain-shake .55s .05s cubic-bezier(.36,.07,.19,.97) both}
 @keyframes cain-shake{10%,90%{transform:translate(-1px,0)}20%,80%{transform:translate(3px,1px)}30%,50%,70%{transform:translate(-6px,-1px) rotate(-.6deg)}40%,60%{transform:translate(6px,1px) rotate(.6deg)}}
 @media(prefers-reduced-motion:reduce){.cain-ink,.cain-veins,.cain-drops{display:none}.cain-mark,.cain-mark svg,.cain-reveal.slot-revealed .flip-card{animation:none}.cain-mark{opacity:.4}}
+/* Grands écrans (doléance du 28/10, écran 3440 × 1440) : tout le site grandit en proportion au lieu de rester à 1 380 px au centre. */
+@media(min-width:2200px) and (min-height:1100px){html{zoom:1.3}}
+@media(min-width:2800px) and (min-height:1300px){html{zoom:1.5}}
+/* Amis : ce qu'il reste aujourd'hui en échanges et cadeaux (doléance du 28/10). */
+.daily-limits{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px}
+.daily-limits .chip strong{color:var(--gold2)}
+.daily-limits .chip.empty{border-color:#a9264666}.daily-limits .chip.empty strong{color:#ff8a9a}
+/* Admin › versions d'illustration : crédit modifiable sur une version existante (28/10). */
+.arts-list li .art-credit-edit{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px}
+.arts-list li .art-credit-edit .auth-field{flex:1 1 180px;margin:0}

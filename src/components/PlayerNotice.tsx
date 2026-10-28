@@ -83,7 +83,7 @@ function EternalGift({card,quantity,busy,onDone}:{card:DemoCard;quantity:number;
     <div className={`flip-card ${shown?'is-revealed':''}`}><span className="flip-inner"><span className="flip-back"><CardBack/></span><span className="flip-front"><TarotCard card={card}/></span></span></div>
    </div>
   </div>
-  <p className={`eternal-gift-caption ${ready?'on':''}`} aria-live="polite">{ready&&<><strong>{card.name}</strong> · Carte éternelle · {card.rarity}{quantity>1?` · ×${quantity}`:''}</>}</p>
+  <p className={`eternal-gift-caption ${ready?'on':''}`} aria-live="polite">{ready&&<><strong>{card.name}</strong> · Carte éternelle{quantity>1?` · ×${quantity}`:''}</>}</p>
   <button className={`primary eternal-gift-done ${ready?'on':''}`} disabled={!ready||busy} onClick={onDone}><Check size={15}/> Ajouter à ma collection</button>
  </div>;
 }

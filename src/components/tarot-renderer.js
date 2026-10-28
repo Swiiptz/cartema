@@ -2,6 +2,8 @@ import {goldFrame,goldDefinitions,goldSurface,goldShine} from './gold-frame';
 import {bloodFrame,bloodDefinitions} from './blood-frame';
 import {renderUniqueCard} from './unique-frame';
 import {eternalDefinitions,eternalSurface,eternalFrame,eternalCorner} from './eternal-frame';
+// Teinte unique des cartes éternelles : argent glacé (la rareté n'est pas montrée, décision du 28/10).
+const ETERNAL_TINT='#8fb4d6';
 // Original vector frame system. Text and local asset paths are XML-escaped in Card.tsx.
 const R={Commun:['#a79c88',0],'Peu commun':['#8aa969',1],Rare:['#74afd2',2],'Très rare':['#56c4c9',3],'Épique':['#b282ce',4],'Légendaire':['#dfb752',5],Mythique:['#d75464',6]};
 const SIG={
@@ -40,7 +42,8 @@ function silhouette(index,u){
 // unique : carte à exemplaire unique (Caïn), habillage propre une fois identifiée ; inconnue, elle garde le voile commun.
 export function renderCard(c,k,illustration,artLayout='portrait',provisional=false,artOffsetY=0,silhouetteIndex,unique=false,signature){
  let[id,n,cl,role,ra,kn,fin]=c;const[base,lv]=R[ra],u='g'+k+id;
- // Carte éternelle (ETER) : toujours en pleine illustration, cadre d'argent teinté par la rareté ; une finition
+ // Carte éternelle (ETER) : toujours en pleine illustration, cadre d'argent d'une seule teinte, sans rareté affichée
+ // (elle ne sert qu'au tirage) ; une finition
  // reste écrite sur la carte mais ne change pas l'habillage.
  const eternal=!!kn&&String(id).startsWith('ETER-'),finishLabel=fin;
  if(eternal){artLayout='fullart';fin='';}
@@ -65,7 +68,7 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  const signed=kn&&signature?`<g class="card-signature" transform="rotate(-7 146 ${fa?196:178})"><image href="${signature}" x="102" y="${fa?172:154}" width="88" height="46" preserveAspectRatio="xMidYMid meet" filter="url(#signature-ink${u})"/></g>`:'';
  return `<div class="card crafted-card ${fin} rarity-${lv}${unique?' unique-veiled':''}${eternal?' eternal-card':''}"><svg viewBox="0 0 200 300" role="img" aria-label="${kn?n+', '+(provisional?'cadre de présentation':ra):'Personnage inconnu, '+ra}">
  <defs>${kn&&signature?`<filter id="signature-ink${u}" x="-10%" y="-20%" width="120%" height="140%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius=".9" result="edge"/><feFlood flood-color="#f1d99b" flood-opacity=".85"/><feComposite in2="edge" operator="in" result="gold"/><feGaussianBlur in="SourceAlpha" stdDeviation="1.4" result="glow"/><feFlood flood-color="#08080b" flood-opacity=".55"/><feComposite in2="glow" operator="in" result="shadow"/><feMerge><feMergeNode in="shadow"/><feMergeNode in="gold"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`:''}${fa?`<filter id="text-shadow${u}" x="-20%" y="-50%" width="140%" height="220%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation=".85"/><feOffset dy=".7"/><feComponentTransfer><feFuncA type="linear" slope=".85"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>`:''}
- ${fin==='blood'?bloodDefinitions(u):fin==='gold'?goldDefinitions(u,fa):''}${eternal?eternalDefinitions(u,base):''}
+ ${fin==='blood'?bloodDefinitions(u):fin==='gold'?goldDefinitions(u,fa):''}${eternal?eternalDefinitions(u,ETERNAL_TINT):''}
   <linearGradient id="metal${u}" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="${light}"/><stop offset=".28" stop-color="${color}"/><stop offset=".48" stop-color="${light}"/><stop offset=".65" stop-color="${color}"/><stop offset="1" stop-color="${light}"/></linearGradient>
   <radialGradient id="glass${u}" cx=".5" cy=".38" r=".75"><stop stop-color="${fin==='blood'?'#75152b':color}" stop-opacity="${fin==='blood'?'.2':'.23'}"/><stop offset=".6" stop-color="#141218"/><stop offset="1" stop-color="#06080a"/></radialGradient>
   <linearGradient id="shade${u}" x1="0" y1="0" x2="0" y2="1">${fa?'<stop offset=".7" stop-color="#08080b" stop-opacity="0"/><stop offset="1" stop-color="#08080b" stop-opacity=".62"/>':'<stop offset=".57" stop-color="#08080b" stop-opacity="0"/><stop offset="1" stop-color="#08080b" stop-opacity=".94"/>'}</linearGradient>
@@ -110,7 +113,7 @@ export function renderCard(c,k,illustration,artLayout='portrait',provisional=fal
  <path d="M36 259H52M148 259H164" stroke="${metal}" stroke-width=".65" opacity=".5"/>
  <text x="100" y="273" text-anchor="middle" font-family="var(--body)" font-size="${title.length>24?9.5:11}"${ink} fill="#e3d0b2">${title}</text>
  <text x="100" y="291" text-anchor="middle" font-family="var(--display)" font-size="5.6" letter-spacing=".5"${ink} fill="#ded1b9">${id}</text>
- <text x="100" y="258" text-anchor="middle" font-family="var(--display)" font-size="5.2" letter-spacing=".6"${ink} fill="${light}" opacity=".8">${provisional?'APERÇU':unique?'UNIQUE':eternal?'ÉTERNELLE · '+ra.toUpperCase():ra.toUpperCase()}${finishLabel?' · '+(finishLabel==='gold'?'DORÉE':'SANGLANTE'):''}</text>
+ <text x="100" y="258" text-anchor="middle" font-family="var(--display)" font-size="5.2" letter-spacing=".6"${ink} fill="${light}" opacity=".8">${provisional?'APERÇU':unique?'UNIQUE':eternal?'ÉTERNELLE':ra.toUpperCase()}${finishLabel?' · '+(finishLabel==='gold'?'DORÉE':'SANGLANTE'):''}</text>
  </svg></div>`;
 }
 export const renderBack=(t,k)=>`<div class="card"><svg viewBox="0 0 200 300"><defs><pattern id="bd${k}" width="18" height="18" patternUnits="userSpaceOnUse"><path d="M9 1l6 8-6 8-6-8z" fill="none" stroke="#c9a45c" stroke-opacity=".09" stroke-width="1"/></pattern><radialGradient id="bg2${k}" cx=".5" cy=".5" r=".75"><stop stop-color="#561430"/><stop offset="1" stop-color="#12060d"/></radialGradient></defs><rect width="200" height="300" fill="url(#bg2${k})"/><rect width="200" height="300" fill="url(#bd${k})"/><rect x="3" y="3" width="194" height="294" rx="10" fill="none" stroke="#c9a45c" stroke-width="3"/><rect x="9" y="9" width="182" height="282" rx="6" fill="none" stroke="#c9a45c" stroke-width="1.4"/><g>${corner(4,'#c9a45c')}</g><g transform="translate(200 0) scale(-1 1)">${corner(4,'#c9a45c')}</g><g transform="translate(0 300) scale(1 -1)">${corner(4,'#c9a45c')}</g><g transform="translate(200 300) scale(-1 -1)">${corner(4,'#c9a45c')}</g><g fill="none" stroke="#c9a45c" stroke-width="2" opacity=".65"><circle cx="100" cy="150" r="48"/><path d="${spokes(100,150,52,58,8)}"/></g><path d="M100 92l32 58-32 58-32-58z" fill="#7b1d36" stroke="#f0d79a" stroke-width="2"/><path d="M100 110l20 40-20 40-20-40z" fill="none" stroke="#f0d79a" stroke-width="1.5"/><circle cx="100" cy="150" r="9" fill="#12060d" stroke="#f0d79a"/>${t?`<rect x="30" y="246" width="140" height="24" fill="#12060d" stroke="#c9a45c"/><text x="100" y="263" text-anchor="middle" font-family="var(--display)" font-weight="700" font-size="16" letter-spacing="5" fill="#f0d79a">${t}</text>`:''}</svg></div>`;

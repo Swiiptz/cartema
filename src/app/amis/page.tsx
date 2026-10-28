@@ -8,7 +8,7 @@ import {useAsk} from '@/components/AskDialog';
 import {Countdown,Skeleton} from '@/components/ui';
 import {EventBanner} from '@/components/EventBanner';
 import {TRADE_WARN,TradeComposer,type TradeDraft} from '@/components/TradeComposer';
-import {callRpc,socialToCard,type Friends,type Social,type SocialCard,type Trade} from '@/lib/game';
+import {callRpc,socialToCard,type Friends,type Social,type SocialCard,type Trade,type TradeStatus} from '@/lib/game';
 
 type Tab='friends'|'gifts'|'trades';
 const STATUS:Record<string,string>={accepted:'Acceptée',declined:'Refusée',cancelled:'Annulée',expired:'Expirée',countered:'Contre-proposée',pending:'En attente'};
@@ -23,10 +23,12 @@ export default function Amis(){
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState<{error?:string;notice?:string}>({});
  const [draft,setDraft]=useState<TradeDraft|null>(null);
+ // Compteurs du jour (doléance du 28/10) : échanges et cadeaux encore possibles, renouvelés à 6 h.
+ const [limits,setLimits]=useState<TradeStatus|null>(null);
 
  const load=useCallback(async()=>{
   if(!client)return;
-  try{const [f,s]=await Promise.all([callRpc<Friends>(client,'get_friends'),callRpc<Social>(client,'get_social')]);setFriends(f);setSocial(s);}
+  try{const [f,s,l]=await Promise.all([callRpc<Friends>(client,'get_friends'),callRpc<Social>(client,'get_social'),callRpc<TradeStatus>(client,'get_trade_status').catch(()=>null)]);setFriends(f);setSocial(s);setLimits(l);}
   catch(e){setMessage({error:(e as Error).message});}
  },[client]);
  useEffect(()=>{if(session)void load();},[session,load]);
@@ -58,6 +60,7 @@ export default function Amis(){
   {askNode}
   <header className="market-head rise"><div><span className="eyebrow">Cercle</span><h1>Amis &amp; échanges</h1></div></header>
   {session&&<EventBanner compact/>}
+  {limits&&<DailyLimits status={limits}/>}
   <div className="segmented social-tabs" role="tablist">{([['friends','Amis',Users],['gifts','Cadeaux',GiftIcon],['trades','Échanges',ArrowLeftRight]] as const).map(([k,l,I])=><button key={k} role="tab" aria-selected={tab===k} onClick={()=>setTab(k)}><I size={15}/> {l}{counts[k]>0&&<b className="tab-count">{counts[k]}</b>}</button>)}</div>
   <div className="admin-toast" aria-live="polite">{message.error&&<p className="auth-error" role="alert">{message.error}<button className="icon-button" aria-label="Fermer" onClick={()=>setMessage({})}><X size={16}/></button></p>}{message.notice&&<p className="auth-notice">{message.notice}</p>}</div>
 
@@ -101,4 +104,14 @@ function TradeSection({title,trades,loading,empty,render}:{title:string;trades:T
    <div className="trade-sides"><div><small className="muted">{t.incoming?'Vous recevez':'Vous donnez'}</small>{side(t.proposer_cards,t.proposer_deniers)}</div><ArrowLeftRight size={18} className="trade-arrow"/><div><small className="muted">{t.incoming?'Vous donnez':'Vous recevez'}</small>{side(t.recipient_cards,t.recipient_deniers)}</div></div>
    <div className="offer-actions">{render(t)}</div>
   </li>)}</ul>}</section>;
+}
+
+/** Ce qu'il reste aujourd'hui : échanges conclus, cadeaux envoyés et reçus (renouvelés à 6 h). Une limite à 0 = sans limite. */
+function DailyLimits({status}:{status:TradeStatus}){
+ const rows:[string,number|undefined,number|undefined][]=[['Échanges',status.trade_daily_limit,status.trades_today],['Cadeaux envoyés',status.gift_daily_limit,status.gifts_sent_today],['Cadeaux reçus',status.gift_daily_limit,status.gifts_received_today]];
+ const shown=rows.filter(([,limit])=>(limit??0)>0);
+ if(!shown.length)return null;
+ return <p className="daily-limits rise" aria-label="Limites du jour">{shown.map(([label,limit,used])=>{const left=Math.max(0,(limit??0)-(used??0));
+  return <span key={label} className={`chip ${left===0?'empty':''}`}><small>{label}</small> <strong>{left}</strong>/{limit} restant{left>1?'s':''}</span>;})}
+  <small className="muted">Renouvelés à 6 h</small></p>;
 }
