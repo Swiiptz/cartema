@@ -57,10 +57,32 @@ describe('édition annoncée (Soon)',()=>{
     expect(s.editions.some((e:any)=>e.id===ed.id)).toBe(false);
     await rpc(db,admin,'admin_set_edition_shop',[ed.id,true,'alpes',null,'Annonce']);
     s=await rpc(db,u,'get_player_state');
-    expect(s.editions.find((e:any)=>e.id===ed.id)).toEqual({id:ed.id,name:'Anarchs',prefix:'ANE',teaser:true,openable:false,theme:'alpes'});
+    expect(s.editions.find((e:any)=>e.id===ed.id)).toEqual({id:ed.id,name:'Anarchs',prefix:'ANE',teaser:true,openable:false,theme:'alpes',launch_at:null});
     expect(JSON.stringify(s)).not.toMatch(/Secret/);
     await expectError(open(u,ed.id),/edition_unavailable/);
     await expectError(rpc(db,u,'buy_boosters',[1,randomUUID(),ed.id]),/edition_unavailable/);
+  });
+
+  it('affiche une date de sortie qui n’ouvre rien une fois passée (10/11)',async()=>{
+    const {rows:[ed]}=await db.query<{id:string}>(`select id from public.editions where prefix='ANE'`);
+    const u=await player();
+    await expectError(rpc(db,u,'admin_set_edition_launch',[ed.id,'2026-11-16T15:00:00Z','Pirate']),/forbidden/);
+    await rpc(db,admin,'admin_set_edition_launch',[ed.id,'2026-11-16T15:00:00Z','Sortie du set 2']);
+    let s=await rpc(db,u,'get_player_state');
+    expect(Date.parse(s.editions.find((e:any)=>e.id===ed.id).launch_at)).toBe(Date.parse('2026-11-16T15:00:00Z'));
+    expect((await rpc(db,admin,'admin_catalog')).editions.find((e:any)=>e.id===ed.id).launch_at).toBeTruthy();
+    // Date passée : l'édition reste annoncée et fermée, l'album caché.
+    await rpc(db,admin,'admin_set_edition_launch',[ed.id,'2020-01-01T00:00:00Z','Date dépassée']);
+    s=await rpc(db,u,'get_player_state');
+    expect(s.editions.find((e:any)=>e.id===ed.id)).toMatchObject({teaser:true,openable:false});
+    await expectError(open(u,ed.id),/edition_unavailable/);
+    expect(JSON.stringify(await rpc(db,u,'get_album',[]))).not.toMatch(/Secret/);
+    // Sans annonce, la date n'est jamais envoyée.
+    await rpc(db,admin,'admin_set_edition_shop',[ed.id,false,'alpes',null,'Fin de l’annonce']);
+    s=await rpc(db,u,'get_player_state');
+    expect(JSON.stringify(s)).not.toMatch(/2020-01-01/);
+    await rpc(db,admin,'admin_set_edition_launch',[ed.id,null,'Retrait de la date']);
+    await rpc(db,admin,'admin_set_edition_shop',[ed.id,true,'alpes',null,'Annonce']);
   });
 });
 

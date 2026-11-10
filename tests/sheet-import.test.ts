@@ -30,4 +30,16 @@ describe('import du Google Sheets',()=>{
     expect(sql).toContain('on conflict (source_ref) where source_ref is not null do nothing');
     expect(sql).toContain(`'draft'`);
   });
+  it('harmonise les clans et garde chaque onglet à part (10/11)',()=>{
+    const r=mapRows(parseCsv(`Prénom,Nom,Clan,Statut/Secte,Rareté,Mort/vivant/disparu,Praxis (SET),Poste & année
+A,,Nosfératu ,Anarch,Commun,,ANE,
+B,,Disciple de Set,Aubain,Rare,,ANE,
+C,,???,Anarch,Epique,,ANE,
+D,,Toréador ,Ancilla,Rare,,ANE,
+`));
+    expect(r.characters.map((c:any)=>c.clan)).toEqual(['Nosferatu','Sethite',null,'Toréador']);
+    const sql=toSql(r,{editionName:'Essai',prefix:'ANE',sheetId:'abc:SET2'});
+    expect(sql).toContain(`'sheet:abc:SET2:L2'`);
+    expect(sql).toContain('source_ref_collision');
+  });
 });

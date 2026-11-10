@@ -4,7 +4,25 @@
     {
       "name": "cartema-dev",
       "runtimeExecutable": "C:\\Program Files\\nodejs\\npm.cmd",
-      "runtimeArgs": ["run", "dev", "--", "-p", "3101"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3101"
+      ],
+      "port": 3101
+    },
+    {
+      "name": "cartema-dev-linux",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3101"
+      ],
       "port": 3101
     }
   ]

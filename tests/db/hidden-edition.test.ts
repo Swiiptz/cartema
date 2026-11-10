@@ -50,6 +50,9 @@ describe('édition en préparation',()=>{
       await db.query('set local role authenticated');
       const {rows}=await db.query<{prefix:string}>('select prefix from public.editions');
       expect(rows.map(r=>r.prefix)).not.toContain('ANE');
+      // Les personnages ne se lisent jamais en direct (10/11, import du set 2 avant l'annonce).
+      const direct=await db.query<{name:string}>('select name from public.characters').then(r=>JSON.stringify(r.rows),e=>(e as Error).message);
+      expect(direct).not.toMatch(SECRET);
     }finally{await db.query('rollback');}
   });
 });

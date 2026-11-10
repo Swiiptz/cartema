@@ -5,7 +5,7 @@ import type {ArtMeta,BoosterThemeName} from './game';
 /** Sachets de booster disponibles (voir BoosterSkin). */
 export type BoosterTheme=BoosterThemeName;
 export const BOOSTER_THEMES:[BoosterTheme,string][]=[['camarilla','Camarilla (bordeaux)'],['alpes','Alpes de Savoie (bleu nuit)'],['sabbat','Sabbat (nuit)'],['independant','Indépendants (émeraude)'],['gold','Or']];
-export type AdminEdition={id:string;name:string;prefix:string;cover_path:string|null;album_published:boolean;packs_enabled:boolean;archived_at:string|null;eternal?:boolean;eternal_drops?:boolean;teaser?:boolean;booster_theme?:BoosterTheme;booster_offers?:Record<string,number>|null;complete:boolean;used:boolean;published_by_rarity:Partial<Record<Rarity,number>>};
+export type AdminEdition={id:string;name:string;prefix:string;cover_path:string|null;album_published:boolean;packs_enabled:boolean;archived_at:string|null;eternal?:boolean;eternal_drops?:boolean;teaser?:boolean;launch_at?:string|null;booster_theme?:BoosterTheme;booster_offers?:Record<string,number>|null;complete:boolean;used:boolean;published_by_rarity:Partial<Record<Rarity,number>>};
 export type AdminClan={id:string;name:string;symbol_key:string|null;lineage_title?:string|null};
 export type CharacterStatus='draft'|'published'|'archived';
 export type IllustrationMeta=ArtMeta&{width?:number;height?:number;transparent?:boolean;original?:string};

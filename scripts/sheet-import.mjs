@@ -1,5 +1,8 @@
 // Import initial du catalogue depuis l'export CSV du Google Sheets (CDC §3 : une seule fois).
-// Usage : node scripts/sheet-import.mjs <fichier.csv> <sortie.sql> [Nom d'édition] [PRÉFIXE]
+// Usage : node scripts/sheet-import.mjs <fichier.csv> <sortie.sql> [Nom d'édition] [PRÉFIXE] [repère de la source]
+// Le repère distingue les onglets d'un même classeur (ex. « 135ip4qZ:SET2 ») : chaque carte est marquée
+// « sheet:<repère>:L<ligne> ». Deux onglets avec le même repère auraient les mêmes marques.
+// Le SQL produit contient les noms des cartes : ne jamais le ranger dans le dépôt (public) avant l'annonce du set.
 // Produit un rapport d'aperçu (stdout) et un SQL idempotent qui crée les personnages EN BROUILLON.
 // La publication reste manuelle (back-office).
 import {readFileSync,writeFileSync} from 'node:fs';
@@ -7,8 +10,10 @@ import {pathToFileURL} from 'node:url';
 
 const RARITIES={commun:'Commun','peu commun':'Peu commun',rare:'Rare','tres rare':'Très rare',epique:'Épique',legendaire:'Légendaire',mythique:'Mythique'};
 // Orthographe française des clans dont le moteur possède le symbole gravé.
-const CLAN_ALIASES={malkavian:'Malkavien'};
-const NO_VALUE=new Set(['','*','inconnu']);
+// Les clés sont repliées (sans accents, minuscules) : « Nosfératu » et « Nosferatu » donnent le même clan.
+const CLAN_ALIASES={malkavian:'Malkavien',malkavien:'Malkavien',nosferatu:'Nosferatu',toreador:'Toréador','disciple de set':'Sethite',sethite:'Sethite'};
+// Sans clan = « clan inconnu » sur la carte. Caitiff (sans clan dans le jeu de rôle) n'est pas un clan du jeu.
+const NO_VALUE=new Set(['','*','inconnu','???','caitiff']);
 
 export const fold=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
 const clean=s=>(s??'').replace(/\s+/g,' ').trim();
@@ -76,6 +81,10 @@ begin
   insert into public.editions (name, prefix, album_published) values (${q(editionName)}, ${q(prefix)}, false)
     on conflict (prefix) do nothing;
   select id into v_edition from public.editions where prefix = ${q(prefix)};
+  -- Une marque déjà prise par une autre édition ferait ignorer la carte en silence (on conflict do nothing).
+  if exists (select 1 from public.characters c where c.edition_id <> v_edition and c.source_ref in (${characters.map(c=>q(`sheet:${sheetId}:L${c.line}`)).join(',')||'null'})) then
+    raise exception 'source_ref_collision' using hint = 'Donner un autre repère de source au script.';
+  end if;
   insert into public.clans (name) select unnest(array[${clans.map(q).join(',')}]::text[]) on conflict (name) do nothing;
   with src(number, name, role_title, clan, rarity, source_ref, lore) as (values
   ${values}
@@ -87,7 +96,7 @@ begin
     returning 1)
   select count(*) into v_inserted from ins;
   insert into public.admin_audit_logs (actor_id, target_id, action, reason, after_state)
-    values (v_admin, v_edition, 'catalog_import', 'Import initial du Google Sheets (mapping validé le 20/10/2026)',
+    values (v_admin, v_edition, 'catalog_import', ${q(`Import du Google Sheets dans ${prefix} (mapping validé le 20/10/2026)`)},
             jsonb_build_object('inserted', v_inserted, 'source_rows', ${characters.length}, 'sheet', ${q(sheetId)}));
   raise notice 'Personnages insérés : %', v_inserted;
 end $$;
@@ -96,11 +105,11 @@ commit;
 }
 
 if(import.meta.url===pathToFileURL(process.argv[1]??'').href){
- const [csvPath,outPath,editionName='Camarilla',prefix='CAM']=process.argv.slice(2);
+ const [csvPath,outPath,editionName='Camarilla',prefix='CAM',sheetId='135ip4qZ']=process.argv.slice(2);
  if(!csvPath||!outPath){console.error('Usage : node scripts/sheet-import.mjs <csv> <sortie.sql> [édition] [PRÉFIXE]');process.exit(1);}
  const result=mapRows(parseCsv(readFileSync(csvPath,'utf8').replace(/^﻿/,'')));
  const byRarity={};const byClan={};
  for(const c of result.characters){byRarity[c.rarity]=(byRarity[c.rarity]??0)+1;const k=c.clan??'(à définir)';byClan[k]=(byClan[k]??0)+1;}
  console.log(JSON.stringify({importes:result.characters.length,numeros:`${result.characters[0]?.number}…${result.characters.at(-1)?.number}`,par_rarete:byRarity,par_clan:byClan,ecartes:result.skipped,avertissements:result.warnings},null,1));
- writeFileSync(outPath,toSql(result,{editionName,prefix,sheetId:'135ip4qZ'}));
+ writeFileSync(outPath,toSql(result,{editionName,prefix,sheetId}));
 }

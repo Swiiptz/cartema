@@ -1522,3 +1522,10 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 
 /* Série de succès : palier plus bas encore manquant */
 .ach-missing{color:var(--gold)}
+
+/* Compte à rebours de sortie sous la pastille « Soon » (10/11, set 2 ANE). Indicatif, rien ne s'ouvre seul. */
+.pack-launch{position:absolute;left:50%;top:calc(50% + 34px);z-index:6;transform:translateX(-50%);white-space:nowrap;padding:4px 12px;border:1px solid #f1d99b66;border-radius:999px;background:#0d090fd9;color:#f1d99b;font:600 12px var(--ui);letter-spacing:.06em;pointer-events:none}
+.pack-launch time{font-variant-numeric:tabular-nums;color:#fff3cf}
+@media(max-width:600px){.pack-launch{top:calc(50% + 28px);font-size:11px}}
+.pack-launch.small{top:calc(50% + 18px);padding:2px 7px;font-size:9px;letter-spacing:.03em}
+@media(max-width:600px){.pack-launch.small{top:calc(50% + 14px);font-size:8px;padding:2px 5px}}

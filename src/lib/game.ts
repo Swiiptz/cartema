@@ -6,7 +6,7 @@ import {ALL_RARITIES,type Finish,type Rarity} from './draw';
 export type ArtMeta={layout?:'portrait'|'full'|'cover'|'fullart';offsetY?:number};
 /** Sachets de booster (voir BoosterSkin). */
 export type BoosterThemeName='camarilla'|'alpes'|'sabbat'|'independant'|'gold';
-export type PlayerEdition={id:string;name:string;prefix?:string;cover_path?:string|null;openable:boolean;teaser?:boolean;theme?:BoosterThemeName;offers?:Record<string,number>;reserve?:number};
+export type PlayerEdition={id:string;name:string;prefix?:string;cover_path?:string|null;openable:boolean;teaser?:boolean;launch_at?:string|null;theme?:BoosterThemeName;offers?:Record<string,number>;reserve?:number};
 export type PlayerState={
  profile:{id:string;handle:string|null;role:'player'|'admin';created_at:string;title?:string|null};
  balance:number;

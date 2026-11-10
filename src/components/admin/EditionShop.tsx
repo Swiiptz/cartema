@@ -9,11 +9,22 @@ import {BOOSTER_THEMES,type AdminEdition,type BoosterTheme} from '@/lib/admin';
 type Act=(label:string,action:(c:SupabaseClient)=>Promise<unknown>)=>Promise<boolean>;
 type Reason=(message:string)=>Promise<string|null>;
 const LOTS=['1','3','10'];
+/** Date ISO → valeur d'un champ datetime-local (heure de l'appareil). */
+function toLocalInput(iso:string){const d=new Date(iso);const p=(n:number)=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;}
 
 /** Boutique d'une édition : sachet, prix propres (vides = prix généraux) et annonce « Soon ». */
 export function EditionShop({edition:e,act,reason}:{edition:AdminEdition;act:Act;reason:Reason}){
  const [theme,setTheme]=useState<BoosterTheme>(e.booster_theme??'camarilla');
  const [teaser,setTeaser]=useState(!!e.teaser);
+ // Date de sortie affichée sous le sachet « Soon », à l'heure de l'appareil de l'admin (Paris).
+ const initialLaunch=e.launch_at?toLocalInput(e.launch_at):'';
+ const [launch,setLaunch]=useState(initialLaunch);
+ async function saveLaunch(){
+  const at=launch?new Date(launch).toISOString():null;
+  const r=await reason(at?`« ${e.name} » : compte à rebours jusqu’au ${new Date(at).toLocaleString('fr-FR',{dateStyle:'full',timeStyle:'short'})}. Indicatif : rien ne s’ouvre seul.`:`« ${e.name} » : plus de date de sortie affichée.`);
+  if(r===null)return;
+  await act('Date de sortie enregistrée.',c=>callRpc(c,'admin_set_edition_launch',{p_id:e.id,p_launch_at:at,p_reason:r}));
+ }
  const [eternal,setEternal]=useState(!!e.eternal);
  const [eternalDrops,setEternalDrops]=useState(!!e.eternal_drops);
  const [prices,setPrices]=useState<Record<string,string>>(()=>Object.fromEntries(LOTS.map(k=>[k,e.booster_offers?.[k]?String(e.booster_offers[k]):''])));
@@ -39,6 +50,8 @@ export function EditionShop({edition:e,act,reason}:{edition:AdminEdition;act:Act
     {bad&&<p className="auth-error">Le lot de 1 est obligatoire dès qu’un prix est renseigné ; des nombres entiers positifs.</p>}
     <label className="admin-check"><input type="checkbox" checked={teaser} onChange={x=>setTeaser(x.target.checked)}/> Annoncer « Soon » sur la page boosters (tant que les boosters sont fermés)</label>
     <button type="button" className="primary ghost compact" disabled={bad} onClick={()=>void save()}><Save size={14}/> Enregistrer</button>
+    <label className="auth-field"><span>Date de sortie (compte à rebours sous le sachet « Soon », n’ouvre rien)</span><input type="datetime-local" value={launch} onChange={x=>setLaunch(x.target.value)}/></label>
+    {launch!==initialLaunch&&<button type="button" className="primary ghost compact" onClick={()=>void saveLaunch()}><Save size={14}/> Enregistrer la date de sortie</button>}
     <label className="admin-check"><input type="checkbox" checked={eternal} onChange={x=>setEternal(x.target.checked)}/> Édition éternelle (ETER) : ses cartes tombent seulement en sixième carte, jamais en booster à part</label>
     {!eternal&&<label className="admin-check"><input type="checkbox" checked={eternalDrops} onChange={x=>setEternalDrops(x.target.checked)}/> Sixième carte éternelle possible dans les boosters de cette édition</label>}
     {(eternal!==!!e.eternal||eternalDrops!==!!e.eternal_drops)&&<button type="button" className="primary ghost compact" onClick={()=>void saveEternal()}><Save size={14}/> Enregistrer les options éternelles</button>}
