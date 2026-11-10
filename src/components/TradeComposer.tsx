@@ -1,4 +1,5 @@
 'use client';
+import {fold} from '@/lib/search';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {AlertTriangle,ArrowLeftRight,Coins,Heart,X,ZoomIn} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
@@ -99,7 +100,7 @@ function Picker({title,cards,selected,onToggle,wishes,wishLabel,wishHint}:{title
  const [query,setQuery]=useState('');
  const [zoom,setZoom]=useState<SocialCard|null>(null);
  // Les cartes souhaitées passent en tête.
- const list=useMemo(()=>(cards??[]).filter(c=>!query||c.name.toLowerCase().includes(query.toLowerCase())).map(c=>({c,w:wished(c,wishes)})).sort((a,b)=>Number(b.w)-Number(a.w)),[cards,query,wishes]);
+ const list=useMemo(()=>(cards??[]).filter(c=>!query||fold(c.name).includes(fold(query))).map(c=>({c,w:wished(c,wishes)})).sort((a,b)=>Number(b.w)-Number(a.w)),[cards,query,wishes]);
  const matches=useMemo(()=>(cards??[]).filter(c=>wished(c,wishes)).length,[cards,wishes]);
  return <section className="trade-picker">
   <div className="picker-head"><h3>{title}</h3><span className="muted">{selected.length}/{MAX}</span></div>

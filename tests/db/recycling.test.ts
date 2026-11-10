@@ -150,3 +150,28 @@ describe('bonus de connexion',()=>{
     expect(await claim('2026-10-25 22:59+00')).toBe(0); // 23:59 à Paris, déjà crédité
   });
 });
+
+describe('protection d’un personnage et doublons par rareté (doléances du 29/10)',()=>{
+  it('un personnage protégé n’est jamais recyclé, et les doublons se filtrent par rareté',async()=>{
+    const u=await createUser(db);
+    const communes=await give(u,'Commun','Standard',3);
+    const rares=await give(u,'Rare','Standard',3);
+    // Doublons des Communes seulement : 2 sur 3 (on en garde un).
+    expect((await rpc(db,u,'preview_duplicates',[1,'{Commun}'])).count).toBe(2);
+    expect((await rpc(db,u,'preview_duplicates',[1])).count).toBe(4);
+    // Protéger les Rares : plus aucun doublon rare, ni par la fiche.
+    const rare=await charId('Rare');
+    expect(await rpc(db,u,'set_character_protected',[rare,true])).toBe(true);
+    expect((await rpc(db,u,'get_inventory',[rare]))[0].protected).toBe(true);
+    expect((await rpc(db,u,'preview_duplicates',[1])).count).toBe(2);
+    await expectError(rpc(db,u,'recycle_cards',[[rares[2]],randomUUID()]),/character_protected/);
+    const r=await rpc(db,u,'recycle_duplicates',[randomUUID(),1,'{Commun,Rare}']);
+    expect(r.count).toBe(2);
+    expect((await db.query(`select 1 from public.inventory_items where id = any($1) and recycled_at is null`,[rares])).rows.length).toBe(3);
+    expect((await db.query(`select 1 from public.inventory_items where id = any($1) and recycled_at is null`,[communes])).rows.length).toBe(1);
+    // Retirer la protection rend le recyclage possible ; un personnage jamais découvert ne se protège pas.
+    await rpc(db,u,'set_character_protected',[rare,false]);
+    expect((await rpc(db,u,'recycle_cards',[[rares[2]],randomUUID()])).count).toBe(1);
+    await expectError(rpc(db,u,'set_character_protected',[await charId('Mythique'),true]),/not_discovered/);
+  });
+});

@@ -45,6 +45,9 @@ function LaunchIn({at}:{at:string}){
  const [past,setPast]=useState(()=>Date.parse(at)<=Date.now());
  return past?<>Ouverture imminente</>:<>Dans <Countdown to={at} onDone={()=>setPast(true)}/></>;
 }
+// Rafale de neige à la déchirure du sachet, visible seulement avec le thème d'hiver (classe « winter », globals.css).
+// Flocons figés : angle, distance, taille et retard de chacun.
+const SNOW_BURST=Array.from({length:34},(_,i)=>({'--a':`${(i*47+13)%360}deg`,'--r':`${110+(i*61)%190}px`,'--s':`${i%5===0?16+(i%3)*5:4+(i%4)*2}px`,'--dl':`${(0.62+(i%6)*0.035).toFixed(3)}s`,'--g':`${30+(i*29)%70}px`} as React.CSSProperties));
 const DEMO_CAROUSEL:PlayerEdition[]=[{id:'demo-cam',name:'Camarilla',prefix:'CAM',openable:true,theme:'camarilla'},{id:'demo-ane',name:'Les Sommets',prefix:'ANE',openable:false,teaser:true,theme:'alpes',launch_at:'2026-11-16T15:00:00Z'}];
 const OPEN_COUNTS=[1,3,5,10];
 // La clé de requête survit au rechargement : rejouer une ouverture interrompue renvoie
@@ -240,7 +243,7 @@ export default function Boosters(){
      <span className="god-burst">{Array.from({length:28},(_,i)=><i key={i} style={{'--a':`${i*360/28}deg`,'--d':`${130+(i*37)%120}px`,'--t':`${(i*53)%260}ms`} as React.CSSProperties}/>)}</span>
      <span className="god-rain">{Array.from({length:24},(_,i)=><i key={i} style={{'--x':`${(i*41)%100}%`,'--t':`${300+(i*137)%1800}ms`,'--s':`${3+(i%3)*2}px`} as React.CSSProperties}/>)}</span>
      <div className="god-title"><Crown size={34}/><strong>God booster</strong><small>Toutes les cartes sont dorées</small></div>
-    </div></>}{phase==='opening'&&effects&&<div className="seal-light" aria-hidden="true"/>}<div className="ritual-orbit orbit-one" aria-hidden="true"/><div className="ritual-orbit orbit-two" aria-hidden="true"/>
+    </div></>}{phase==='opening'&&effects&&<div className="seal-light" aria-hidden="true"/>}{phase==='opening'&&effects&&<div className="snow-burst" aria-hidden="true">{SNOW_BURST.map((st,i)=><i key={i} className={i%5===0?'crystal':undefined} style={st}/>)}</div>}<div className="ritual-orbit orbit-one" aria-hidden="true"/><div className="ritual-orbit orbit-two" aria-hidden="true"/>
    {effects&&<div className="motes" aria-hidden="true">{Array.from({length:18},(_,i)=><i key={i} style={{'--i':i,left:`${8+(i*37)%85}%`,top:`${10+(i*23)%80}%`} as React.CSSProperties}/>)}</div>}
    {phase!=='reveal'?<div className={`sealed-scene ${soon?'is-soon':''} ${carousel.length>1?'has-carousel':''}`}>{carousel.length>1&&phase==='sealed'?<>
     {prevEdition?<button className={`side-pack side-left ${prevEdition.teaser?'soon':''}`} aria-label={`Booster ${prevEdition.name}${prevEdition.teaser?' (bientôt)':''}`} onClick={()=>step(-1)}><BoosterSkin name={prevEdition.name} theme={prevEdition.theme}/>{prevEdition.teaser&&<span className="pack-soon small">Soon</span>}{prevEdition.teaser&&prevEdition.launch_at&&<span className="pack-launch small"><LaunchIn at={prevEdition.launch_at}/></span>}</button>:<span className="side-pack side-left empty" aria-hidden="true"/>}

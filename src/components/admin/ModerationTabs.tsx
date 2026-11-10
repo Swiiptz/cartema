@@ -1,4 +1,5 @@
 'use client';
+import {fold} from '@/lib/search';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {Check,Gift,Trash2,X} from 'lucide-react';
@@ -63,8 +64,8 @@ export function PlayerCards({client,act,reason,playerId,playerName,characters,on
  const [zoom,setZoom]=useState<OwnedCard|null>(null);
  const load=useCallback(async()=>{setCards(await callRpc<OwnedCard[]>(client,'admin_player_cards',{p_id:playerId}).catch(()=>[]));},[client,playerId]);
  useEffect(()=>{setCards(null);setVersionsOnly(false);void load();},[load]);
- const matches=useMemo(()=>{const q=query.trim().toLowerCase();if(q.length<2)return [];return characters.filter(c=>c.status==='published'&&!c.is_unique&&(c.name.toLowerCase().includes(q)||String(c.number)===q)).slice(0,8);},[query,characters]);
- const shown=useMemo(()=>(cards??[]).filter(c=>(!versionsOnly||c.variant)&&(!filter||c.name.toLowerCase().includes(filter.toLowerCase())||c.code.toLowerCase().includes(filter.toLowerCase())||(c.variant??'').toLowerCase().includes(filter.toLowerCase()))),[cards,filter,versionsOnly]);
+ const matches=useMemo(()=>{const q=fold(query);if(q.length<2)return [];return characters.filter(c=>c.status==='published'&&!c.is_unique&&(fold(c.name).includes(q)||String(c.number)===q)).slice(0,8);},[query,characters]);
+ const shown=useMemo(()=>(cards??[]).filter(c=>(!versionsOnly||c.variant)&&(!filter||[c.name,c.code,c.variant].some(t=>fold(t).includes(fold(filter))))),[cards,filter,versionsOnly]);
  const versions=(cards??[]).filter(c=>c.variant).length;
  async function give(){
   if(!pick)return;const n=Number(quantity);

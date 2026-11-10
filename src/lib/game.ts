@@ -37,7 +37,7 @@ export type UnknownAlbumEntry={known:false;edition_id:string;code:string;number:
 export type AlbumEntry=KnownAlbumEntry|UnknownAlbumEntry;
 /** Carte d'album : rendu + informations de possession. */
 export type AlbumCard=DemoCard&{variants?:ArtVariant[];characterId?:string;editionId?:string;finishesSeen?:Finish[];owned?:number};
-export type InventoryItem={cooldown_until?:string|null;
+export type InventoryItem={cooldown_until?:string|null;protected?:boolean;
  /** Exemplaire de l'artiste (concours) : mention gardée ; artist_until n'est plus renseigné depuis le 26/10 (plus de délai). */
  /** Version d'illustration de l'exemplaire (null = officielle). */
  art_id?:string|null;artist_copy?:boolean;artist_until?:string|null;signed?:boolean;variant?:string|null;variant_kind?:string|null;instance_id:string;finish:Finish;locked:boolean;reserved:boolean;reserved_kind?:string|null;listing_id?:string|null;listing_price?:number|null;listing_kind?:'fixed'|'auction'|null;acquired_at:string;unique:boolean;value:number};
@@ -195,6 +195,7 @@ const messages:Record<string,string>={
  confirmation_mismatch:'La confirmation ne correspond pas.',
  cannot_delete_admin:'Le compte administrateur ne peut pas être supprimé ici.',
  not_discovered:'Découvrez d’abord cette carte.',
+ character_protected:'Ce personnage est protégé du recyclage : retirez la protection depuis sa fiche.',
  image_required:'Ajoutez une image.',
  credit_required:'Indiquez le nom à créditer (2 à 80 caractères).',
  too_many_submissions:'Trop de propositions aujourd’hui, réessayez demain.',

@@ -1,9 +1,10 @@
 import type {DemoCard} from '../components/Card';
+import {fold} from './search';
 import {ALL_RARITIES,type Rarity,type Finish} from './draw';
 /** status « dupes » : cartes possédées en plusieurs exemplaires ; sort « copies » : les plus nombreuses d'abord. */
 export type AlbumFilters={query:string;status:'all'|'known'|'missing'|'dupes';clan:string;rarity:Rarity|'all';finish:Finish|'all';sort:'number'|'name'|'rarity'|'clan'|'copies';descending:boolean};
 export const initialAlbumFilters:AlbumFilters={query:'',status:'all',clan:'all',rarity:'all',finish:'all',sort:'number',descending:false};
-const normalize=(s:string)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr').trim();
+const normalize=fold;
 const compare=new Intl.Collator('fr',{numeric:true,sensitivity:'base'}).compare;
 // finishesSeen (album réel) : finitions déjà obtenues ; sinon finition affichée (démo).
 // owned (album réel) : exemplaires possédés.

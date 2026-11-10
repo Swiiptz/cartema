@@ -23,7 +23,7 @@ describe('nouveautés du prochain set',()=>{
     await db.query(`update public.characters set flavor_text='Un texte déjà validé.', signature_path=$2 where edition_id=$1`,[cam,SIG]);
     await rpc(db,admin,'admin_save_settings',[{signed_odds:1},'Toujours signé (test)']);
 
-    expect(await rpc(db,u,'get_features')).toEqual({next_set:false});
+    expect(await rpc(db,u,'get_features')).toMatchObject({next_set:false});
     await expectError(rpc(db,u,'submit_card_feedback',['CAM-001','ambiance','Elle sourit avant de mordre.',null]),/feature_locked/);
     await expectError(rpc(db,u,'submit_card_feedback',['CAM-001','signature','',`${u}/sig.png`]),/feature_locked/);
     expect(await rpc(db,u,'submit_card_feedback',['CAM-001','info','Le clan est faux.',null])).toBeTruthy();
@@ -32,7 +32,7 @@ describe('nouveautés du prochain set',()=>{
 
     await expectError(rpc(db,admin,'admin_save_settings',[{next_set_features:2},'Hors plage']),/invalid_setting/);
     await rpc(db,admin,'admin_save_settings',[{next_set_features:1},'Lancement du set']);
-    expect(await rpc(db,u,'get_features')).toEqual({next_set:true});
+    expect(await rpc(db,u,'get_features')).toMatchObject({next_set:true});
     expect(await rpc(db,u,'submit_card_feedback',['CAM-001','ambiance','Elle sourit avant de mordre.',null])).toBeTruthy();
     expect(await rpc(db,u,'get_card_flavor',[c.id])).toMatchObject({text:'Un texte déjà validé.'});
     expect((await rpc(db,u,'open_booster',[cam,randomUUID()])).cards.every((x:any)=>x.signed)).toBe(true);

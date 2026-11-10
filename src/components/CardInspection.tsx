@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useId,useRef,useState} from 'react';
 import Link from 'next/link';
-import {Expand,Gift,Lock,LockOpen,Recycle,Tag,X} from 'lucide-react';
+import {Expand,Gift,Lock,LockOpen,Recycle,Tag,X,ShieldCheck} from 'lucide-react';
 import {TarotCard,type DemoCard} from './Card';
 import {useAuth} from './AuthProvider';
 import {useAsk} from './AskDialog';
@@ -90,6 +90,9 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
   catch(e){setMessage({error:(e as Error).message});}
   finally{setBusy(false);}
  }
+ // Protection du personnage entier contre le recyclage (doléance du 29/10), exemplaires à venir compris.
+ const protectedChar=!!items?.[0]?.protected;
+ const toggleProtect=()=>run(async()=>{await callRpc(client!,'set_character_protected',{p_character_id:characterId,p_protected:!protectedChar});return protectedChar?'Protection retirée : ce personnage peut de nouveau être recyclé.':'Personnage protégé : aucun de ses exemplaires ne sera recyclé, même ceux à venir.';});
  const toggleLock=(it:InventoryItem)=>run(async()=>{await callRpc(client!,'set_cards_locked',{p_instance_ids:[it.instance_id],p_locked:!it.locked});return null;});
  const recycle=(list:InventoryItem[])=>run(async()=>{
   const total=list.reduce((s,i)=>s+i.value,0);
@@ -127,12 +130,13 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
  });};
  const unlist=(it:InventoryItem)=>run(async()=>{await callRpc(client!,'cancel_listing',{p_listing_id:it.listing_id});return 'Annonce retirée.';});
  if(!items)return <div className="owned-copies"><Skeleton style={{height:44}}/><Skeleton style={{height:44}}/></div>;
- const extras=items.filter(i=>i.finish==='Standard'&&!i.locked&&!i.reserved&&!i.unique).slice(1);
+ const extras=protectedChar?[]:items.filter(i=>i.finish==='Standard'&&!i.locked&&!i.reserved&&!i.unique).slice(1);
  return <section className="owned-copies" aria-label="Vos exemplaires">
   {askNode}
   {client&&<GiftDialog open={!!gifting} client={client} name={cardName} onCancel={()=>setGifting(null)} onConfirm={confirmGift}/>}
   <SellDialog open={!!selling} name={cardName} finish={selling?.finish??'Standard'} prices={prices} pricesStatus={pricesStatus} onCancel={()=>setSelling(null)} onConfirm={confirmSell}/>
   <div className="owned-head"><span className="eyebrow">Vos exemplaires</span><strong>{items.length}</strong></div>
+  {items.length>0&&!items[0].unique&&<button type="button" className={`protect-toggle ${protectedChar?'on':''}`} disabled={busy} aria-pressed={protectedChar} onClick={()=>void toggleProtect()}><ShieldCheck size={15}/> {protectedChar?'Personnage protégé du recyclage':'Protéger ce personnage du recyclage'}</button>}
   {items.length===0?<p className="muted">Vous ne possédez plus d’exemplaire de cette carte. Elle reste découverte dans votre album.</p>:<ul className="owned-list">{items.map(it=><li key={it.instance_id} className={`finish-${it.finish==='Dorée'?'gold':it.finish==='Sanglante'?'blood':'standard'} ${it.listing_id?'listed':''}`}>
    <div className="owned-top">
     <span className="owned-finish">{it.finish}{it.variant&&<em className="owned-variant"> · {it.variant}</em>}{it.signed&&<em className="owned-signed"> · Signée</em>}{it.artist_copy&&<span className="detail-rarity artist-badge">Exemplaire de l’artiste</span>}<small>Obtenue le {new Date(it.acquired_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}</small></span>
@@ -147,7 +151,7 @@ function OwnedCopies({characterId,cardName,onChanged}:{characterId:string;cardNa
       {it.artist_until?<span className="owned-note artist-note">Exemplaire de l’artiste · échangeable et vendable {until(it.artist_until)}</span>
        :it.cooldown_until&&<span className="owned-note">Reçue récemment · échangeable et vendable {until(it.cooldown_until)}</span>}
       <span className="action-sep" aria-hidden="true"/>
-      {it.unique?<span className="owned-note">Indestructible</span>:<button className="action-btn recycle" disabled={busy||it.locked||it.reserved} onClick={()=>void recycle([it])}><Recycle size={14}/> Recycler <b>+{it.value.toLocaleString('fr-FR')}</b></button>}</>}
+      {it.unique?<span className="owned-note">Indestructible</span>:<button className="action-btn recycle" disabled={busy||it.locked||it.reserved||protectedChar} title={protectedChar?"Personnage protégé du recyclage":undefined} onClick={()=>void recycle([it])}><Recycle size={14}/> Recycler <b>+{it.value.toLocaleString('fr-FR')}</b></button>}</>}
    </div>
    {it.locked&&!it.listing_id&&<small className="owned-hint">Verrouillée : protégée de la vente et du recyclage.</small>}
   </li>)}</ul>}

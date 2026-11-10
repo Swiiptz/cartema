@@ -1,4 +1,5 @@
 'use client';
+import {fold} from '@/lib/search';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {Plus,Save,X} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
@@ -31,7 +32,7 @@ export function EventContent({client,act,reason,eventId,characters}:{client:Supa
   setBoard({metric:c.leaderboard.metric??'',r:[0,1,2].map(i=>({d:String(c.leaderboard.rewards[i]?.deniers??0),b:String(c.leaderboard.rewards[i]?.boosters??0)}))});
  },[client,eventId]);
  useEffect(()=>{void load().catch(()=>{});},[load]);
- const drafts=useMemo(()=>{const q=query.trim().toLowerCase();if(q.length<2)return [];return characters.filter(c=>c.status==='draft'&&!c.is_unique&&!cards.includes(c.id)&&(c.name.toLowerCase().includes(q)||String(c.number)===q)).slice(0,8);},[query,characters,cards]);
+ const drafts=useMemo(()=>{const q=fold(query);if(q.length<2)return [];return characters.filter(c=>c.status==='draft'&&!c.is_unique&&!cards.includes(c.id)&&(fold(c.name).includes(q)||String(c.number)===q)).slice(0,8);},[query,characters,cards]);
  const name=(id:string)=>{const c=characters.find(x=>x.id===id);return c?`${c.number}. ${c.name} · ${c.rarity}`:id;};
  if(!data)return <Skeleton style={{height:120}}/>;
  const setM=(i:number,k:keyof MissionRow,v:string)=>setMissions(ms=>ms.map((m,j)=>j!==i?m:{...m,[k]:v}));

@@ -1,4 +1,5 @@
 'use client';
+import {fold} from '@/lib/search';
 import {useEffect,useMemo,useState} from 'react';
 import {Check,X} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
@@ -32,7 +33,7 @@ export function ShowcaseEditor({client,open,current,onClose,onSaved}:{client:Sup
   setPicked(current);setQuery('');setError(null);setCandidates(null);
   void callRpc<SocialCard[]>(client,'get_showcase_candidates').then(setCandidates).catch(e=>setError((e as Error).message));
  },[open,client,current]);
- const list=useMemo(()=>(candidates??[]).filter(c=>!query||c.name.toLowerCase().includes(query.toLowerCase())),[candidates,query]);
+ const list=useMemo(()=>(candidates??[]).filter(c=>!query||fold(c.name).includes(fold(query))),[candidates,query]);
  const copiesOf=(c:SocialCard)=>c.instances??(c.instance_id?[c.instance_id]:[]);
  const used=new Set(picked.map(p=>p.instance_id));
  const shown=(c:SocialCard)=>copiesOf(c).filter(id=>used.has(id)).length;

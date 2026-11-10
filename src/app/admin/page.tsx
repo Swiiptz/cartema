@@ -1,4 +1,5 @@
 'use client';
+import {fold} from '@/lib/search';
 import {createContext,useCallback,useContext,useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {Archive,BookPlus,Check,FolderOpen,Images,ImagePlus,PackageOpen,Plus,Save,ShieldAlert,Upload,X} from 'lucide-react';
@@ -108,7 +109,7 @@ function CharactersTab({catalog,act,client,onError}:{catalog:AdminCatalog;act:Ac
  const [bulk,setBulk]=useState(false);
  const list=useMemo(()=>{const q=query.trim().toLowerCase();return catalog.characters.filter(c=>inScope(c)&&(status==='all'||c.status===status)
   &&(rarity==='all'||c.rarity===rarity)&&(clanId==='all'||(clanId==='none'?!c.clan_id:c.clan_id===clanId))
-  &&(art==='all'||(art==='missing'?!c.art_path:!!c.art_path))&&(!q||c.name.toLowerCase().includes(q)||String(c.number)===q));},[catalog,inScope,status,rarity,clanId,art,query]);
+  &&(art==='all'||(art==='missing'?!c.art_path:!!c.art_path))&&(!q||fold(c.name).includes(fold(q))||String(c.number)===q));},[catalog,inScope,status,rarity,clanId,art,query]);
  const inEdition=catalog.characters.filter(inScope);
  const missingArt=inEdition.filter(c=>!c.art_path&&c.status!=='archived').length;
  const filtered=status!=='all'||rarity!=='all'||clanId!=='all'||art!=='all'||!!query.trim();
@@ -362,7 +363,7 @@ function AchievementsTab({catalog,act,client}:{catalog:AdminCatalog;act:Act;clie
  const load=useCallback(async()=>{setList(await callRpc<CustomAchievement[]>(client,'admin_custom_achievements').catch(()=>[]));},[client]);
  useEffect(()=>{void load();},[load]);
  const published=useMemo(()=>catalog.characters.filter(c=>c.status==='published'),[catalog]);
- const matches=useMemo(()=>{const q=query.trim().toLowerCase();return q.length<2?[]:published.filter(c=>c.name.toLowerCase().includes(q)&&!chars.includes(c.id)).slice(0,8);},[query,published,chars]);
+ const matches=useMemo(()=>{const q=fold(query);return q.length<2?[]:published.filter(c=>fold(c.name).includes(q)&&!chars.includes(c.id)).slice(0,8);},[query,published,chars]);
  const label=(id:string)=>{const c=catalog.characters.find(x=>x.id===id);const e=catalog.editions.find(x=>x.id===c?.edition_id);return c?`${c.name} (${e?.prefix}-${String(c.number).padStart(3,'0')})`:id;};
  const edit=(a:CustomAchievement)=>{setForm({code:a.code,label:a.label,description:a.description,secret:a.secret,deniers:String(a.reward_deniers),boosters:String(a.reward_boosters),title:a.title??'',mode:a.conditional?'conditional':'manual',edition:a.edition_id??''});setChars(a.characters.map(c=>c.id));setFinishes(Object.fromEntries(a.characters.filter(c=>c.finish).map(c=>[c.id,c.finish!])));setArts(Object.fromEntries(a.characters.filter(c=>c.art).map(c=>[c.id,c.art!])));};
  const reset=()=>{setForm(emptyAchievement);setChars([]);setFinishes({});setArts({});};

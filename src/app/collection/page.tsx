@@ -32,6 +32,9 @@ export default function Collection(){
  const [dup,setDup]=useState<DuplicatePreview|null>(null);
  const [dupBusy,setDupBusy]=useState(false);
  const [dupMessage,setDupMessage]=useState<{error?:string;notice?:string}>({});
+ // Raretés concernées par le recyclage des doublons (doléance du 29/10) : toutes par défaut.
+ const [dupRarities,setDupRarities]=useState<Rarity[]>([...ALL_RARITIES]);
+ const rarityArg=(list:Rarity[])=>list.length===ALL_RARITIES.length?null:list;
  const live=Boolean(configured&&session&&client);
  const wish=useWishes(client,live);
  const wishedCodes=new Set([...wish.keys].map(k=>k.split('|')[0]));
@@ -52,13 +55,19 @@ export default function Collection(){
    .catch(e=>{if(alive&&!albumCache)setLoadError((e as Error).message);});
   return()=>{alive=false;};
  },[live,client,reloadKey,userId]);
- async function openDuplicates(){
-  setDupOpen(true);setDup(null);setDupMessage({});
-  try{setDup(await callRpc<DuplicatePreview>(client!,'preview_duplicates',{p_keep:1}));}catch(e){setDupMessage({error:(e as Error).message});}
+ async function previewDuplicates(list:Rarity[]){
+  setDup(null);setDupMessage({});
+  if(!list.length){setDup({count:0,total:0,by_rarity:{}});return;}
+  try{setDup(await callRpc<DuplicatePreview>(client!,'preview_duplicates',{p_keep:1,p_rarities:rarityArg(list)}));}catch(e){setDupMessage({error:(e as Error).message});}
+ }
+ function openDuplicates(){setDupOpen(true);void previewDuplicates(dupRarities);}
+ function toggleDupRarity(r:Rarity){
+  const next=dupRarities.includes(r)?dupRarities.filter(x=>x!==r):ALL_RARITIES.filter(x=>x===r||dupRarities.includes(x));
+  setDupRarities(next);void previewDuplicates(next);
  }
  async function recycleDuplicates(){
   setDupBusy(true);setDupMessage({});
-  try{const r=await callRpc<RecycleResult>(client!,'recycle_duplicates',{p_request_id:crypto.randomUUID(),p_keep:1});setDupMessage({notice:`${r.count} carte${r.count>1?'s':''} recyclée${r.count>1?'s':''} · +${r.total.toLocaleString('fr-FR')} Deniers`});setDup({count:0,total:0,by_rarity:{}});reload();void refreshPlayer();}
+  try{const r=await callRpc<RecycleResult>(client!,'recycle_duplicates',{p_request_id:crypto.randomUUID(),p_keep:1,p_rarities:rarityArg(dupRarities)});setDupMessage({notice:`${r.count} carte${r.count>1?'s':''} recyclée${r.count>1?'s':''} · +${r.total.toLocaleString('fr-FR')} Deniers`});setDup({count:0,total:0,by_rarity:{}});reload();void refreshPlayer();}
   catch(e){setDupMessage({error:(e as Error).message});}
   finally{setDupBusy(false);}
  }
@@ -96,8 +105,9 @@ export default function Collection(){
  <div className="card-grid album-grid" key={`${filters.status}|${filters.clan}|${filters.rarity}|${filters.finish}|${filters.sort}|${filters.descending}|${editionId}|${wishOnly}`}>{cards.map((c,i)=><div className={`album-card-cell rise ${live&&(c.owned??0)>2?'stack-2':live&&(c.owned??0)>1?'stack-1':''}`} style={{'--i':Math.min(i,12)} as React.CSSProperties} key={c.id}><CardInspection card={c} finishesSeen={live?c.finishesSeen:undefined} characterId={live?c.characterId:undefined} onChanged={live?reload:undefined} wishes={live?wish.keys:undefined} onWish={live?wish.toggle:undefined} variants={live?c.variants:undefined}/>{wishedCodes.has(c.id)&&<span className="wish-badge" aria-label="Dans votre liste de souhaits"><Heart size={12}/></span>}{live&&(c.owned??0)>1&&<span className="copies-badge" aria-label={`${c.owned} exemplaires`}>×{c.owned}</span>}{(!c.known||(live&&!c.owned))&&<span className={`discovery-status ${c.known?'known':''}`}>{c.known?'Cédée':'À découvrir'}</span>}</div>)}</div>
  {live&&!album&&!loadError&&<div className="card-grid album-grid" aria-label="Chargement de l’album">{Array.from({length:8},(_,i)=><Skeleton key={i} className="skeleton-card"/>)}</div>}{loadError&&<p className="auth-error" role="alert">{loadError}</p>}{live&&album&&!source.length&&<div className="album-empty"><BookOpen size={28}/><h2>Les archives sont encore vides.</h2><p>Aucune carte n’a été publiée pour le moment.</p></div>}{!cards.length&&source.length>0&&discovered===0&&filters.status==='known'?<div className="album-empty"><BookOpen size={28}/><h2>Aucun visage dévoilé pour l’instant.</h2><p>Ouvrez un booster pour commencer votre collection, ou parcourez les cartes encore voilées.</p><div className="auth-actions"><Link className="primary" href="/boosters/">Ouvrir un booster</Link><button className="primary ghost" onClick={()=>update('status','all')}>Voir toutes les cartes</button></div></div>:!cards.length&&source.length>0&&wishOnly?<div className="album-empty"><Heart size={28}/><h2>Aucune carte recherchée ici.</h2><p>Ouvrez une carte et touchez « Je cherche cette carte » : elle apparaîtra ici, et vous serez prévenu quand elle sera en vente.</p><button className="primary ghost" onClick={()=>setWishOnly(false)}>Voir toutes les cartes</button></div>:!cards.length&&source.length>0&&filters.status!=='dupes'&&<div className="album-empty"><Search size={28}/><h2>Aucun visage dans le miroir.</h2><p>Essayez un autre nom ou allégez vos filtres.</p><button className="primary ghost" onClick={reset}><RotateCcw size={16}/> Réinitialiser les filtres</button></div>}
  {live&&<Sheet open={dupOpen} onClose={()=>setDupOpen(false)} title="Recycler les doublons">
-  <p className="muted sheet-text">Recycle les exemplaires <strong>Standard</strong> en trop, en gardant le plus ancien de chaque personnage. Les cartes verrouillées, Dorées, Sanglantes, uniques et en version d’illustration (alternatives, anciennes illustrations) ne sont jamais concernées.</p>
-  {!dup?<Skeleton style={{height:90}}/>:dup.count===0?<p className="auth-notice">{dupMessage.notice??'Aucun doublon Standard à recycler.'}</p>:<div className="dup-summary"><p><strong>{dup.count}</strong> carte{dup.count>1?'s':''} · <strong className="gain">+{dup.total.toLocaleString('fr-FR')} Deniers</strong></p><ul>{Object.entries(dup.by_rarity).map(([r,n])=><li key={r}>{r} <b>×{n}</b></li>)}</ul><button className="primary" disabled={dupBusy} onClick={()=>void recycleDuplicates()}><Recycle size={15}/> {dupBusy?'Recyclage…':'Recycler définitivement'}</button></div>}
+  <p className="muted sheet-text">Recycle les exemplaires <strong>Standard</strong> en trop, en gardant le plus ancien de chaque personnage. Les cartes verrouillées, Dorées, Sanglantes, uniques et en version d’illustration (alternatives, anciennes illustrations) ne sont jamais concernées, ni les personnages protégés depuis leur fiche.</p>
+  <div className="dup-rarities" role="group" aria-label="Raretés à recycler">{ALL_RARITIES.map(r=><button key={r} type="button" className={`chip ${dupRarities.includes(r)?'on':''}`} aria-pressed={dupRarities.includes(r)} disabled={dupBusy} onClick={()=>toggleDupRarity(r)}>{r}</button>)}</div>
+  {!dup?<Skeleton style={{height:90}}/>:dup.count===0?<p className="auth-notice">{dupMessage.notice??(dupRarities.length?'Aucun doublon Standard à recycler dans ces raretés.':'Choisissez au moins une rareté.')}</p>:<div className="dup-summary"><p><strong>{dup.count}</strong> carte{dup.count>1?'s':''} · <strong className="gain">+{dup.total.toLocaleString('fr-FR')} Deniers</strong></p><ul>{Object.entries(dup.by_rarity).map(([r,n])=><li key={r}>{r} <b>×{n}</b></li>)}</ul><button className="primary" disabled={dupBusy} onClick={()=>void recycleDuplicates()}><Recycle size={15}/> {dupBusy?'Recyclage…':'Recycler définitivement'}</button></div>}
   {dupMessage.error&&<p className="auth-error" role="alert">{dupMessage.error}</p>}
  </Sheet>}
  {!live&&<p className="demo-note">Album de démonstration · Clans et raretés des illustrations ajoutées à définir.{configured&&<> <Link className="text-link" href="/connexion/">Se connecter pour voir sa collection</Link></>}</p>}</div>;

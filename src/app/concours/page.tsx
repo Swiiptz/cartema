@@ -1,4 +1,5 @@
 'use client';
+import {fold} from '@/lib/search';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import Link from 'next/link';
 import {Brush,Check,Clock,Crown,Flag,Flame,Heart,ImagePlus,Images,Palette,ScrollText,Search,Trophy,X} from 'lucide-react';
@@ -44,8 +45,8 @@ export default function Concours(){
  const mult=contest?.priority_multiplier??2;
  const prioCount=(contest?.cards??[]).filter(c=>c.priority).length;
  const cards=useMemo(()=>{
-  const q=query.trim().toLowerCase();
-  return (contest?.cards??[]).filter(c=>(!q||c.name.toLowerCase().includes(q)||c.code.toLowerCase().includes(q)||(c.clan??'').toLowerCase().includes(q))
+  const q=fold(query);
+  return (contest?.cards??[]).filter(c=>(!q||[c.name,c.code,c.clan].some(t=>fold(t).includes(q)))
    &&(!rarity||c.rarity===rarity)&&(filter==='all'||(filter==='priority'&&!!c.priority)||(filter==='entries'&&c.entries>0)||(filter==='mine'&&c.mine)||(filter==='empty'&&c.entries===0)));
  },[contest,query,rarity,filter]);
 

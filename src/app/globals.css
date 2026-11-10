@@ -1529,3 +1529,65 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 @media(max-width:600px){.pack-launch{top:calc(50% + 28px);font-size:11px}}
 .pack-launch.small{top:calc(50% + 18px);padding:2px 7px;font-size:9px;letter-spacing:.03em}
 @media(max-width:600px){.pack-launch.small{top:calc(50% + 14px);font-size:8px;padding:2px 5px}}
+
+/* Nouveautés de la mise à jour d'hiver (WhatsNew, 10/11) : givre bleuté sur le panneau habituel. */
+.whats-new{position:relative;overflow:hidden;padding:18px 20px;border-color:#9fc3dc66;background:linear-gradient(125deg,#1c2230,#1a1118 55%,#211a26)}
+.whats-new-frost{position:absolute;inset:-30% auto auto -10%;width:55%;height:160%;background:radial-gradient(closest-side,#b9dcf322,transparent);pointer-events:none}
+.whats-new .teaser-icon{border-color:#9fc3dc99;color:#d7ecfa;background:radial-gradient(circle at 35% 30%,#33465c,#141822);box-shadow:0 0 18px #9fc3dc33}
+.whats-new-head{display:flex;align-items:center;gap:14px;padding-right:40px}
+.whats-new-head h2{margin:2px 0 0;font-size:22px;color:#eef6fc}
+.whats-new .eyebrow{color:#a9cfe6}
+.whats-new ul{margin:14px 0 0;padding-left:20px;display:grid;gap:6px;font:400 14px/1.55 var(--ui);color:#d9d3d8}
+.whats-new li strong{color:#eef6fc;font-weight:600}
+.whats-new-close{position:absolute;top:8px;right:8px;z-index:1}
+@media(max-width:640px){.whats-new-head h2{font-size:19px}.whats-new .teaser-icon{width:42px;height:42px}}
+.visitor>.whats-new{margin:28px 0 8px}
+
+/* Thème d'hiver (WinterTheme, réglage winter_theme, 10/11). Désactivable par chaque joueur (bouton flocon de l'en-tête,
+   mémorisé sur l'appareil). Nuit d'hiver : teinte de nuit froide et neige qui tombe en profondeur, rien d'autre. Essayés puis refusés par
+   Swiiptz (ne pas les remettre) : guirlande, stalactites, houx, brume givrée des bords, bandes de neige posée
+   sur l'en-tête, la barre du bas, les panneaux et les boutons.
+   Tout est statique sauf les flocons : chute (span, linéaire) et balancement (i, aller-retour) séparés, transform seulement.
+   Un flocon sur deux sur téléphone, aucun si l'appareil réduit les animations. */
+html.winter{--bg:#0a0c14}
+.winter body{background:radial-gradient(ellipse 70% 38% at 50% 0,#8fc0e41f,transparent 78%),radial-gradient(ellipse 60% 30% at 50% 0,#36122240,transparent 80%),linear-gradient(180deg,#0c111d,#0a0c14 60%,#0b0a12)}
+.snowfall{position:fixed;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+.snowfall span{position:absolute;top:-40px;left:var(--l);animation:snow-fall var(--d) linear var(--dl) infinite;will-change:transform}
+.snowfall i{display:block;width:var(--s);height:var(--s);border-radius:50%;opacity:var(--o);background:radial-gradient(circle,#fff 0,#eef6fc 40%,#eef6fc00 72%);animation:snow-sway var(--sw) ease-in-out infinite alternate}
+.snowfall .plane-2 i{background:radial-gradient(circle,#f4f9fd 0,#f4f9fd00 68%)}
+.snowfall i.crystal{border-radius:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23ffffff' stroke-width='1.3' stroke-linecap='round'%3E%3Cg id='b'%3E%3Cpath d='M24 24V3M24 9l-4-4M24 9l4-4M24 15l-5-4M24 15l5-4'/%3E%3C/g%3E%3Cuse href='%23b' transform='rotate(60 24 24)'/%3E%3Cuse href='%23b' transform='rotate(120 24 24)'/%3E%3Cuse href='%23b' transform='rotate(180 24 24)'/%3E%3Cuse href='%23b' transform='rotate(240 24 24)'/%3E%3Cuse href='%23b' transform='rotate(300 24 24)'/%3E%3Ccircle cx='24' cy='24' r='1.6' fill='%23ffffff' stroke='none'/%3E%3C/svg%3E") center/contain no-repeat;filter:drop-shadow(0 0 3px #cfe6f588);animation:snow-sway var(--sw) ease-in-out infinite alternate,snow-turn 22s linear infinite}
+@keyframes snow-fall{from{transform:translate3d(0,0,0)}to{transform:translate3d(0,calc(100vh + 80px),0)}}
+@keyframes snow-sway{from{translate:calc(var(--w) * -1) 0}to{translate:var(--w) 0}}
+@keyframes snow-turn{to{rotate:360deg}}
+@media(max-width:640px){.snowfall span:nth-child(2n){display:none}}
+@media(prefers-reduced-motion:reduce){.snowfall{display:none}}
+.winter .logo>svg{filter:drop-shadow(0 0 6px #cfe6f566)}
+.winter h1 em{text-shadow:0 0 18px #cfe6f544}
+.winter-toggle{display:grid;place-items:center;width:36px;height:36px;padding:0;border-radius:50%;border:1px solid #dcecf877;background:#16203099;color:#eef6fc;transition:color .2s,border-color .2s,opacity .2s}
+.winter-toggle:hover{border-color:#eef6fc}
+.winter-toggle[aria-pressed=false]{color:var(--muted);border-color:var(--line);background:transparent;opacity:.7}
+/* Doublons par rareté (10/11). */
+.dup-rarities{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.dup-rarities .chip.on{border-color:#c9a45c99;background:#3a2530;color:var(--gold2)}
+.dup-rarities .chip:not(.on){opacity:.6}
+/* Protéger un personnage du recyclage (fiche de carte, 10/11). */
+.protect-toggle{display:inline-flex;align-items:center;gap:8px;min-height:40px;margin:2px 0 10px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:#160f16cc;color:var(--muted);font:600 13px/1.2 var(--ui)}
+.protect-toggle svg{color:var(--muted)}
+.protect-toggle.on{border-color:#7fb38f88;background:#16261c;color:#cfe9d6}
+.protect-toggle.on svg{color:#8fd1a2}
+
+/* Rafale de neige à l'ouverture d'un booster (thème d'hiver seulement, 10/11). Au moment où le sachet se déchire :
+   souffle froid et 34 flocons projetés (pas d'onde ni de cercle : refusé) depuis le sachet, qui retombent en s'effaçant. Une seule fois
+   par ouverture, transform et opacité seulement ; rien sans le thème, ni si l'appareil réduit les animations. */
+.snow-burst{display:none}
+/* Les flocons projetés dépassent la scène : on coupe au bord de la page, sans barre de défilement. */
+.winter .opening-page{overflow-x:clip}
+.winter .snow-burst{display:block;position:absolute;left:50%;top:52%;width:0;height:0;z-index:5;pointer-events:none}
+.winter .snow-burst::after{content:'';position:absolute;left:-190px;top:-190px;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,#f4f9fdcc 0,#cfe6f555 30%,transparent 68%);opacity:0;animation:frost-flash .9s ease-out .58s both}
+.snow-burst i{position:absolute;left:0;top:0;width:var(--s);height:var(--s);margin:calc(var(--s) / -2);border-radius:50%;opacity:0;background:radial-gradient(circle,#fff 0,#eef6fc 45%,#eef6fc00 72%);animation:snow-burst 1.3s cubic-bezier(.12,.75,.25,1) var(--dl) both,snow-burst-drop 1.3s cubic-bezier(.5,0,.9,.6) var(--dl) both}
+.snow-burst i.crystal{border-radius:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23ffffff' stroke-width='1.3' stroke-linecap='round'%3E%3Cg id='b'%3E%3Cpath d='M24 24V3M24 9l-4-4M24 9l4-4M24 15l-5-4M24 15l5-4'/%3E%3C/g%3E%3Cuse href='%23b' transform='rotate(60 24 24)'/%3E%3Cuse href='%23b' transform='rotate(120 24 24)'/%3E%3Cuse href='%23b' transform='rotate(180 24 24)'/%3E%3Cuse href='%23b' transform='rotate(240 24 24)'/%3E%3Cuse href='%23b' transform='rotate(300 24 24)'/%3E%3Ccircle cx='24' cy='24' r='1.6' fill='%23ffffff' stroke='none'/%3E%3C/svg%3E") center/contain no-repeat;filter:drop-shadow(0 0 4px #cfe6f5aa)}
+@keyframes snow-burst{0%{opacity:0;transform:rotate(var(--a)) translateX(0) scale(.2)}12%{opacity:1}65%{opacity:.95}100%{opacity:0;transform:rotate(var(--a)) translateX(var(--r)) rotate(140deg) scale(1)}}
+@keyframes snow-burst-drop{from{translate:0 0}to{translate:0 var(--g)}}
+@keyframes frost-flash{0%{opacity:0;transform:scale(.4)}30%{opacity:.85}100%{opacity:0;transform:scale(1.5)}}
+@media(max-width:640px){.snow-burst i:nth-child(3n){display:none}}
+@media(prefers-reduced-motion:reduce){.winter .snow-burst{display:none}}

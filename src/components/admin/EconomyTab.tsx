@@ -8,7 +8,7 @@ import {ALL_RARITIES,type Rarity} from '@/lib/draw';
 import {callRpc} from '@/lib/game';
 
 type Weighted={value:string;weight:number};
-type Settings={next_set_features?:number;signed_odds?:number;pity_epic_every?:number;pity_legend_every?:number;streak_booster_every?:number;streak_booster_count?:number;trade_cooldown_hours:number;trade_daily_limit:number;gift_daily_limit:number;trade_tax_pct:number;trade_weekly_deniers_cap:number;buyer_tax_pct:number;bid_refund_tax_pct:number;alternate_art_odds:number;booster_offers:Record<string,number>;daily_login_reward:number;discovery_reward:number;welcome_free_boosters:number;free_booster_capacity:number;
+type Settings={next_set_features?:number;winter_theme?:number;signed_odds?:number;pity_epic_every?:number;pity_legend_every?:number;streak_booster_every?:number;streak_booster_count?:number;trade_cooldown_hours:number;trade_daily_limit:number;gift_daily_limit:number;trade_tax_pct:number;trade_weekly_deniers_cap:number;buyer_tax_pct:number;bid_refund_tax_pct:number;alternate_art_odds:number;booster_offers:Record<string,number>;daily_login_reward:number;discovery_reward:number;welcome_free_boosters:number;free_booster_capacity:number;
  market_commission_pct:number;mission_bonus_daily:number;mission_bonus_weekly:number;recycle_values:Record<Rarity,number>;finish_multipliers:Record<string,number>;alternate_rarity_mult?:Record<Rarity,number>};
 type Economy={settings:{version:number;settings:Settings;created_at:string};settings_history:{version:number;created_at:string;by:string|null;active:boolean}[];
  ruleset:{version:number;slots:Weighted[][];finishes:Weighted[];unique_odds:number;notes:string;created_at:string};
@@ -29,6 +29,7 @@ const FIELDS:[keyof Settings,string,string][]=[
  ['streak_booster_count','Bonus de série','boosters offerts à chaque palier'],
  ['pity_epic_every','Épique garantie','au N-ième booster d’un joueur sans Épique (0 = aucune), caché aux joueurs'],
  ['next_set_features','Nouveautés du prochain set','1 = allumées : signatures, cartes signées et textes d’ambiance ; 0 = coupées (en attente du set)'],
+ ['winter_theme','Thème d’hiver','1 = neige et touches de Noël sur le site ; 0 = éteint (à couper à la fin de la saison)'],
  ['signed_odds','Carte signée','1 exemplaire sur N d’un personnage dont la signature est publiée (0 = jamais)'],
  ['pity_legend_every','Légendaire garantie','au N-ième booster d’un joueur sans Légendaire (0 = aucune), caché aux joueurs'],
  ['discovery_reward','Découverte d’un personnage','Deniers, une fois par personnage'],
@@ -171,7 +172,7 @@ function ArtLines({client,act,reason}:{client:SupabaseClient;act:Act;reason:Reas
 function SettingsForm({eco,act,reason,onSaved}:{eco:Economy;act:Act;reason:Reason;onSaved:()=>Promise<void>}){
  const cur=eco.settings.settings;
  const [form,setForm]=useState(()=>({
-  fields:Object.fromEntries(FIELDS.map(([k])=>[k,String(cur[k])])) as Record<string,string>,
+  fields:Object.fromEntries(FIELDS.map(([k])=>[k,String(cur[k]??0)])) as Record<string,string>,
   offers:Object.fromEntries(Object.entries(cur.booster_offers).map(([k,v])=>[k,String(v)])) as Record<string,string>,
   recycle:Object.fromEntries(ALL_RARITIES.map(r=>[r,String(cur.recycle_values[r]??0)])) as Record<string,string>,
   gold:String(cur.finish_multipliers['Dorée']),blood:String(cur.finish_multipliers['Sanglante']),
