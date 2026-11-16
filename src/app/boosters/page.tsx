@@ -99,7 +99,8 @@ export default function Boosters(){
  // Carrousel : éditions ouvertes puis annoncées (« Soon », grisées, sans ouverture ni achat).
  const carousel=player?player.editions.filter(e=>e.openable||e.teaser):configured?[]:DEMO_CAROUSEL;
  const editions=carousel.filter(e=>e.openable);
- const sel=carousel.find(e=>e.id===editionId)??editions[0]??carousel[0];
+ // Sans choix : la plus récente des éditions ouvertes (le nouveau set d'abord), sinon la première annoncée.
+ const sel=carousel.find(e=>e.id===editionId)??editions[editions.length-1]??carousel[0];
  const edition=sel&&!sel.teaser?sel:undefined;
  const soon=!!sel?.teaser;
  const selIndex=Math.max(0,carousel.findIndex(e=>e.id===sel?.id));

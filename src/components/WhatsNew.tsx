@@ -15,6 +15,11 @@ const TITLE='L’Appel des Neiges Éternelles';
 const ITEMS:[string,string][]=[
  ['Un nouveau set','Appel des Neiges Éternelles rejoint la Camarilla : un nouvel album à compléter et ses propres boosters, dans leur sachet des cimes.'],
  ['L’hiver s’installe','la neige tombe sur Cartema le temps des fêtes.'],
+ ['Finition Neige','une quatrième finition, aussi rare que la Sanglante, givrée jusqu’au bout du cadre. Elle tombe dans les boosters du nouveau set… et parfois ailleurs.'],
+ ['Signez vos cartes','vous jouez un personnage ? Depuis sa fiche, « Contribuer à cette carte » : signez à l’écran ou envoyez votre signature. Une fois validée, des exemplaires signés pourront tomber.'],
+ ['Textes d’ambiance','proposez une citation pour une carte que vous avez découverte ; validée, elle s’affiche sur sa fiche, signée de votre pseudo.'],
+ ['Lignées','le nouveau set agrandit les clans : complétez-les de nouveau pour retrouver votre titre, et regagner une fois la récompense.'],
+ ['Deux albums','l’accueil et la collection passent d’une édition à l’autre d’une touche.'],
  ['Nouveaux succès secrets','certains lient les deux sets. À vous de les débusquer.'],
  ['Protéger un personnage','depuis sa fiche : aucun de ses exemplaires ne sera recyclé, même ceux à venir.'],
  ['Doublons par rareté','choisissez les raretés à recycler d’un coup.'],
