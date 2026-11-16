@@ -18,7 +18,7 @@ const sameCard=(a:DemoCard,b:DemoCard)=>a.id===b.id&&a.name===b.name&&a.clan===b
 export const TarotCard=memo(function TarotCard({card}:{card:DemoCard}){
  const id=useId().replace(/[^a-zA-Z0-9_-]/g,'');
  const html=useMemo(()=>{
- const tuple=[escape(card.id),escape(card.name),escape(card.known?card.clan:'?'),escape(card.role),card.rarity,card.known?1:0,card.finish==='Dorée'?'gold':card.finish==='Sanglante'?'blood':''];
+ const tuple=[escape(card.id),escape(card.name),escape(card.known?card.clan:'?'),escape(card.role),card.rarity,card.known?1:0,card.finish==='Dorée'?'gold':card.finish==='Sanglante'?'blood':card.finish==='Neige'?'snow':''];
  // Only local illustration paths or the project's public storage are accepted; text and attributes are XML-escaped.
  const source=resolveIllustration(card.illustration);
  const illustration=source?escape(source):undefined;

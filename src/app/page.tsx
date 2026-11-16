@@ -13,6 +13,8 @@ import {InstallCard} from '@/components/InstallCard';
 import {WhatsNew} from '@/components/WhatsNew';
 import {showcase} from '@/data/demo';
 import {ALL_RARITIES} from '@/lib/draw';
+import {editionProgress,latestEdition,type AlbumEdition} from '@/lib/album';
+import {EditionSwitch} from '@/components/EditionSwitch';
 import {callRpc,openedToCard,revealOrder,type AlbumEntry,type Mission,type Missions,type Opening} from '@/lib/game';
 
 export default function Home(){
@@ -46,6 +48,9 @@ function Visitor({configured}:{configured:boolean}){
 function Dashboard(){
  const {client,player,refreshPlayer}=useAuth();
  const [album,setAlbum]=useState<AlbumEntry[]|null>(null);
+ // Plusieurs éditions : la carte « Votre album » montre une édition à la fois, la plus récente d'abord.
+ const [editions,setEditions]=useState<AlbumEdition[]>([]);
+ const [editionId,setEditionId]=useState<string|null>(null);
  const [last,setLast]=useState<Opening|null|undefined>(undefined);
  const [missions,setMissions]=useState<Missions|null>(null);
  const [claiming,setClaiming]=useState(false);
@@ -56,6 +61,7 @@ function Dashboard(){
   if(!client)return;
   let alive=true;
   callRpc<AlbumEntry[]>(client,'get_album').then(a=>{if(alive)setAlbum(a);}).catch(()=>{if(alive)setAlbum([]);});
+  void client.from('editions').select('id,name,prefix,eternal').order('created_at').then(({data})=>{if(alive)setEditions((data??[]) as AlbumEdition[]);});
   client.from('pack_openings').select('id').order('created_at',{ascending:false}).limit(1).then(async({data})=>{
    const id=data?.[0]?.id;
    const o=id?await callRpc<Opening>(client,'get_opening',{p_opening_id:id}).catch(()=>null):null;
@@ -65,12 +71,16 @@ function Dashboard(){
  },[client]);
  const onSlot=useCallback(()=>{void refreshPlayer();},[refreshPlayer]);
 
+ const shown=editionId??latestEdition(editions);
+ const progress=useMemo(()=>album?editionProgress(album.map(c=>({editionId:c.edition_id,known:c.known})),editions.filter(e=>!e.eternal)):[],[album,editions]);
  const stats=useMemo(()=>{
   if(!album)return null;
-  const total=album.length,found=album.filter(c=>c.known).length;
-  const byRarity=ALL_RARITIES.map(r=>({rarity:r,total:album.filter(c=>c.rarity===r&&!c.unique).length,found:album.filter(c=>c.rarity===r&&!c.unique&&c.known).length}));
+  // Une seule édition affichée quand il y en a plusieurs (éternelles exclues, comme dans la collection).
+  const list=editions.length>1&&shown?album.filter(c=>c.edition_id===shown):album.filter(c=>!editions.some(e=>e.eternal&&e.id===c.edition_id));
+  const total=list.length,found=list.filter(c=>c.known).length;
+  const byRarity=ALL_RARITIES.map(r=>({rarity:r,total:list.filter(c=>c.rarity===r&&!c.unique).length,found:list.filter(c=>c.rarity===r&&!c.unique&&c.known).length}));
   return {total,found,byRarity};
- },[album]);
+ },[album,editions,shown]);
  if(!player)return null;
  const b=player.boosters,available=b.free+b.purchased,full=b.free>=b.free_capacity;
  const hour=new Date().getHours();
@@ -103,6 +113,7 @@ function Dashboard(){
 
   <section className="panel progress-card rise" style={{'--i':2} as React.CSSProperties}>
    <div className="section-header"><div><span className="eyebrow">Votre album</span><h2>{stats?<><CountUp value={stats.found}/> <small>/ {stats.total} visages</small></>:<Skeleton style={{height:26,width:140}}/>}</h2></div><Link className="text-link" href="/collection/"><BookOpen size={14}/> Ouvrir</Link></div>
+   {progress.length>1&&shown&&<EditionSwitch progress={progress} value={shown} onChange={setEditionId} label="Édition de l’album"/>}
    <div className="meter" aria-hidden="true"><i style={{'--v':`${stats&&stats.total?stats.found/stats.total*100:0}%`} as React.CSSProperties}/></div>
    <ul className="rarity-progress">{(stats?.byRarity??ALL_RARITIES.map(r=>({rarity:r,total:0,found:0}))).map(r=><li key={r.rarity} style={{'--rc':palette[r.rarity]} as React.CSSProperties}><span>{r.rarity}</span><b>{stats?`${r.found}/${r.total}`:'…'}</b></li>)}</ul>
   </section>

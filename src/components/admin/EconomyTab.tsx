@@ -91,7 +91,7 @@ function GodSettings({client,act,reason}:{client:SupabaseClient;act:Act;reason:R
   <p className="admin-hint">À chaque ouverture, une chance qu’un booster devienne divin : toutes ses cartes au moins Dorées, plus de Sanglantes et de skins (jamais d’ancienne illustration officielle), et davantage de cartes Rares ou mieux.</p>
   <div className="eco-grid">
    {field('odds','Chance d’apparition','« 1 sur N » boosters ouverts (0 = jamais)')}
-   {field('blood_pct','Part de Sanglante','% par carte, les autres sont Dorées')}
+   {field('blood_pct','Part de Sanglante','% par carte ; autant de Neige une fois une édition Neige ouverte, les autres sont Dorées')}
    {field('plain_slots','Cartes sans skin','N cartes placées au hasard : finition seulement (0 à 5)')}
    {field('skin_slots','Cartes à skin garanti','N cartes placées au hasard, parmi les personnages qui ont un skin (0 à 5)')}
    {field('skin_weight','Personnages à skin favorisés','×N dans le tirage des autres cartes (1 = aucun avantage, jusqu’à 20)')}

@@ -17,11 +17,11 @@ type Phase='sealed'|'opening'|'reveal';
 type Tier='unique'|'eternelle'|'mythique'|'legendaire';
 // Les cartes de l'édition éternelle (sixième carte) ont leur propre révélation.
 function rarityTier(c:DemoCard):Tier|null{return c.unique?'unique':c.id.startsWith('ETER-')?'eternelle':c.rarity==='Mythique'?'mythique':c.rarity==='Légendaire'?'legendaire':null;}
-function finishTier(c:DemoCard):'gold'|'blood'|null{return c.finish==='Dorée'?'gold':c.finish==='Sanglante'?'blood':null;}
+function finishTier(c:DemoCard):'gold'|'blood'|'snow'|null{return c.finish==='Dorée'?'gold':c.finish==='Sanglante'?'blood':c.finish==='Neige'?'snow':null;}
 const TIER_LABEL:Record<Tier,string>={unique:'Carte unique',eternelle:'Carte éternelle',mythique:'Mythique',legendaire:'Légendaire'};
-const FINISH_LABEL={gold:'Finition Dorée',blood:'Finition Sanglante'} as const;
+const FINISH_LABEL={gold:'Finition Dorée',blood:'Finition Sanglante',snow:'Finition Neige'} as const;
 /** Grande révélation d'une carte rare (pile carte par carte, ou cascade de « Tout révéler »). */
-function EpicOverlay({tier,fin,rays}:{tier:Tier;fin:'gold'|'blood'|null;rays:boolean;tint?:string}){
+function EpicOverlay({tier,fin,rays}:{tier:Tier;fin:'gold'|'blood'|'snow'|null;rays:boolean;tint?:string}){
  return <div className={`epic-reveal epic-${tier} ${rays?'with-rays':''}`} aria-hidden="true"><span className="epic-rays"/><span className="epic-ring"/>{tier==='eternelle'&&<><span className="eternal-flash"/><span className="eternal-mist"/><span className="eternal-halo"/><span className="eternal-motes">{Array.from({length:18},(_,k)=><i key={k} style={{'--m':k} as React.CSSProperties}/>)}</span></>}{tier==='unique'&&<CainOverlay/>}<span className="epic-banner"><strong>{TIER_LABEL[tier]}</strong>{fin&&<small>et {FINISH_LABEL[fin].toLowerCase()} !</small>}</span></div>;
 }
 /** Révélation de Caïn : encre et sang qui éclatent, fissures pourpres, Marque de Caïn géante qui bat comme un cœur, gouttes qui tombent. */

@@ -71,7 +71,7 @@ describe('succès',()=>{
     const list=await rpc<any[]>(db,u,'get_achievements');
     const sets=list.filter(a=>a.category==='collection'&&a.edition_prefix==='CAM');
     expect(sets.filter(a=>a.code.includes(':rarity:'))).toHaveLength(7);
-    expect(sets.find(a=>a.code==='set:CAM:all')).toMatchObject({label:'Maître de Édition CAM',target:14,progress:0});
+    expect(sets.find(a=>a.code==='set:CAM:all')).toMatchObject({label:'Maître de l’Édition CAM',target:14,progress:0});
   });
   it('proportionne les récompenses de collection à la taille du groupe',async()=>{
     const u=await player('comptable');
@@ -99,7 +99,7 @@ describe('succès',()=>{
     await expectError(rpc(db,u,'set_title',['faces_50']),/title_locked/);
     await discover(u,`true`);
     await rpc(db,u,'get_achievements');
-    expect(await rpc(db,u,'set_title',['set:CAM:all'])).toBe('Maître de Édition CAM');
+    expect(await rpc(db,u,'set_title',['set:CAM:all'])).toBe('Maître de l’Édition CAM');
   });
   it('décerne un succès personnalisé, une seule fois, avec motif',async()=>{
     const admin=await player('maitre_jeu');

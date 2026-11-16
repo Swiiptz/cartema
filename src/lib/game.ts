@@ -125,7 +125,7 @@ export function albumToCard(e:AlbumEntry):AlbumCard{
  if(!e.known)return {id:e.code,name:'Inconnu',clan:'Inconnu',role:'',rarity:e.rarity,unique:!!e.unique,known:false,silhouette:silhouetteIndex(e.silhouette_key),editionId:e.edition_id};
  const owned=Object.values(e.owned).reduce((s,n)=>s+(n??0),0);
  // Affichée dans la finition la plus rare possédée, sinon la plus rare déjà obtenue.
- const rank=(f:Finish)=>(['Standard','Dorée','Sanglante'] as Finish[]).indexOf(f);
+ const rank=(f:Finish)=>(['Standard','Dorée','Sanglante','Neige'] as Finish[]).indexOf(f);
  const ownedFinishes=(Object.keys(e.owned) as Finish[]).filter(f=>(e.owned[f]??0)>0);
  const pool=ownedFinishes.length?ownedFinishes:e.finishes_seen;
  const best=[...pool].sort((x,y)=>rank(y)-rank(x))[0];
@@ -163,7 +163,7 @@ const messages:Record<string,string>={
  immutable_edition:'Le préfixe est figé dès la première carte.',
  edition_archived:'Cette édition est archivée.',
  not_found:'Élément introuvable (rechargez la page).',
- confirm_special_finish:'Confirmez le recyclage des finitions Dorée ou Sanglante.',
+ confirm_special_finish:'Confirmez le recyclage des finitions Dorée, Sanglante ou Neige.',
  card_locked:'Cette carte est verrouillée : déverrouillez-la d’abord.',
  card_reserved:'Cette carte est engagée dans une vente ou un échange.',
  not_owned:'Cette carte ne vous appartient plus (rechargez la page).',
@@ -277,7 +277,7 @@ export async function callRpc<T>(client:SupabaseClient,fn:string,args?:Record<st
 // Ordre de révélation : de la moins rare à la plus rare, finitions spéciales en dernier à rareté égale,
 // carte unique toujours en tout dernier.
 // Affichage seulement : l'historique serveur conserve les positions du tirage.
-const FINISH_ORDER=['Standard','Dorée','Sanglante'];
+const FINISH_ORDER=['Standard','Dorée','Sanglante','Neige'];
 /** Ordre de révélation : rareté croissante, puis les éternelles (ETER), la carte unique en tout dernier. */
 export function revealOrder<C extends {rarity:Rarity;finish?:string;unique?:boolean;id?:string}>(cards:readonly C[]):C[]{
  const last=(c:C)=>c.unique?2:c.id?.startsWith('ETER-')?1:0;

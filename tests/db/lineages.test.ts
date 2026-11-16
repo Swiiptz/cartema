@@ -134,3 +134,35 @@ describe('lignée d’un nouveau clan',()=>{
     await expectError(rpc(db,admin,'admin_set_clan_lineage',[clan,'  ','Vide']),/invalid/);
   });
 });
+
+describe('lignée et nouveau set (16/11)',()=>{
+  it('un nouveau membre fait perdre la lignée ; la compléter sur le nouveau total redonne la récompense une seule fois',async()=>{
+    const u=await player('heritier_set2');
+    const first=await give(u,cam,1);await give(u,cam,2);await give(u,anx,1);
+    await rpc(db,u,'sync_my_achievements');
+    expect(await rewards(u)).toBe(1);
+    const second=async()=>Number((await db.query<{n:string}>(`select count(*) n from public.wallet_ledger where owner_id=$1 and idempotency_key=$2`,[u,`achievement:${CODE}:4`])).rows[0].n);
+    const boosters=async()=>Number((await db.query<{n:string}>(`select coalesce(sum(quantity),0) n from public.booster_grants where owner_id=$1 and source='reward'`,[u])).rows[0].n);
+    const before=await boosters();
+    // Le set suivant ajoute un membre au clan : la lignée tombe à la passe suivante.
+    await db.query(`update public.characters set clan_id=$1 where edition_id=$2 and number=2`,[clan,anx]);
+    await rpc(db,u,'sync_my_achievements');
+    expect(await lineage(u)).toMatchObject({unlocked_at:null,progress:3,target:4});
+    // Clan complet sur le nouveau total : la lignée revient avec une nouvelle récompense (Deniers et boosters).
+    await give(u,anx,2);
+    await rpc(db,u,'sync_my_achievements');
+    expect((await lineage(u)).unlocked_at).not.toBeNull();
+    expect(await second()).toBe(1);
+    // (D'autres succès peuvent aussi donner des boosters à cette passe : au moins les 2 de la lignée.)
+    expect(await boosters()).toBeGreaterThanOrEqual(before+2);
+    const after=await boosters();
+    // La perdre puis la reprendre au même total ne redonne rien.
+    await rpc(db,u,'recycle_cards',[[first],randomUUID(),true]);
+    await give(u,cam,1);
+    await rpc(db,u,'sync_my_achievements');
+    expect((await lineage(u)).unlocked_at).not.toBeNull();
+    expect(await second()).toBe(1);
+    expect(await boosters()).toBe(after);
+    await db.query(`update public.characters set clan_id=null where edition_id=$1 and number=2`,[anx]);
+  });
+});

@@ -10,7 +10,7 @@ import type {Rarity} from '@/lib/draw';
 
 /** Clé d'un souhait : numéro de carte + finition (« * » = toutes). */
 export const wishKey=(code:string,finish?:string|null)=>`${code}|${finish||'*'}`;
-const WISH_FINISHES:[string|null,string][]=[[null,'Toutes'],['Dorée','Dorée'],['Sanglante','Sanglante']];
+const WISH_FINISHES:[string|null,string][]=[[null,'Toutes'],['Dorée','Dorée'],['Sanglante','Sanglante'],['Neige','Neige']];
 
 export function wishToCard(w:WishItem){
  return {id:w.code,name:w.name??'Inconnu',clan:w.known?w.clan??'?':'Inconnu',role:w.role_title??'',rarity:w.rarity as Rarity,known:w.known,
@@ -36,7 +36,7 @@ export function useWishes(client:SupabaseClient|null,enabled:boolean){
  return {keys,toggle,reload:load};
 }
 
-/** Choix « je cherche cette carte » dans la fiche : toute finition, ou Dorée / Sanglante précise. */
+/** Choix « je cherche cette carte » dans la fiche : toute finition, ou Dorée / Sanglante / Neige précise. */
 export function WishPicker({code,keys,onToggle}:{code:string;keys:Set<string>;onToggle:(code:string,finish:string|null,on:boolean)=>Promise<void>}){
  const [error,setError]=useState<string|null>(null);
  const any=[...keys].some(k=>k.startsWith(`${code}|`));

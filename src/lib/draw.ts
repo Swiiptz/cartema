@@ -1,6 +1,8 @@
 /** Moteur probabiliste de référence, pur. En production, appeler uniquement depuis le serveur. */
 export type Rarity = 'Commun'|'Peu commun'|'Rare'|'Très rare'|'Épique'|'Légendaire'|'Mythique';
-export type Finish = 'Standard'|'Dorée'|'Sanglante';
+export type Finish = 'Standard'|'Dorée'|'Sanglante'|'Neige';
+/** Toutes les finitions, de la plus courante à la plus rare ; Neige : boosters ANE et God boosters (16/11). */
+export const ALL_FINISHES: Finish[]=['Standard','Dorée','Sanglante','Neige'];
 export type Weighted<T extends string> = ReadonlyArray<{value:T; weight:number}>;
 export const SLOT_5: Weighted<Rarity> = [
   {value:'Rare',weight:55},{value:'Très rare',weight:37},{value:'Épique',weight:6},

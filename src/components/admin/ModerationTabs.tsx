@@ -83,7 +83,7 @@ export function PlayerCards({client,act,reason,playerId,playerName,characters,on
     :<><input className="picker-search" placeholder="Donner une carte : nom ou numéro…" value={query} onChange={e=>setQuery(e.target.value)}/>
      {matches.length>0&&<ul className="friend-pick">{matches.map(c=><li key={c.id}><button onClick={()=>{setPick(c);setQuery('');}}>{c.number}. {c.name} · {c.rarity}</button></li>)}</ul>}</>}
    {pick&&<div className="admin-row give-row">
-    <label className="auth-field"><span>Finition</span><select value={finish} onChange={e=>setFinish(e.target.value)}>{['Standard','Dorée','Sanglante'].map(f=><option key={f}>{f}</option>)}</select></label>
+    <label className="auth-field"><span>Finition</span><select value={finish} onChange={e=>setFinish(e.target.value)}>{['Standard','Dorée','Sanglante','Neige'].map(f=><option key={f}>{f}</option>)}</select></label>
     {arts.length>0&&<label className="auth-field"><span>Version</span><select value={art} onChange={e=>setArt(e.target.value)}><option value="">Illustration officielle</option>{arts.map(a=><option key={a.id} value={a.id}>{a.label}{a.kind==='legacy'?' (ancienne officielle)':a.active?'':' (désactivée)'}</option>)}</select></label>}
     <label className="auth-field"><span>Quantité</span><input inputMode="numeric" value={quantity} onChange={e=>setQuantity(e.target.value.replace(/\D/g,'').slice(0,2))}/></label>
     <button className="primary compact" disabled={!(Number(quantity)>=1&&Number(quantity)<=20)} onClick={()=>void give()}><Gift size={14}/> Donner</button></div>}

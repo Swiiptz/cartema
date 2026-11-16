@@ -177,7 +177,7 @@ export default function Market(){
    <div className="market-filters">
     <label className="search-field"><Search size={18}/><input aria-label="Rechercher un personnage" placeholder="Rechercher…" value={query} onChange={e=>setQuery(e.target.value)}/></label>
     <select aria-label="Rareté" value={rarity} onChange={e=>setRarity(e.target.value as Rarity|'')}><option value="">Toutes raretés</option>{ALL_RARITIES.map(r=><option key={r}>{r}</option>)}</select>
-    <select aria-label="Finition" value={finish} onChange={e=>setFinish(e.target.value as Finish|'')}><option value="">Toutes finitions</option>{['Standard','Dorée','Sanglante'].map(f=><option key={f}>{f}</option>)}</select>
+    <select aria-label="Finition" value={finish} onChange={e=>setFinish(e.target.value as Finish|'')}><option value="">Toutes finitions</option>{['Standard','Dorée','Sanglante','Neige'].map(f=><option key={f}>{f}</option>)}</select>
     <select aria-label="Clan" value={clan} onChange={e=>setClan(e.target.value)}><option value="">Tous les clans</option>{clans.map(c=><option key={c.id} value={c.id}>{c.name}{c.listings!==undefined?` (${c.listings})`:''}</option>)}</select>
     <select aria-label="Trier" value={sort||SORTS[kind][0][0]} onChange={e=>setSort(e.target.value)}>{SORTS[kind].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>
     <label className="check-field"><input type="checkbox" checked={undiscovered} onChange={e=>setUndiscovered(e.target.checked)}/> Non découvertes</label>

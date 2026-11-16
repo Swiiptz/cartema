@@ -187,7 +187,7 @@ function CharacterEditor({draft,setDraft,catalog,act,client,onError}:{draft:Draf
   <div className="admin-editor-body">
    <div className="admin-preview">
     <TarotCard key={`${finish}-${draft.art_path}-${draft.art_meta.layout}-${draft.art_meta.offsetY}`} card={previewCard(draft,catalog,finish)}/>
-    <div className="finish-switch" aria-label="Aperçu de finition">{['Standard','Dorée','Sanglante'].map(f=><button key={f} className={finish===f?'active':''} aria-pressed={finish===f} onClick={()=>setFinish(f)}>{f}</button>)}</div>
+    <div className="finish-switch" aria-label="Aperçu de finition">{['Standard','Dorée','Sanglante','Neige'].map(f=><button key={f} className={finish===f?'active':''} aria-pressed={finish===f} onClick={()=>setFinish(f)}>{f}</button>)}</div>
    </div>
    <div className="admin-form">
     <div className="admin-row">

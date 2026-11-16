@@ -824,6 +824,23 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .contribution-choice.signature,.contribution-choice.ambiance{border-color:#c9a45c44}.contribution-choice.signature .contribution-icon{background:radial-gradient(circle at 35% 30%,#f0d79a55,#2a1a12 70%)}
 .contribution-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.contribution-head strong{font:600 15px var(--ui);color:var(--gold2)}
 .contribution-back{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid #c9a45c44;border-radius:999px;background:none;color:var(--muted);font:500 12px var(--ui);cursor:pointer}.contribution-back:hover{color:var(--gold2);border-color:#c9a45c99}
+/* Plusieurs éditions : pastilles de choix (collection, accueil) et avancement par édition. */
+.edition-switch{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 4px;margin-bottom:10px}.edition-switch::-webkit-scrollbar{display:none}
+.edition-switch button{flex:none;display:inline-flex;align-items:baseline;gap:8px;max-width:72vw;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:#ffffff05;color:var(--muted);font:600 13px var(--ui);cursor:pointer;transition:border-color .2s,background .2s,color .2s}
+.edition-switch button:hover{border-color:#c9a45c77;color:var(--text)}
+.edition-switch button[aria-selected=true]{border-color:#c9a45caa;background:linear-gradient(175deg,#3a2430,#24161f);color:var(--gold2);box-shadow:inset 0 1px 0 #f0d8a314}
+.edition-switch-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.edition-switch small{font:500 11px var(--ui);color:var(--muted);font-variant-numeric:tabular-nums}
+.progress-card .edition-switch{margin:0}
+.edition-progress{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:10px}
+.edition-progress li{display:grid;gap:5px}.edition-progress button{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:0;border:0;background:none;color:var(--text);font:500 13px var(--ui);text-align:left;cursor:pointer}.edition-progress button:hover span{color:var(--gold2)}
+.edition-progress b{font:600 14px var(--ui);font-variant-numeric:tabular-nums}.edition-progress small{color:var(--muted);font-weight:400}
+.edition-progress i{display:block;height:4px;border-radius:4px;background:linear-gradient(90deg,var(--gold) var(--v),#ffffff12 var(--v))}
+/* Finition Neige (prototype) : flocons qui tombent doucement sur l'illustration. */
+.snow .snow-flake{animation:snow-fall 7s linear infinite}
+@keyframes snow-fall{0%{transform:translate(0,-14px)}50%{transform:translate(3px,6px)}100%{transform:translate(-2px,26px)}}
+.snow .snow-twinkle{transform-box:fill-box;transform-origin:center;animation:snow-twinkle 2.8s ease-in-out infinite}
+@keyframes snow-twinkle{0%,100%{opacity:.15;transform:scale(.5)}50%{opacity:1;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.snow .snow-flake,.snow .snow-twinkle{animation:none}}
 .signature-preview{display:flex;align-items:center;gap:14px}.signature-preview .tarot-card{width:150px;flex:none}
 .owned-variant{font-style:normal;color:var(--gold)}
 

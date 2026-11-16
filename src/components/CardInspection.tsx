@@ -13,7 +13,7 @@ import {WishPicker} from './Wishes';
 import {CardFeedback} from './CardFeedback';
 import type {ArtVariant} from '@/lib/game';
 
-const FINISHES=['Standard','Dorée','Sanglante'];
+const FINISHES=['Standard','Dorée','Sanglante','Neige'];
 /**
  * finishesSeen : finitions débloquées par le joueur ; seules celles-ci sont proposées en aperçu.
  * characterId + onChanged : album réel, affiche les exemplaires possédés (verrouiller, recycler).
@@ -43,7 +43,7 @@ export function CardInspection({card,finishesSeen,characterId,onChanged,wishes,o
  };
  const untilt=(e:React.PointerEvent<HTMLDivElement>)=>{const el=e.currentTarget;el.style.setProperty('--rx','0deg');el.style.setProperty('--ry','0deg');el.style.setProperty('--holo','0');};
  const shownFinish=card.known?finish:card.finish;
- const holo=card.unique?'unique':shownFinish==='Dorée'?'gold':shownFinish==='Sanglante'?'blood':card.rarity==='Légendaire'||card.rarity==='Mythique'?'rare':'std';
+ const holo=card.unique?'unique':shownFinish==='Dorée'?'gold':shownFinish==='Sanglante'?'blood':shownFinish==='Neige'?'rare':card.rarity==='Légendaire'||card.rarity==='Mythique'?'rare':'std';
  return <><button className="inspect-card" aria-label={`Examiner ${card.known?card.name:'la carte inconnue'}`} onClick={()=>{setFinish(card.finish||'Standard');setOpen(true);dialog.current?.showModal();}}><TarotCard card={card}/><span className="inspect-hint"><Expand size={13}/> Examiner la carte</span></button>
  <dialog className="card-dialog" ref={dialog} aria-labelledby={title} onClose={e=>{if(e.target===e.currentTarget)setOpen(false);}} onCancel={e=>{if(e.target!==e.currentTarget)return;e.preventDefault();close();}} onClick={e=>{if(e.target===e.currentTarget)close();}}><div className="card-dialog-content">
   <button className="icon-button dialog-close" aria-label="Fermer le détail" onClick={close}><X size={20}/></button>

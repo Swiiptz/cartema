@@ -9,7 +9,7 @@ import {callRpc,type GameEvent} from '@/lib/game';
 /** Effets d'un événement en phrases courtes. */
 export function eventEffects(e:Pick<GameEvent,'finish_multiplier'|'deniers_multiplier'|'bonus_boosters'|'free_interval_hours'|'trade_truce'>){
  const out:{icon:typeof Sparkles;text:string}[]=[];
- if(e.finish_multiplier>1)out.push({icon:Sparkles,text:`Finitions Dorée et Sanglante ×${String(e.finish_multiplier).replace('.',',')}`});
+ if(e.finish_multiplier>1)out.push({icon:Sparkles,text:`Finitions Dorée, Sanglante et Neige ×${String(e.finish_multiplier).replace('.',',')}`});
  if(e.deniers_multiplier>1)out.push({icon:Coins,text:`Deniers ×${String(e.deniers_multiplier).replace('.',',')} (connexion et missions)`});
  if(e.free_interval_hours)out.push({icon:Hourglass,text:`Un booster gratuit toutes les ${e.free_interval_hours} h`});
  if(e.trade_truce)out.push({icon:ArrowLeftRight,text:'Échanges libres : ni délai de 72 h, ni délai avant qu’une carte revienne'});
