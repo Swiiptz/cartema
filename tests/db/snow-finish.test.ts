@@ -83,3 +83,20 @@ describe('finition Neige',()=>{
     expect((await state('test:aval')).unlocked_at).not.toBeNull();
   });
 });
+
+describe('trophées des quatre finitions (16/11)',()=>{
+  it('une même carte d’ANE de la rareté, en Standard, Dorée, Sanglante et Neige',async()=>{
+    const u=await player('quatre_saisons');
+    await db.query(`insert into public.achievements (code,label,description,category,metric,target,rarity,edition_id,sort) values
+      ('test:quartet','Poudreuse','Une Rare d’ANE dans ses quatre finitions.','general','finish_quartet',1,'Rare',$1,903)`,[ane]);
+    const pick=async(edition:string,k:number)=>(await db.query<{id:string}>(`select id from public.characters where edition_id=$1 and rarity='Rare' order by number offset $2 limit 1`,[edition,k])).rows[0].id;
+    const give=async(c:string,f:string)=>db.query(`insert into public.inventory_items (owner_id,character_id,finish) values ($1,$2,$3)`,[u,c,f]);
+    const unlocked=async()=>(await rpc<any[]>(db,u,'get_achievements')).find(a=>a.code==='test:quartet').unlocked_at;
+    const camRare=await pick(cam,0),a=await pick(ane,0),b=await pick(ane,1);
+    for(const f of ['Standard','Dorée','Sanglante','Neige'])await give(camRare,f); // une carte de CAM ne compte pas
+    await give(a,'Standard');await give(a,'Dorée');await give(a,'Sanglante');await give(b,'Neige'); // pas la même carte
+    expect(await unlocked()).toBeNull();
+    await give(a,'Neige');
+    expect(await unlocked()).not.toBeNull();
+  });
+});

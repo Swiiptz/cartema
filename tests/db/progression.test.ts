@@ -77,7 +77,8 @@ describe('succès',()=>{
     const u=await player('comptable');
     const list=await rpc<any[]>(db,u,'get_achievements');
     expect(list.find(a=>a.code==='set:CAM:rarity:Commun').reward_deniers).toBe(2*8);
-    expect(list.find(a=>a.code==='set:CAM:rarity:Mythique')).toMatchObject({reward_deniers:2*500,reward_boosters:4});
+    expect(list.find(a=>a.code==='set:CAM:rarity:Légendaire')).toMatchObject({reward_deniers:2*400,reward_boosters:5});
+    expect(list.find(a=>a.code==='set:CAM:rarity:Mythique')).toMatchObject({reward_deniers:2*1500,reward_boosters:6});
     expect(list.find(a=>a.code==='set:CAM:all')).toMatchObject({reward_deniers:8000,reward_boosters:12});
   });
   it('débloque « toutes les Communes » une seule fois avec sa récompense',async()=>{

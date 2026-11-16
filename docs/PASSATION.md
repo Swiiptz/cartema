@@ -233,6 +233,8 @@ Mise à jour : 23 octobre 2026 (soir). Commencer par l'état ci-dessous, puis `A
 
 - **16/11** (site seulement) : page Boosters ouverte par défaut sur la plus récente édition ouvrable (ANE le jour de la sortie) ; note « Nouveautés » complétée : finition Neige, signatures, textes d'ambiance, lignées à regagner, deux albums. Suppose `winter_theme` et `next_set_features` à 1 à l'ouverture.
 
+- **16/11** (migrations `20261116180000_rarity_rewards` et `20261116190000_finish_quartet`, tests `progression`, `snow-finish`) : **récompenses** (décision de Swiiptz : rester au barème de CAM, sauf Légendaires et Mythiques) — « Toutes les Légendaires » 400 Deniers par carte et 5 boosters (au lieu de 150 et 3), « Toutes les Mythiques » 1 500 et 6 (au lieu de 500 et 4), pour CAM comme pour ANE ; By night 1 000 + 7, Oubliés 700 + 3. **Série « Sang, or et givre »** (métrique `finish_quartet`) : une même carte d'ANE de la rareté dans ses quatre finitions, 7 paliers (Premier givre, Gel matinal, Poudreuse, Blizzard, Congère d'or, Glacier ensanglanté, Sang, or et givre ; de 600 + 1 à 18 000 + 30), secrets jusqu'à l'ouverture : à rendre visibles dans Admin › Succès.
+
 ## 1. Reprendre ici
 
 Cartema est un **jeu en ligne, en service** : site statique sur GitHub Pages, toute la logique dans Supabase (Postgres, RLS, fonctions `security definer`, tâches pg_cron). Des joueurs réels ont des comptes, des collections et des Deniers : toute migration touche des données vivantes.
