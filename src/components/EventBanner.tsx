@@ -17,21 +17,29 @@ export function eventEffects(e:Pick<GameEvent,'finish_multiplier'|'deniers_multi
  return out;
 }
 
+// Événements dont la bannière disparaît une fois le cadeau récupéré (décision exceptionnelle de Swiiptz, 16/11) :
+// « Sortie de l’Appel des Neiges Éternelles ».
+const HIDE_ONCE_CLAIMED=new Set(['bef4e0ed-9a02-4f6b-8e0d-a718c87d5763']);
+
 /** Bannière des événements en cours et à venir (14 jours), avec le cadeau à récupérer. */
 export function EventBanner({compact=false}:{compact?:boolean}){
  const {client,player,refreshPlayer}=useAuth();
  const [events,setEvents]=useState<GameEvent[]>([]);
  const [busy,setBusy]=useState(false);
  const [notice,setNotice]=useState<string|null>(null);
+ // Cadeau récupéré pendant cette visite : la bannière reste le temps de voir la confirmation.
+ const [justClaimed,setJustClaimed]=useState<string|null>(null);
  const load=useCallback(()=>{if(client&&player)void callRpc<GameEvent[]>(client,'get_events').then(setEvents).catch(()=>{});},[client,player]);
  useEffect(()=>{load();},[load]);
  async function claim(e:GameEvent){
   if(!client)return;
   setBusy(true);
-  try{const n=await callRpc<number>(client,'claim_event_bonus',{p_event_id:e.id});setNotice(`+${n} booster${n>1?'s':''} ajouté${n>1?'s':''} à votre réserve.`);load();void refreshPlayer();}
+  try{const n=await callRpc<number>(client,'claim_event_bonus',{p_event_id:e.id});setNotice(`+${n} booster${n>1?'s':''} ajouté${n>1?'s':''} à votre réserve.`);setJustClaimed(e.id);load();void refreshPlayer();}
   catch(err){setNotice((err as Error).message);}finally{setBusy(false);}
  }
- const shown=compact?events.filter(e=>e.active):events;
+ // Exception : la bannière de la sortie du set 2 disparaît une fois les boosters récupérés. Les autres événements restent affichés.
+ const visible=events.filter(e=>!(e.claimed&&HIDE_ONCE_CLAIMED.has(e.id)&&e.id!==justClaimed));
+ const shown=compact?visible.filter(e=>e.active):visible;
  if(!shown.length)return null;
  return <div className={`event-banners ${compact?'compact':''}`}>{shown.map((e,i)=><section key={e.id} className={`event-banner rise ${e.active?'live':'soon'}`} style={{'--i':i} as React.CSSProperties}>
   <div className="event-head"><span className="eyebrow"><span className="event-dot" aria-hidden="true"/>{e.active?'Événement en cours':'Bientôt'}</span>
