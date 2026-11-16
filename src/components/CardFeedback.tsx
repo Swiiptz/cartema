@@ -2,6 +2,8 @@
 import {useState} from 'react';
 import {ImagePlus,MessageSquareWarning} from 'lucide-react';
 import {useAuth} from './AuthProvider';
+import {TarotCard,type DemoCard} from './Card';
+import {SignaturePad} from './SignaturePad';
 import {Sheet} from './ui';
 import {callRpc,type InventoryItem} from '@/lib/game';
 
@@ -9,13 +11,15 @@ const TYPES:Record<string,string>={'image/png':'png','image/webp':'webp','image/
 const MAX=10*1024*1024;
 
 /** Lien discret de la fiche : signaler une information fausse ou proposer une illustration. */
-export function CardFeedback({code,name,hasArt,characterId}:{code:string;name:string;hasArt:boolean;characterId?:string|null}){
+export function CardFeedback({code,name,hasArt,characterId,card}:{code:string;name:string;hasArt:boolean;characterId?:string|null;card?:DemoCard}){
  const {client,session}=useAuth();
  const [open,setOpen]=useState(false);
  const [kind,setKind]=useState<'info'|'illustration'|'credit'|'ambiance'|'signature'>('info');
  const [credit,setCredit]=useState('');
  const [message,setMessage]=useState('');
  const [file,setFile]=useState<File|null>(null);
+ // Signature tracée ou importée, déjà contrôlée et rognée (PNG) ; adresse locale pour l'aperçu sur la carte.
+ const [signature,setSignature]=useState<{blob:Blob;url:string}|null>(null);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState<string|null>(null);
  const [sent,setSent]=useState(false);
@@ -25,19 +29,24 @@ export function CardFeedback({code,name,hasArt,characterId}:{code:string;name:st
  const [versions,setVersions]=useState<{id:string;label:string}[]>([]);
  const [artId,setArtId]=useState('');
  if(!client||!session)return null;
- const reset=()=>{setKind('info');setMessage('');setCredit('');setFile(null);setError(null);setSent(false);setArtId('');};
+ const reset=()=>{setKind('info');setMessage('');setCredit('');setFile(null);setSignature(null);setError(null);setSent(false);setArtId('');};
  function loadVersions(){
   if(!characterId)return;
   void callRpc<InventoryItem[]>(client!,'get_inventory',{p_character_id:characterId}).then(items=>{const seen=new Map<string,string>();for(const i of items)if(i.art_id&&i.variant&&!seen.has(i.art_id))seen.set(i.art_id,i.variant);const list=[...seen].map(([id,label])=>({id,label}));setVersions(list);if(!hasArt&&list[0])setArtId(list[0].id);}).catch(()=>setVersions([]));
  }
  async function send(e:React.FormEvent){
   e.preventDefault();setError(null);
-  if((kind==='illustration'||kind==='signature')&&(!file||!TYPES[file.type])){setError('Choisissez une image PNG, WebP ou JPEG.');return;}
-  if(file&&file.size>MAX){setError('Image trop lourde : 10 Mo maximum.');return;}
+  if(kind==='illustration'&&(!file||!TYPES[file.type])){setError('Choisissez une image PNG, WebP ou JPEG.');return;}
+  if(kind==='signature'&&!signature){setError('Signez ou importez votre signature.');return;}
+  if(kind==='illustration'&&file&&file.size>MAX){setError('Image trop lourde : 10 Mo maximum.');return;}
   setBusy(true);
   try{
    let path:string|null=null;
-   if((kind==='illustration'||kind==='signature')&&file){
+   if(kind==='signature'&&signature){
+    path=`${session!.user.id}/${crypto.randomUUID()}.png`;
+    const up=await client!.storage.from('submissions').upload(path,signature.blob,{contentType:'image/png',upsert:false});
+    if(up.error)throw new Error(`Envoi de la signature impossible : ${up.error.message}`);
+   }else if(kind==='illustration'&&file){
     // Chaque joueur n'écrit que dans son propre dossier du bucket privé.
     path=`${session!.user.id}/${crypto.randomUUID()}.${TYPES[file.type]}`;
     const up=await client!.storage.from('submissions').upload(path,file,{contentType:file.type,upsert:false});
@@ -59,15 +68,21 @@ export function CardFeedback({code,name,hasArt,characterId}:{code:string;name:st
       {nextSet&&<button type="button" role="tab" aria-selected={kind==='ambiance'} onClick={()=>setKind('ambiance')}>Texte d’ambiance</button>}
       {nextSet&&<button type="button" role="tab" aria-selected={kind==='signature'} onClick={()=>setKind('signature')}>Ma signature</button>}
      </div>
-     {kind==='signature'&&<p className="admin-hint">Réservé à la personne qui joue ce personnage : l’administrateur le vérifie. Envoyez votre signature sur fond transparent (PNG). Une fois validée, des exemplaires signés de cette carte pourront tomber dans les boosters.</p>}
-     {(kind==='illustration'||kind==='signature')&&<label className="feedback-file"><ImagePlus size={16}/><span>{file?file.name:'Choisir une image (PNG, WebP, JPEG · 10 Mo max)'}</span><input type="file" accept="image/png,image/webp,image/jpeg" onChange={e=>setFile(e.target.files?.[0]??null)}/></label>}
+     {kind==='signature'&&<p className="admin-hint">Réservé à la personne qui joue ce personnage (PJ ou PNJ) : l’administrateur le vérifie avant de publier. Une fois validée, des exemplaires signés de cette carte pourront tomber dans les boosters.</p>}
+     {kind==='signature'&&<SignaturePad onChange={b=>setSignature(old=>{if(old)URL.revokeObjectURL(old.url);return b?{blob:b,url:URL.createObjectURL(b)}:null;})}/>}
+     {kind==='signature'&&signature&&card&&<div className="signature-preview"><TarotCard card={{...card,signature:signature.url}}/><p className="admin-hint">Aperçu : sur les exemplaires signés, votre signature apparaîtra ainsi, à l’encre dorée.</p></div>}
+     {kind==='illustration'&&<label className="feedback-file"><ImagePlus size={16}/><span>{file?file.name:'Choisir une image (PNG, WebP, JPEG · 10 Mo max)'}</span><input type="file" accept="image/png,image/webp,image/jpeg" onChange={e=>setFile(e.target.files?.[0]??null)}/></label>}
      {kind==='credit'&&versions.length>0&&<label className="auth-field"><span>Illustration concernée</span><select value={artId} onChange={e=>setArtId(e.target.value)}>{hasArt&&<option value="">Illustration officielle</option>}{versions.map(v=><option key={v.id} value={v.id}>Version « {v.label} »</option>)}</select></label>}
      {kind==='credit'&&<label className="auth-field"><span>Nom à afficher sous l’illustration</span><input value={credit} onChange={e=>setCredit(e.target.value)} maxLength={80} placeholder="Votre nom d’artiste"/></label>}
-     <label className="auth-field"><span>{kind==='info'?'Qu’est-ce qui est faux ?':kind==='credit'?'Comment l’administrateur peut-il vérifier ? (facultatif)':kind==='ambiance'?`Votre texte d’ambiance (${message.trim().length}/200)`:kind==='signature'?'Votre lien avec ce personnage (facultatif)':'Un mot sur votre illustration (facultatif)'}</span>
-      <textarea rows={4} maxLength={kind==='ambiance'?200:1500} value={message} onChange={e=>setMessage(e.target.value)} placeholder={kind==='info'?'Ex. : le clan est Toréador, pas Ventrue.':kind==='ambiance'?'Ex. : Elle sourit toujours avant de mordre, jamais après.':kind==='credit'?'Ex. : lien vers mon portfolio, fichier source…':'Ex. : portrait réalisé par moi, fond transparent.'}/></label>
+     {kind==='ambiance'?<label className="flavor-editor"><span className="flavor-editor-label">Votre texte d’ambiance <small>Une phrase du personnage ou sur lui, comme une citation.</small></span>
+      <span className="flavor-editor-quote"><span aria-hidden="true">«</span><textarea rows={3} maxLength={200} value={message} onChange={e=>setMessage(e.target.value)} placeholder="Elle sourit toujours avant de mordre, jamais après."/><span aria-hidden="true">»</span></span>
+      <span className="flavor-editor-foot"><span>Signé de votre pseudo une fois validé</span><span className={message.trim().length>200||message.trim().length<10?'flavor-count short':'flavor-count'}>{message.trim().length}/200</span></span>
+     </label>:
+     <label className="auth-field"><span>{kind==='info'?'Qu’est-ce qui est faux ?':kind==='credit'?'Comment l’administrateur peut-il vérifier ? (facultatif)':kind==='signature'?'Votre lien avec ce personnage (facultatif)':'Un mot sur votre illustration (facultatif)'}</span>
+      <textarea rows={4} maxLength={1500} value={message} onChange={e=>setMessage(e.target.value)} placeholder={kind==='info'?'Ex. : le clan est Toréador, pas Ventrue.':kind==='credit'?'Ex. : lien vers mon portfolio, fichier source…':'Ex. : portrait réalisé par moi, fond transparent.'}/></label>}
      {kind==='illustration'&&<p className="admin-hint">En proposant une image, vous confirmez en avoir les droits et acceptez qu’elle soit utilisée dans Cartema.</p>}
      {error&&<p className="auth-error" role="alert">{error}</p>}
-     <button className="primary" disabled={busy||(kind==='info'?message.trim().length<5:kind==='ambiance'?message.trim().length<10||message.trim().length>200:kind==='signature'?!file:kind==='credit'?credit.trim().length<2:!file)}>{busy?'Envoi…':'Envoyer'}</button>
+     <button className="primary" disabled={busy||(kind==='info'?message.trim().length<5:kind==='ambiance'?message.trim().length<10||message.trim().length>200:kind==='signature'?!signature:kind==='credit'?credit.trim().length<2:!file)}>{busy?'Envoi…':'Envoyer'}</button>
     </form>}
   </Sheet>
  </>;

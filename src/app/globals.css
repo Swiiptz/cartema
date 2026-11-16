@@ -794,6 +794,24 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .feedback-link svg{color:var(--gold)}
 .feedback-file{position:relative;display:flex;align-items:center;gap:10px;padding:14px;border:1px dashed #c9a45c66;border-radius:12px;color:var(--gold2);font:500 13px var(--ui);cursor:pointer}
 .feedback-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+/* Signature : tracée sur une feuille claire (le canevas reste transparent) ou importée. */
+.signature-pad{display:grid;gap:10px}.signature-modes button{display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.signature-sheet{position:relative;border-radius:12px;overflow:hidden;background:linear-gradient(170deg,#f7efdd,#e8d9bb);box-shadow:inset 0 0 0 1px #c9a45c88,inset 0 2px 14px #3a24101f,0 8px 20px #0007}
+.signature-sheet canvas{position:relative;z-index:1;display:block;width:100%;aspect-ratio:5/2;touch-action:none;cursor:crosshair}
+.signature-placeholder{position:absolute;inset:0;display:grid;place-items:center;font:italic 28px var(--body);color:#8a745899;pointer-events:none}
+.signature-line{position:absolute;left:8%;right:8%;bottom:22%;border-bottom:1px dashed #8a745880;pointer-events:none}
+.signature-tools{display:flex;gap:8px;flex-wrap:wrap}
+.signature-tool{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:8px 16px;border-radius:999px;border:1px solid #c9a45c55;background:#ffffff06;color:var(--gold2);font:600 13px var(--ui);cursor:pointer;transition:background .2s,border-color .2s}
+.signature-tool:hover:not(:disabled){background:#c9a45c1a;border-color:#c9a45caa}.signature-tool:disabled{opacity:.4;cursor:default}
+.feedback-file{transition:background .2s,border-color .2s}.feedback-file:hover{background:#c9a45c12;border-color:#c9a45caa}
+.signature-rules{margin:0;padding:10px 14px 10px 30px;border-radius:10px;background:#ffffff05;border:1px solid var(--line);display:grid;gap:4px;font:400 12.5px/1.55 var(--ui);color:var(--muted)}.signature-rules strong{color:var(--gold2);font-weight:600}
+/* Texte d'ambiance : on écrit directement dans la citation, telle qu'elle apparaîtra sur la fiche. */
+.flavor-editor{display:grid;gap:8px}.flavor-editor-label{font:600 13px var(--ui);color:var(--text)}.flavor-editor-label small{display:block;font:400 12px var(--ui);color:var(--muted)}
+.flavor-editor-quote{display:flex;align-items:flex-start;gap:4px;padding:12px 14px;border-left:2px solid var(--gold);border-radius:0 12px 12px 0;background:linear-gradient(90deg,#c9a45c14,#ffffff03 70%);font:italic 19px/1.5 var(--body);color:var(--gold2);transition:background .2s}
+.flavor-editor-quote:focus-within{background:linear-gradient(90deg,#c9a45c24,#ffffff06 70%)}
+.flavor-editor-quote textarea{flex:1;min-height:3em;field-sizing:content;padding:0;border:0;background:none;outline:none;resize:none;font:italic 19px/1.5 var(--body);color:var(--text);box-shadow:none}.flavor-editor-quote textarea::placeholder{color:#b8a8b077}
+.flavor-editor-foot{display:flex;justify-content:space-between;gap:10px;font:400 12px var(--ui);color:var(--muted)}.flavor-count{font-variant-numeric:tabular-nums;color:var(--gold2)}.flavor-count.short{color:var(--muted)}
+.signature-preview{display:flex;align-items:center;gap:14px}.signature-preview .tarot-card{width:150px;flex:none}
 .owned-variant{font-style:normal;color:var(--gold)}
 
 .contribution-body{display:grid;grid-template-columns:120px 120px 1fr;gap:14px;align-items:start}

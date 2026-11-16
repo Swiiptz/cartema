@@ -197,6 +197,7 @@ const messages:Record<string,string>={
  not_discovered:'Découvrez d’abord cette carte.',
  character_protected:'Ce personnage est protégé du recyclage : retirez la protection depuis sa fiche.',
  image_required:'Ajoutez une image.',
+ png_required:'La signature doit être une image PNG à fond transparent.',
  credit_required:'Indiquez le nom à créditer (2 à 80 caractères).',
  too_many_submissions:'Trop de propositions aujourd’hui, réessayez demain.',
  feature_locked:'Cette nouveauté arrive avec le prochain set.',

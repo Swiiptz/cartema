@@ -23,6 +23,8 @@ describe('cartes signées',()=>{
     const {rows:[c]}=await db.query<{id:string}>('select id from public.characters where edition_id=$1 and number=1',[cam]);
     await db.query('insert into public.discoveries (owner_id,character_id) values ($1,$2)',[u,c.id]);
     await expectError(rpc(db,u,'submit_card_feedback',['CAM-001','signature','',null]),/image_required/);
+    // Signature : PNG seulement (fond transparent, contrôlé par le site) ; une illustration garde ses autres formats.
+    for(const ext of ['webp','jpg','PNG.jpg'])await expectError(rpc(db,u,'submit_card_feedback',['CAM-001','signature','',`${u}/signature.${ext}`]),/png_required/);
     const id=await rpc<string>(db,u,'submit_card_feedback',['CAM-001','signature','C’est mon personnage.',`${u}/signature.png`]);
     expect((await rpc<any[]>(db,admin,'admin_submissions',['pending'])).find(s=>s.id===id)).toMatchObject({kind:'signature'});
     await expectError(rpc(db,u,'admin_set_signature',[c.id,SIG,'Pirate']),/forbidden/);
