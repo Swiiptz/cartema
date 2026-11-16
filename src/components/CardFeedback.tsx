@@ -1,6 +1,6 @@
 'use client';
 import {useState} from 'react';
-import {ImagePlus,MessageSquareWarning} from 'lucide-react';
+import {ArrowLeft,BadgeCheck,ChevronRight,ImagePlus,MessageSquareWarning,PenLine,Quote,TriangleAlert} from 'lucide-react';
 import {useAuth} from './AuthProvider';
 import {TarotCard,type DemoCard} from './Card';
 import {SignaturePad} from './SignaturePad';
@@ -9,12 +9,24 @@ import {callRpc,type InventoryItem} from '@/lib/game';
 
 const TYPES:Record<string,string>={'image/png':'png','image/webp':'webp','image/jpeg':'jpg'};
 const MAX=10*1024*1024;
+type Kind='info'|'illustration'|'credit'|'ambiance'|'signature';
+
+/** Types de contribution proposés en tuiles (texte d'ambiance et signature : nouveautés du prochain set). */
+const CHOICES:{kind:Kind;Icon:typeof Quote;title:(hasArt:boolean)=>string;hint:string}[]=[
+ {kind:'info',Icon:TriangleAlert,title:()=>'Signaler une erreur',hint:'Nom, clan, fonction ou rareté inexacts.'},
+ {kind:'illustration',Icon:ImagePlus,title:hasArt=>hasArt?'Proposer une autre illustration':'Proposer une illustration',hint:'Votre dessin pour ce personnage.'},
+ {kind:'credit',Icon:BadgeCheck,title:()=>'Demander un crédit',hint:'Vous êtes l’auteur d’une illustration de cette carte.'},
+ {kind:'ambiance',Icon:Quote,title:()=>'Écrire un texte d’ambiance',hint:'Une citation affichée sur la fiche, signée de votre pseudo.'},
+ {kind:'signature',Icon:PenLine,title:()=>'Signer la carte',hint:'Vous jouez ce personnage : votre autographe sur des exemplaires rares.'},
+];
 
 /** Lien discret de la fiche : signaler une information fausse ou proposer une illustration. */
 export function CardFeedback({code,name,hasArt,characterId,card}:{code:string;name:string;hasArt:boolean;characterId?:string|null;card?:DemoCard}){
  const {client,session}=useAuth();
  const [open,setOpen]=useState(false);
- const [kind,setKind]=useState<'info'|'illustration'|'credit'|'ambiance'|'signature'>('info');
+ const [kind,setKind]=useState<Kind>('info');
+ // Première étape : choisir le type de contribution, présenté en tuiles ; le formulaire vient ensuite.
+ const [chosen,setChosen]=useState(false);
  const [credit,setCredit]=useState('');
  const [message,setMessage]=useState('');
  const [file,setFile]=useState<File|null>(null);
@@ -29,7 +41,7 @@ export function CardFeedback({code,name,hasArt,characterId,card}:{code:string;na
  const [versions,setVersions]=useState<{id:string;label:string}[]>([]);
  const [artId,setArtId]=useState('');
  if(!client||!session)return null;
- const reset=()=>{setKind('info');setMessage('');setCredit('');setFile(null);setSignature(null);setError(null);setSent(false);setArtId('');};
+ const reset=()=>{setKind('info');setChosen(false);setMessage('');setCredit('');setFile(null);setSignature(null);setError(null);setSent(false);setArtId('');};
  function loadVersions(){
   if(!characterId)return;
   void callRpc<InventoryItem[]>(client!,'get_inventory',{p_character_id:characterId}).then(items=>{const seen=new Map<string,string>();for(const i of items)if(i.art_id&&i.variant&&!seen.has(i.art_id))seen.set(i.art_id,i.variant);const list=[...seen].map(([id,label])=>({id,label}));setVersions(list);if(!hasArt&&list[0])setArtId(list[0].id);}).catch(()=>setVersions([]));
@@ -57,17 +69,16 @@ export function CardFeedback({code,name,hasArt,characterId,card}:{code:string;na
   }catch(err){setError((err as Error).message);}finally{setBusy(false);}
  }
  return <>
-  <div className="feedback-row"><button className="feedback-link" onClick={()=>{reset();setOpen(true);loadVersions();void callRpc<{next_set:boolean}>(client,'get_features').then(f=>setNextSet(f.next_set)).catch(()=>setNextSet(false));}} title="Signaler une erreur, proposer une illustration ou demander un crédit"><MessageSquareWarning size={13}/><span>Une erreur ? Une illustration à proposer ?</span></button></div>
+  <div className="feedback-row"><button className="feedback-link" onClick={()=>{reset();setOpen(true);loadVersions();void callRpc<{next_set:boolean}>(client,'get_features').then(f=>setNextSet(f.next_set)).catch(()=>setNextSet(false));}} title="Signaler une erreur, proposer une illustration, un texte d’ambiance ou votre signature, demander un crédit"><MessageSquareWarning size={14}/><span>Contribuer à cette carte</span></button></div>
   <Sheet open={open} onClose={()=>setOpen(false)} title={name}>
    {sent?<p className="auth-notice">Merci ! L’administrateur va examiner votre proposition. Vous serez prévenu de sa décision{kind==='illustration'&&!hasArt?' ; une illustration acceptée rapporte 1 booster':kind==='credit'?' ; une fois validé, votre nom apparaîtra dans les détails de la carte':''}.</p>
+    :!chosen?<div className="contribution-choices">
+     <p className="admin-hint">Que voulez-vous faire pour cette carte ?</p>
+     {CHOICES.filter(c=>c.kind==='credit'?hasArt||versions.length>0:c.kind==='ambiance'||c.kind==='signature'?nextSet:true).map(c=><button key={c.kind} type="button" className={`contribution-choice ${c.kind}`} onClick={()=>{setKind(c.kind);setChosen(true);setError(null);setMessage('');}}>
+      <span className="contribution-icon" aria-hidden="true"><c.Icon size={18}/></span><span className="contribution-text"><strong>{c.title(hasArt)}</strong><small>{c.hint}</small></span><ChevronRight size={16} className="contribution-chevron" aria-hidden="true"/></button>)}
+    </div>
     :<form className="report-form" onSubmit={e=>void send(e)}>
-     <div className="segmented" role="tablist">
-      <button type="button" role="tab" aria-selected={kind==='info'} onClick={()=>setKind('info')}>Information erronée</button>
-      <button type="button" role="tab" aria-selected={kind==='illustration'} onClick={()=>setKind('illustration')}>{hasArt?'Autre illustration':'Proposer une illustration'}</button>
-      {(hasArt||versions.length>0)&&<button type="button" role="tab" aria-selected={kind==='credit'} onClick={()=>setKind('credit')}>Demander un crédit</button>}
-      {nextSet&&<button type="button" role="tab" aria-selected={kind==='ambiance'} onClick={()=>setKind('ambiance')}>Texte d’ambiance</button>}
-      {nextSet&&<button type="button" role="tab" aria-selected={kind==='signature'} onClick={()=>setKind('signature')}>Ma signature</button>}
-     </div>
+     <div className="contribution-head"><button type="button" className="contribution-back" onClick={()=>{setChosen(false);setError(null);}}><ArrowLeft size={15}/> Changer</button><strong>{CHOICES.find(c=>c.kind===kind)?.title(hasArt)}</strong></div>
      {kind==='signature'&&<p className="admin-hint">Réservé à la personne qui joue ce personnage (PJ ou PNJ) : l’administrateur le vérifie avant de publier. Une fois validée, des exemplaires signés de cette carte pourront tomber dans les boosters.</p>}
      {kind==='signature'&&<SignaturePad onChange={b=>setSignature(old=>{if(old)URL.revokeObjectURL(old.url);return b?{blob:b,url:URL.createObjectURL(b)}:null;})}/>}
      {kind==='signature'&&signature&&card&&<div className="signature-preview"><TarotCard card={{...card,signature:signature.url}}/><p className="admin-hint">Aperçu : sur les exemplaires signés, votre signature apparaîtra ainsi, à l’encre dorée.</p></div>}
@@ -79,7 +90,7 @@ export function CardFeedback({code,name,hasArt,characterId,card}:{code:string;na
       <span className="flavor-editor-foot"><span>Signé de votre pseudo une fois validé</span><span className={message.trim().length>200||message.trim().length<10?'flavor-count short':'flavor-count'}>{message.trim().length}/200</span></span>
      </label>:
      <label className="auth-field"><span>{kind==='info'?'Qu’est-ce qui est faux ?':kind==='credit'?'Comment l’administrateur peut-il vérifier ? (facultatif)':kind==='signature'?'Votre lien avec ce personnage (facultatif)':'Un mot sur votre illustration (facultatif)'}</span>
-      <textarea rows={4} maxLength={1500} value={message} onChange={e=>setMessage(e.target.value)} placeholder={kind==='info'?'Ex. : le clan est Toréador, pas Ventrue.':kind==='credit'?'Ex. : lien vers mon portfolio, fichier source…':'Ex. : portrait réalisé par moi, fond transparent.'}/></label>}
+      <textarea rows={4} maxLength={1500} value={message} onChange={e=>setMessage(e.target.value)} placeholder={kind==='info'?'Ex. : le clan est Toréador, pas Ventrue.':kind==='credit'?'Ex. : lien vers mon portfolio, fichier source…':kind==='signature'?'Ex. : je joue ce personnage sur le serveur depuis la première chronique.':'Ex. : portrait réalisé par moi, fond transparent.'}/></label>}
      {kind==='illustration'&&<p className="admin-hint">En proposant une image, vous confirmez en avoir les droits et acceptez qu’elle soit utilisée dans Cartema.</p>}
      {error&&<p className="auth-error" role="alert">{error}</p>}
      <button className="primary" disabled={busy||(kind==='info'?message.trim().length<5:kind==='ambiance'?message.trim().length<10||message.trim().length>200:kind==='signature'?!signature:kind==='credit'?credit.trim().length<2:!file)}>{busy?'Envoi…':'Envoyer'}</button>

@@ -792,6 +792,9 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .feedback-link{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border:1px solid transparent;border-radius:999px;background:none;color:var(--muted);font:500 12px var(--ui);opacity:.8;transition:color .2s,border-color .2s,background .2s,opacity .2s}
 .feedback-link:hover,.feedback-link:focus-visible{opacity:1;color:var(--gold2);border-color:#c9a45c44;background:#c9a45c0d}
 .feedback-link svg{color:var(--gold)}
+/* Lien de contribution bien visible ; ses cinq onglets passent à la ligne sur téléphone au lieu de se chevaucher. */
+.feedback-link{border-color:#c9a45c33;opacity:1;color:var(--text);font-size:13px;padding:8px 16px}
+.report-form .flavor-editor-quote textarea{width:auto;padding:0;border:0;border-radius:0;background:none;font:italic 19px/1.5 var(--body);resize:none}
 .feedback-file{position:relative;display:flex;align-items:center;gap:10px;padding:14px;border:1px dashed #c9a45c66;border-radius:12px;color:var(--gold2);font:500 13px var(--ui);cursor:pointer}
 .feedback-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
 /* Signature : tracée sur une feuille claire (le canevas reste transparent) ou importée. */
@@ -811,6 +814,16 @@ a.person-name{transition:color .2s}a.person-name:hover{color:var(--gold2)}
 .flavor-editor-quote:focus-within{background:linear-gradient(90deg,#c9a45c24,#ffffff06 70%)}
 .flavor-editor-quote textarea{flex:1;min-height:3em;field-sizing:content;padding:0;border:0;background:none;outline:none;resize:none;font:italic 19px/1.5 var(--body);color:var(--text);box-shadow:none}.flavor-editor-quote textarea::placeholder{color:#b8a8b077}
 .flavor-editor-foot{display:flex;justify-content:space-between;gap:10px;font:400 12px var(--ui);color:var(--muted)}.flavor-count{font-variant-numeric:tabular-nums;color:var(--gold2)}.flavor-count.short{color:var(--muted)}
+/* Contribution : tuiles de choix, puis formulaire avec « Changer ». */
+.contribution-choices{display:grid;gap:8px}.contribution-choices .admin-hint{margin-bottom:4px}
+.contribution-choice{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(170deg,#ffffff07,#ffffff02);color:var(--text);text-align:left;cursor:pointer;transition:border-color .2s,background .2s,transform .2s}
+.contribution-choice:hover,.contribution-choice:focus-visible{border-color:#c9a45c88;background:linear-gradient(170deg,#c9a45c14,#ffffff03);transform:translateY(-1px)}
+.contribution-icon{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:50%;border:1px solid #c9a45c55;background:radial-gradient(circle at 35% 30%,#c9a45c33,#120c12 70%);color:var(--gold2)}
+.contribution-text{display:grid;gap:2px;flex:1;min-width:0}.contribution-text strong{font:600 14px var(--ui)}.contribution-text small{font:400 12px/1.45 var(--ui);color:var(--muted)}
+.contribution-chevron{flex:none;color:var(--muted)}
+.contribution-choice.signature,.contribution-choice.ambiance{border-color:#c9a45c44}.contribution-choice.signature .contribution-icon{background:radial-gradient(circle at 35% 30%,#f0d79a55,#2a1a12 70%)}
+.contribution-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.contribution-head strong{font:600 15px var(--ui);color:var(--gold2)}
+.contribution-back{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid #c9a45c44;border-radius:999px;background:none;color:var(--muted);font:500 12px var(--ui);cursor:pointer}.contribution-back:hover{color:var(--gold2);border-color:#c9a45c99}
 .signature-preview{display:flex;align-items:center;gap:14px}.signature-preview .tarot-card{width:150px;flex:none}
 .owned-variant{font-style:normal;color:var(--gold)}
 
@@ -1413,6 +1426,8 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 @media(prefers-reduced-motion:reduce){.new-badge{animation:none}}
 /* Texte d'ambiance dans la fiche d'une carte (25/10). */
 .flavor-text{margin:10px 0 4px;padding:8px 12px;border-left:2px solid var(--gold);border-radius:0;color:var(--text);font:italic 17px/1.5 var(--body)}.flavor-text p{margin:0}.flavor-text cite{display:block;margin-top:4px;color:var(--muted);font:normal 12px var(--ui)}
+/* Dans la fiche, « .dialog-copy p » imposait la police d'interface : la citation garde l'italique. */
+.dialog-copy .flavor-text p{font:italic 18px/1.5 var(--body);color:var(--text)}.dialog-copy .flavor-text cite{font:normal 12px var(--ui);color:var(--muted)}
 /* Cartes signées (25/10). */
 .owned-signed{color:var(--gold2);font-style:italic}
 .card-signature{pointer-events:none}
