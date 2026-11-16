@@ -12,7 +12,7 @@
 // inscription au journal d'administration. Passe par la CLI Supabase du projet lié : aucune clé
 // à fournir. Une carte qui avait déjà une illustration est remplacée.
 import {execFileSync} from 'node:child_process';
-import {mkdirSync,readFileSync,readdirSync,renameSync,rmSync,statSync,writeFileSync} from 'node:fs';
+import {existsSync,mkdirSync,readFileSync,readdirSync,renameSync,rmSync,statSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join,extname,basename,relative,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -68,6 +68,9 @@ ${last.trim()||'(aucun)'}
  process.exit(1);
 }
 function supabaseUrl(){
+ // Sans .env.local (site local en mode démo), l'adresse se déduit du projet lié à la CLI.
+ const ref=join(ROOT,'supabase','.temp','project-ref');
+ if(!existsSync(join(ROOT,'.env.local'))&&existsSync(ref))return `https://${readFileSync(ref,'utf8').trim()}.supabase.co`;
  const env=readFileSync(join(ROOT,'.env.local'),'utf8');
  const m=env.match(/^NEXT_PUBLIC_SUPABASE_URL=(.+)$/m);
  if(!m)throw new Error('NEXT_PUBLIC_SUPABASE_URL absent de .env.local');
