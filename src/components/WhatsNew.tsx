@@ -4,12 +4,12 @@ import {Snowflake,X} from 'lucide-react';
 
 /**
  * Note « Nouveautés » de la mise à jour d'hiver (set 2), figée dans le site.
- * Visible du lundi 16/11/2026 16 h au lundi 30/11/2026 16 h (Paris), refermable (mémorisé sur l'appareil).
+ * Visible du lundi 16/11/2026 16 h au samedi 21/11/2026 16 h (Paris ; raccourcie le 18/11), refermable (mémorisé sur l'appareil).
  * Jamais de carte citée ici : ni nom, ni numéro, ni rareté. N'ajouter une ligne qu'une fois la nouveauté livrée.
  * Aperçu en développement : /?nouveautes
  */
 const FROM=Date.parse('2026-11-16T15:00:00Z');
-const UNTIL=Date.parse('2026-11-30T15:00:00Z');
+const UNTIL=Date.parse('2026-11-21T15:00:00Z');
 const DISMISS_KEY='cartema:whats-new:hiver-2026';
 const TITLE='L’Appel des Neiges Éternelles';
 const ITEMS:[string,string][]=[

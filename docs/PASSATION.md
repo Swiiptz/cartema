@@ -243,6 +243,8 @@ Mise à jour : 23 octobre 2026 (soir). Commencer par l'état ci-dessous, puis `A
 
 - **16/11** (site seulement ; illustration en données) : **exceptionnellement** (décision de Swiiptz), la bannière de l'événement de sortie du set 2 disparaît une fois le cadeau récupéré (`HIDE_ONCE_CLAIMED` dans `EventBanner`, son identifiant seul ; les autres événements ne changent pas) — les 213 joueurs déjà servis par la sortie du set 2 ne la voient plus ; la confirmation reste affichée juste après le clic. Illustration d'Anselme de Beaupré (ANE-214) importée.
 
+- **18/11** (site seulement) : **bandeau « Merci à vous »** en tête de l'accueil (`src/components/HostingNotice.tsx`, refermable, jusqu'au 30/11 16 h) — remerciements, récapitulatif chiffré figé au 18/11 (220 joueurs, 57 324 boosters, 286 620 cartes, 25 663 ventes, 1 096 échanges, 8 816 succès, 154 dessins, 194 contributions) et annonce du retour sur l’offre gratuite de Supabase le samedi 21/11 (jeu plus lent, rien de perdu), avec un bouton « Pourquoi, en détail » qui explique simplement le rôle de Supabase, les lenteurs du début, ce que l’offre payante apportait et ce qui change. Note « Nouveautés » raccourcie : fin le 21/11 16 h. **À savoir pour le plan gratuit** (mesuré le 18/11) : base 359 Mo, stockage 922 Mo (illustrations 573, contributions 316, concours 33), proches des plafonds gratuits (500 Mo et 1 Go, à vérifier) ; base en lecture seule si elle dépasse.
+
 ## 1. Reprendre ici
 
 Cartema est un **jeu en ligne, en service** : site statique sur GitHub Pages, toute la logique dans Supabase (Postgres, RLS, fonctions `security definer`, tâches pg_cron). Des joueurs réels ont des comptes, des collections et des Deniers : toute migration touche des données vivantes.

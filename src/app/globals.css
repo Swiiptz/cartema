@@ -1581,6 +1581,16 @@ a.ach-missing-chip:hover{background:#c9a45c1f;border-color:#c9a45c88}
 @media(max-width:600px){.pack-launch.small{top:calc(50% + 14px);font-size:8px;padding:2px 5px}}
 
 /* Nouveautés de la mise à jour d'hiver (WhatsNew, 10/11) : givre bleuté sur le panneau habituel. */
+.hosting-notice{position:relative;padding:18px 20px;border-color:#c9a45c55;background:linear-gradient(125deg,#2a1520,#1a1118 60%,#211a1c)}
+.hosting-notice-head{display:flex;align-items:center;gap:14px;padding-right:40px}.hosting-notice-head h2{margin:2px 0 0;font-size:21px}
+.hosting-notice p{margin:12px 0 0;color:var(--text);font:400 14px/1.6 var(--ui)}.hosting-notice p strong{color:var(--gold2)}
+.hosting-recap{list-style:none;margin:12px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.hosting-recap li{display:grid;gap:2px;padding:8px 10px;border-radius:10px;border:1px solid #c9a45c33;background:#ffffff05}.hosting-recap b{font:600 18px var(--display);color:var(--gold2);font-variant-numeric:tabular-nums}.hosting-recap span{font:400 12px var(--ui);color:var(--muted)}
+.hosting-more{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:0;border:0;background:none;color:var(--gold2);font:600 13px var(--ui);cursor:pointer}.hosting-more svg{transition:transform .25s}.hosting-more svg.open{transform:rotate(180deg)}
+.hosting-details{margin-top:12px;padding:14px 16px;border-radius:12px;border:1px solid #c9a45c33;background:#00000033;animation:rise .35s var(--ease-out) both}
+.hosting-details h3{margin:14px 0 4px;font:600 14px var(--ui);color:var(--gold2)}.hosting-details h3:first-child{margin-top:0}
+.hosting-details p,.hosting-details li{margin:0;color:var(--text);font:400 13px/1.65 var(--ui)}.hosting-details ul{margin:6px 0 0;padding-left:18px;display:grid;gap:4px}.hosting-details strong{color:var(--gold2)}
+.hosting-notice .teaser-icon{color:#f0a3b4}.hosting-notice-close{position:absolute;top:8px;right:8px;z-index:1}
 .whats-new{position:relative;overflow:hidden;padding:18px 20px;border-color:#9fc3dc66;background:linear-gradient(125deg,#1c2230,#1a1118 55%,#211a26)}
 .whats-new-frost{position:absolute;inset:-30% auto auto -10%;width:55%;height:160%;background:radial-gradient(closest-side,#b9dcf322,transparent);pointer-events:none}
 .whats-new .teaser-icon{border-color:#9fc3dc99;color:#d7ecfa;background:radial-gradient(circle at 35% 30%,#33465c,#141822);box-shadow:0 0 18px #9fc3dc33}

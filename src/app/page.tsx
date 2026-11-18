@@ -11,6 +11,7 @@ import {EventBanner} from '@/components/EventBanner';
 import {ContestTeaser} from '@/components/ContestTeaser';
 import {InstallCard} from '@/components/InstallCard';
 import {WhatsNew} from '@/components/WhatsNew';
+import {HostingNotice} from '@/components/HostingNotice';
 import {showcase} from '@/data/demo';
 import {ALL_RARITIES} from '@/lib/draw';
 import {editionProgress,latestEdition,type AlbumEdition} from '@/lib/album';
@@ -35,6 +36,7 @@ function Visitor({configured}:{configured:boolean}){
     <div className="visitor-actions">{configured?<><Link className="primary" href="/connexion/?mode=inscription">Créer un compte <ArrowRight size={16}/></Link><Link className="primary ghost" href="/connexion/">Se connecter</Link></>:<><Link className="primary" href="/boosters/">Voir l’ouverture <ArrowRight size={16}/></Link><Link className="primary ghost" href="/collection/">Voir l’album</Link></>}</div>
    </div>
   </section>
+  <HostingNotice/>
   <WhatsNew/>
   <InstallCard/>
   <ul className="visitor-facts">
@@ -95,6 +97,7 @@ function Dashboard(){
    </div>
   </header>
 
+  <HostingNotice/>
   <WhatsNew/>
   <ContestTeaser/>
   <InstallCard/>
